@@ -1,7 +1,10 @@
 using System.Linq.Expressions;
 using Treaty.Contracts;
+using Treaty.Matching;
 using Treaty.Serialization;
 using Treaty.Validation;
+
+using MatcherValidationConfig = Treaty.Contracts.MatcherValidationConfig;
 
 namespace Treaty;
 
@@ -13,6 +16,7 @@ public sealed class ResponseExpectationBuilder
     private int _statusCode = 200;
     private string? _contentType;
     private Type? _bodyType;
+    private object? _matcherSchema;
     private readonly Dictionary<string, HeaderExpectation> _headers = new(StringComparer.OrdinalIgnoreCase);
     private PartialValidationBuilder? _partialValidationBuilder;
 
@@ -93,6 +97,31 @@ public sealed class ResponseExpectationBuilder
     }
 
     /// <summary>
+    /// Specifies that the response body should match a schema defined by matchers.
+    /// Use Match.* methods to define flexible matching rules.
+    /// </summary>
+    /// <param name="matcherSchema">An anonymous object with Match.* matchers defining the expected structure.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .WithMatcherSchema(new {
+    ///     id = Match.Guid(),
+    ///     name = Match.NonEmptyString(),
+    ///     email = Match.Email(),
+    ///     status = Match.OneOf("active", "inactive"),
+    ///     createdAt = Match.DateTime()
+    /// })
+    /// </code>
+    /// </example>
+    public ResponseExpectationBuilder WithMatcherSchema(object matcherSchema)
+    {
+        _matcherSchema = matcherSchema ?? throw new ArgumentNullException(nameof(matcherSchema));
+        _bodyType = null; // Clear any type-based schema
+        _contentType ??= "application/json";
+        return this;
+    }
+
+    /// <summary>
     /// Specifies a required header in the response.
     /// </summary>
     /// <param name="headerName">The header name.</param>
@@ -118,8 +147,16 @@ public sealed class ResponseExpectationBuilder
     internal ResponseExpectation Build(IJsonSerializer serializer)
     {
         ISchemaValidator? validator = null;
-        if (_bodyType != null)
+
+        if (_matcherSchema != null)
         {
+            // Build matcher-based validator
+            var schema = MatcherSchema.FromObject(_matcherSchema);
+            validator = new MatcherSchemaValidator(schema);
+        }
+        else if (_bodyType != null)
+        {
+            // Build type-based validator
             var schema = serializer.GetSchema(_bodyType);
             validator = new TypeSchemaValidator(schema, serializer);
         }
@@ -144,6 +181,7 @@ public abstract class PartialValidationBuilder
 public sealed class PartialValidationBuilder<T> : PartialValidationBuilder
 {
     private readonly List<string> _propertiesToValidate = [];
+    private readonly Dictionary<string, IMatcher> _propertyMatchers = new();
     private bool _ignoreExtraFields;
 
     /// <summary>
@@ -181,8 +219,40 @@ public sealed class PartialValidationBuilder<T> : PartialValidationBuilder
         return this;
     }
 
+    /// <summary>
+    /// Specifies a matcher for a specific property, overriding the type-based validation.
+    /// </summary>
+    /// <typeparam name="TProp">The property type.</typeparam>
+    /// <param name="property">Expression selecting the property.</param>
+    /// <param name="matcher">The matcher to use for this property.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .WithMatcher(u => u.Id, Match.Guid())
+    /// .WithMatcher(u => u.CreatedAt, Match.DateTime())
+    /// </code>
+    /// </example>
+    public PartialValidationBuilder<T> WithMatcher<TProp>(Expression<Func<T, TProp>> property, IMatcher matcher)
+    {
+        var memberExpr = property.Body as MemberExpression
+            ?? (property.Body as UnaryExpression)?.Operand as MemberExpression;
+
+        if (memberExpr != null)
+        {
+            _propertyMatchers[memberExpr.Member.Name] = matcher;
+        }
+
+        return this;
+    }
+
     internal override PartialValidationConfig Build()
     {
-        return new PartialValidationConfig(_propertiesToValidate, _ignoreExtraFields);
+        MatcherValidationConfig? matcherConfig = null;
+        if (_propertyMatchers.Count > 0)
+        {
+            matcherConfig = new MatcherValidationConfig(_propertyMatchers);
+        }
+
+        return new PartialValidationConfig(_propertiesToValidate, _ignoreExtraFields, matcherConfig);
     }
 }

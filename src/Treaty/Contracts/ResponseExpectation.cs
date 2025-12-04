@@ -62,9 +62,34 @@ public sealed class PartialValidationConfig
     /// </summary>
     public bool IgnoreExtraFields { get; }
 
-    internal PartialValidationConfig(IReadOnlyList<string> propertiesToValidate, bool ignoreExtraFields)
+    /// <summary>
+    /// Gets the matcher overrides for specific properties.
+    /// </summary>
+    public MatcherValidationConfig? MatcherConfig { get; }
+
+    internal PartialValidationConfig(
+        IReadOnlyList<string> propertiesToValidate,
+        bool ignoreExtraFields,
+        MatcherValidationConfig? matcherConfig = null)
     {
         PropertiesToValidate = propertiesToValidate;
         IgnoreExtraFields = ignoreExtraFields;
+        MatcherConfig = matcherConfig;
+    }
+}
+
+/// <summary>
+/// Configuration for matcher-based property validation overrides.
+/// </summary>
+public sealed class MatcherValidationConfig
+{
+    /// <summary>
+    /// Gets the property matchers keyed by property name (CLR name).
+    /// </summary>
+    public IReadOnlyDictionary<string, Matching.IMatcher> PropertyMatchers { get; }
+
+    internal MatcherValidationConfig(IReadOnlyDictionary<string, Matching.IMatcher> propertyMatchers)
+    {
+        PropertyMatchers = propertyMatchers;
     }
 }

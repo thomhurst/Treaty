@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Treaty.Contracts;
+using Treaty.Matching;
 using Treaty.Serialization;
 
 namespace Treaty.Validation;
@@ -160,7 +161,19 @@ internal sealed class TypeSchemaValidator : ISchemaValidator
 
             if (obj.TryGetPropertyValue(propName, out var propNode))
             {
-                ValidateNode(propNode, propSchema.TypeSchema, endpoint, $"{path}.{propName}", violations, null);
+                var propPath = $"{path}.{propName}";
+
+                // Check if there's a matcher override for this property
+                if (partialValidation?.MatcherConfig?.PropertyMatchers.TryGetValue(propSchema.ClrName ?? propName, out var matcher) == true)
+                {
+                    // Use matcher validation instead of type validation
+                    var matcherViolations = matcher.Validate(propNode, endpoint, propPath);
+                    violations.AddRange(matcherViolations);
+                }
+                else
+                {
+                    ValidateNode(propNode, propSchema.TypeSchema, endpoint, propPath, violations, null);
+                }
             }
         }
 
