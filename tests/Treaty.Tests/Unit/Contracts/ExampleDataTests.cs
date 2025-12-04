@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Treaty.Contracts;
 
 namespace Treaty.Tests.Unit.Contracts;
 

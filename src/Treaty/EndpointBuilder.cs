@@ -1,6 +1,5 @@
 using Treaty.Contracts;
 using Treaty.Serialization;
-using Treaty.Validation;
 
 namespace Treaty;
 

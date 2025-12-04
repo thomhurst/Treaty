@@ -1,11 +1,8 @@
-using Microsoft.Extensions.Logging;
 using Treaty.Consumer;
 using Treaty.Contracts;
 using Treaty.Mocking;
 using Treaty.OpenApi;
-using Treaty.Pact;
 using Treaty.Provider;
-using Treaty.Serialization;
 
 namespace Treaty;
 
@@ -184,72 +181,4 @@ public static class Treaty
     /// </example>
     public static ContractDiff CompareContracts(Contract oldContract, Contract newContract)
         => ContractComparer.Compare(oldContract, newContract);
-
-    /// <summary>
-    /// Imports a Pact contract from a file and converts it to a Treaty contract.
-    /// </summary>
-    /// <param name="filePath">Path to the Pact JSON file.</param>
-    /// <returns>A Treaty contract built from the Pact file.</returns>
-    /// <example>
-    /// <code>
-    /// var contract = Treaty.FromPact("consumer-provider.json");
-    ///
-    /// // Use for provider verification
-    /// var verifier = Treaty.ForProvider&lt;MyApi&gt;()
-    ///     .WithContract(contract)
-    ///     .Build();
-    /// </code>
-    /// </example>
-    public static Contract FromPact(string filePath)
-        => PactImporter.FromFile(filePath);
-
-    /// <summary>
-    /// Imports a Pact contract from a JSON string.
-    /// </summary>
-    /// <param name="json">The Pact JSON content.</param>
-    /// <returns>A Treaty contract built from the Pact JSON.</returns>
-    public static Contract FromPactJson(string json)
-        => PactImporter.FromJson(json);
-
-    /// <summary>
-    /// Imports a Pact contract from a stream.
-    /// </summary>
-    /// <param name="stream">Stream containing the Pact JSON.</param>
-    /// <returns>A Treaty contract built from the Pact stream.</returns>
-    public static Contract FromPactStream(Stream stream)
-        => PactImporter.FromStream(stream);
-
-    /// <summary>
-    /// Exports a Treaty contract to Pact JSON format.
-    /// </summary>
-    /// <param name="contract">The contract to export.</param>
-    /// <param name="consumerName">Name of the consumer application.</param>
-    /// <param name="providerName">Name of the provider application.</param>
-    /// <returns>A JSON string in Pact format.</returns>
-    /// <example>
-    /// <code>
-    /// var contract = Treaty.DefineContract("Users API")
-    ///     .ForEndpoint("/users/{id}")
-    ///         .WithMethod(HttpMethod.Get)
-    ///         .ExpectingResponse(r => r
-    ///             .WithStatus(200)
-    ///             .WithJsonBody&lt;User&gt;())
-    ///     .Build();
-    ///
-    /// var pactJson = Treaty.ToPactJson(contract, "UserService", "UsersAPI");
-    /// File.WriteAllText("consumer-provider-pact.json", pactJson);
-    /// </code>
-    /// </example>
-    public static string ToPactJson(Contract contract, string consumerName, string providerName)
-        => PactExporter.ToJson(contract, consumerName, providerName);
-
-    /// <summary>
-    /// Exports a Treaty contract to a Pact JSON file.
-    /// </summary>
-    /// <param name="contract">The contract to export.</param>
-    /// <param name="filePath">Path where the Pact file will be written.</param>
-    /// <param name="consumerName">Name of the consumer application.</param>
-    /// <param name="providerName">Name of the provider application.</param>
-    public static void ToPactFile(Contract contract, string filePath, string consumerName, string providerName)
-        => PactExporter.ToFile(contract, filePath, consumerName, providerName);
 }

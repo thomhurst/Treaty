@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Treaty.Contracts;
-using Treaty.Serialization;
 using TreatyLib = Treaty.Treaty;
 
 namespace Treaty.Tests.Unit.Builders;

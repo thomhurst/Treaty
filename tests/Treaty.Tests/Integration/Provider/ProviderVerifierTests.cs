@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Treaty.Tests.TestApi;
-using Treaty.Validation;
 using TreatyLib = Treaty.Treaty;
 using TreatyProvider = Treaty.Provider;
 

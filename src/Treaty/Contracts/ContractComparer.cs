@@ -1,5 +1,3 @@
-using Treaty.Serialization;
-
 namespace Treaty.Contracts;
 
 /// <summary>
