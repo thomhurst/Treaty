@@ -115,5 +115,8 @@ public enum ViolationType
     MissingQueryParameter,
 
     /// <summary>A query parameter has an invalid value.</summary>
-    InvalidQueryParameterValue
+    InvalidQueryParameterValue,
+
+    /// <summary>Verification timed out.</summary>
+    Timeout
 }

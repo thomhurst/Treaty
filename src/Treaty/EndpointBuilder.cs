@@ -16,6 +16,8 @@ public sealed class EndpointBuilder
     private readonly List<ResponseExpectationBuilder> _responseBuilders = [];
     private readonly Dictionary<string, HeaderExpectation> _headers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, QueryParameterExpectation> _queryParams = new(StringComparer.OrdinalIgnoreCase);
+    private ExampleDataBuilder? _exampleDataBuilder;
+    private readonly List<ProviderState> _providerStates = [];
 
     internal EndpointBuilder(ContractBuilder parent, string pathTemplate)
     {
@@ -31,6 +33,50 @@ public sealed class EndpointBuilder
     public EndpointBuilder WithMethod(HttpMethod method)
     {
         _method = method;
+        return this;
+    }
+
+    /// <summary>
+    /// Specifies a provider state that must be established before this endpoint can be tested.
+    /// Provider states allow consumers to declare prerequisites for their tests.
+    /// </summary>
+    /// <param name="stateName">The name of the required state (e.g., "a user with id 123 exists").</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ForEndpoint("/users/{id}")
+    ///     .Given("a user with id 123 exists")
+    ///     .WithMethod(HttpMethod.Get)
+    ///     .ExpectingResponse(r => r.WithStatus(200))
+    /// </code>
+    /// </example>
+    public EndpointBuilder Given(string stateName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateName);
+        _providerStates.Add(new ProviderState(stateName));
+        return this;
+    }
+
+    /// <summary>
+    /// Specifies a provider state with parameters that must be established before this endpoint can be tested.
+    /// </summary>
+    /// <param name="stateName">The name of the required state.</param>
+    /// <param name="parameters">An anonymous object containing state parameters.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ForEndpoint("/users/{id}")
+    ///     .Given("a user exists", new { id = 123, name = "John" })
+    ///     .WithMethod(HttpMethod.Get)
+    ///     .WithExamplePathParams(new { id = 123 })
+    ///     .ExpectingResponse(r => r.WithStatus(200))
+    /// </code>
+    /// </example>
+    public EndpointBuilder Given(string stateName, object parameters)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stateName);
+        ArgumentNullException.ThrowIfNull(parameters);
+        _providerStates.Add(ProviderState.Create(stateName, parameters));
         return this;
     }
 
@@ -114,6 +160,53 @@ public sealed class EndpointBuilder
     }
 
     /// <summary>
+    /// Specifies example data for this endpoint, used for automatic request generation
+    /// during bulk verification with <see cref="Provider.ProviderVerifier{TStartup}.VerifyAllAsync"/>.
+    /// </summary>
+    /// <param name="configure">Action to configure example data.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ForEndpoint("/users/{id}")
+    ///     .WithMethod(HttpMethod.Get)
+    ///     .WithExampleData(e => e
+    ///         .WithPathParam("id", 123)
+    ///         .WithQueryParam("include", "profile")
+    ///         .WithHeader("X-Tenant", "acme"))
+    ///     .ExpectingResponse(r => r.WithStatus(200))
+    /// </code>
+    /// </example>
+    public EndpointBuilder WithExampleData(Action<ExampleDataBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _exampleDataBuilder = new ExampleDataBuilder();
+        configure(_exampleDataBuilder);
+        return this;
+    }
+
+    /// <summary>
+    /// Specifies example path parameters using an anonymous object.
+    /// This is a shorthand for <see cref="WithExampleData"/> when only path parameters are needed.
+    /// </summary>
+    /// <param name="pathParams">An anonymous object containing path parameter values.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ForEndpoint("/users/{id}/posts/{postId}")
+    ///     .WithMethod(HttpMethod.Get)
+    ///     .WithExamplePathParams(new { id = 123, postId = 456 })
+    ///     .ExpectingResponse(r => r.WithStatus(200))
+    /// </code>
+    /// </example>
+    public EndpointBuilder WithExamplePathParams(object pathParams)
+    {
+        ArgumentNullException.ThrowIfNull(pathParams);
+        _exampleDataBuilder ??= new ExampleDataBuilder();
+        _exampleDataBuilder.WithPathParams(pathParams);
+        return this;
+    }
+
+    /// <summary>
     /// Starts defining another endpoint.
     /// </summary>
     /// <param name="pathTemplate">The path template for the new endpoint.</param>
@@ -133,6 +226,7 @@ public sealed class EndpointBuilder
     {
         var request = _requestBuilder?.Build(serializer);
         var responses = _responseBuilders.Select(b => b.Build(serializer)).ToList();
+        var exampleData = _exampleDataBuilder?.Build();
 
         return new EndpointContract(
             _pathTemplate,
@@ -140,6 +234,8 @@ public sealed class EndpointBuilder
             request,
             responses,
             _headers,
-            _queryParams);
+            _queryParams,
+            exampleData,
+            _providerStates);
     }
 }

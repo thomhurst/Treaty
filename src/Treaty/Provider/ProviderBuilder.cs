@@ -13,8 +13,12 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
 {
     private Contract? _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
+    private IStateHandler? _stateHandler;
 
-    internal ProviderBuilder() { }
+    /// <summary>
+    /// Creates a new provider builder.
+    /// </summary>
+    public ProviderBuilder() { }
 
     /// <summary>
     /// Specifies the contract to verify against.
@@ -39,6 +43,42 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     }
 
     /// <summary>
+    /// Specifies a state handler for setting up provider states before verification.
+    /// </summary>
+    /// <param name="stateHandler">The state handler implementation.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ProviderBuilder<TStartup> WithStateHandler(IStateHandler stateHandler)
+    {
+        _stateHandler = stateHandler ?? throw new ArgumentNullException(nameof(stateHandler));
+        return this;
+    }
+
+    /// <summary>
+    /// Configures state handlers using a fluent builder.
+    /// </summary>
+    /// <param name="configure">Action to configure state handlers.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .WithStateHandler(states => states
+    ///     .ForState("a user exists", async p =>
+    ///     {
+    ///         var id = (int)p["id"];
+    ///         await _db.CreateUser(id, "Test");
+    ///     })
+    ///     .ForState("the cart is empty", () => _cart.Clear()))
+    /// </code>
+    /// </example>
+    public ProviderBuilder<TStartup> WithStateHandler(Action<StateHandlerBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var builder = new StateHandlerBuilder();
+        configure(builder);
+        _stateHandler = builder.Build();
+        return this;
+    }
+
+    /// <summary>
     /// Builds the provider verifier.
     /// </summary>
     /// <returns>The configured provider verifier.</returns>
@@ -48,6 +88,6 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
         if (_contract == null)
             throw new InvalidOperationException("A contract must be specified using WithContract().");
 
-        return new ProviderVerifier<TStartup>(_contract, _loggerFactory);
+        return new ProviderVerifier<TStartup>(_contract, _loggerFactory, _stateHandler);
     }
 }

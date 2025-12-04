@@ -31,6 +31,17 @@ public sealed class ContractViolationException : Exception
     {
     }
 
+    /// <summary>
+    /// Creates a new contract violation exception with a custom message.
+    /// </summary>
+    /// <param name="message">The exception message.</param>
+    /// <param name="violations">The violations that were detected.</param>
+    public ContractViolationException(string message, IReadOnlyList<ContractViolation> violations)
+        : base(message + Environment.NewLine + FormatMessage(violations))
+    {
+        Violations = violations;
+    }
+
     private static string FormatMessage(IReadOnlyList<ContractViolation> violations)
     {
         if (violations.Count == 0)

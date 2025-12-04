@@ -40,13 +40,25 @@ public sealed class EndpointContract
     /// </summary>
     public IReadOnlyDictionary<string, QueryParameterExpectation> ExpectedQueryParameters { get; }
 
+    /// <summary>
+    /// Gets the example data for this endpoint, used for automatic request generation.
+    /// </summary>
+    public ExampleData? ExampleData { get; }
+
+    /// <summary>
+    /// Gets the provider states that must be established before this endpoint can be tested.
+    /// </summary>
+    public IReadOnlyList<ProviderState> ProviderStates { get; }
+
     internal EndpointContract(
         string pathTemplate,
         HttpMethod method,
         RequestExpectation? requestExpectation,
         IReadOnlyList<ResponseExpectation> responseExpectations,
         IReadOnlyDictionary<string, HeaderExpectation> expectedHeaders,
-        IReadOnlyDictionary<string, QueryParameterExpectation> expectedQueryParameters)
+        IReadOnlyDictionary<string, QueryParameterExpectation> expectedQueryParameters,
+        ExampleData? exampleData = null,
+        IReadOnlyList<ProviderState>? providerStates = null)
     {
         PathTemplate = pathTemplate;
         Method = method;
@@ -54,6 +66,8 @@ public sealed class EndpointContract
         ResponseExpectations = responseExpectations;
         ExpectedHeaders = expectedHeaders;
         ExpectedQueryParameters = expectedQueryParameters;
+        ExampleData = exampleData;
+        ProviderStates = providerStates ?? [];
 
         (_pathPattern, _pathParameterNames) = BuildPathPattern(pathTemplate);
     }
@@ -105,6 +119,70 @@ public sealed class EndpointContract
     /// Gets a display string for this endpoint (e.g., "GET /users/{id}").
     /// </summary>
     public override string ToString() => $"{Method.Method} {PathTemplate}";
+
+    /// <summary>
+    /// Gets a value indicating whether this endpoint has example data defined
+    /// that can be used for automatic request generation.
+    /// </summary>
+    public bool HasExampleData => ExampleData?.HasValues == true ||
+                                   _pathParameterNames.Count == 0;
+
+    /// <summary>
+    /// Generates a concrete path by replacing path parameters with example values.
+    /// </summary>
+    /// <returns>The concrete path with parameters replaced, or the template if no example data is available.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when example data is missing for required path parameters.</exception>
+    public string GetExamplePath()
+    {
+        if (_pathParameterNames.Count == 0)
+            return PathTemplate;
+
+        if (ExampleData == null)
+            throw new InvalidOperationException(
+                $"Cannot generate example path for '{PathTemplate}': No example data provided. " +
+                $"Use WithExampleData() or WithExamplePathParams() to specify values for path parameters: {string.Join(", ", _pathParameterNames)}");
+
+        var path = PathTemplate;
+        foreach (var paramName in _pathParameterNames)
+        {
+            if (!ExampleData.PathParameters.TryGetValue(paramName, out var value))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot generate example path for '{PathTemplate}': Missing example value for path parameter '{paramName}'. " +
+                    $"Use WithExampleData(e => e.WithPathParam(\"{paramName}\", value)) to specify a value.");
+            }
+
+            path = path.Replace($"{{{paramName}}}", value.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        return path;
+    }
+
+    /// <summary>
+    /// Generates a concrete URL by replacing path parameters with example values
+    /// and appending query parameters.
+    /// </summary>
+    /// <returns>The concrete URL with parameters replaced and query string appended.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when example data is missing for required path parameters.</exception>
+    public string GetExampleUrl()
+    {
+        var path = GetExamplePath();
+
+        if (ExampleData?.QueryParameters.Count > 0)
+        {
+            var queryParams = string.Join("&",
+                ExampleData.QueryParameters.Select(kv =>
+                    $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value.ToString() ?? "")}"));
+            path = $"{path}?{queryParams}";
+        }
+
+        return path;
+    }
+
+    /// <summary>
+    /// Gets the names of path parameters in this endpoint's path template.
+    /// </summary>
+    public IReadOnlyList<string> PathParameterNames => _pathParameterNames;
 
     private static (Regex pattern, List<string> parameterNames) BuildPathPattern(string pathTemplate)
     {
