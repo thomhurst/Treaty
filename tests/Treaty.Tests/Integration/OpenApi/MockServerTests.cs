@@ -4,9 +4,9 @@ using FluentAssertions;
 using TreatyLib = Treaty.Treaty;
 using TreatyOpenApi = Treaty.OpenApi;
 
-namespace Treaty.Tests;
+namespace Treaty.Tests.Integration.OpenApi;
 
-public class MockServerIntegrationTests : IAsyncDisposable
+public class MockServerTests : IAsyncDisposable
 {
     private TreatyOpenApi.MockServer? _mockServer;
     private HttpClient? _client;

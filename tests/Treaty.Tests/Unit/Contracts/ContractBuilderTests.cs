@@ -2,7 +2,7 @@ using FluentAssertions;
 using Treaty.Contracts;
 using TreatyLib = Treaty.Treaty;
 
-namespace Treaty.Tests;
+namespace Treaty.Tests.Unit.Contracts;
 
 public class ContractBuilderTests
 {
@@ -70,62 +70,6 @@ public class ContractBuilderTests
     }
 
     [Test]
-    public void EndpointContract_Matches_WithExactPath()
-    {
-        // Arrange
-        var contract = TreatyLib.DefineContract()
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
-
-        // Act & Assert
-        var endpoint = contract.FindEndpoint("/users", HttpMethod.Get);
-        endpoint.Should().NotBeNull();
-        endpoint!.Matches("/users", HttpMethod.Get).Should().BeTrue();
-        endpoint.Matches("/users", HttpMethod.Post).Should().BeFalse();
-        endpoint.Matches("/other", HttpMethod.Get).Should().BeFalse();
-    }
-
-    [Test]
-    public void EndpointContract_Matches_WithPathParameter()
-    {
-        // Arrange
-        var contract = TreatyLib.DefineContract()
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
-
-        // Act & Assert
-        var endpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
-        endpoint.Should().NotBeNull();
-        endpoint!.Matches("/users/123", HttpMethod.Get).Should().BeTrue();
-        endpoint.Matches("/users/abc", HttpMethod.Get).Should().BeTrue();
-        endpoint.Matches("/users/", HttpMethod.Get).Should().BeFalse();
-    }
-
-    [Test]
-    public void EndpointContract_ExtractPathParameters_ReturnsValues()
-    {
-        // Arrange
-        var contract = TreatyLib.DefineContract()
-            .ForEndpoint("/users/{userId}/posts/{postId}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
-
-        var endpoint = contract.FindEndpoint("/users/123/posts/456", HttpMethod.Get);
-
-        // Act
-        var pathParams = endpoint!.ExtractPathParameters("/users/123/posts/456");
-
-        // Assert
-        pathParams.Should().ContainKey("userId").WhoseValue.Should().Be("123");
-        pathParams.Should().ContainKey("postId").WhoseValue.Should().Be("456");
-    }
-
-    [Test]
     public void DefineContract_WithHeaders_SetsHeaders()
     {
         // Arrange & Act
@@ -162,6 +106,20 @@ public class ContractBuilderTests
         endpoint.ExpectedQueryParameters["page"].IsRequired.Should().BeTrue();
         endpoint.ExpectedQueryParameters.Should().ContainKey("limit");
         endpoint.ExpectedQueryParameters["limit"].IsRequired.Should().BeFalse();
+    }
+
+    [Test]
+    public void DefineContract_WithoutName_UsesDefaultName()
+    {
+        // Arrange & Act
+        var contract = TreatyLib.DefineContract()
+            .ForEndpoint("/users")
+                .WithMethod(HttpMethod.Get)
+                .ExpectingResponse(r => r.WithStatus(200))
+            .Build();
+
+        // Assert
+        contract.Name.Should().Be("Contract");
     }
 
     private record TestUser(int Id, string Name, string Email);

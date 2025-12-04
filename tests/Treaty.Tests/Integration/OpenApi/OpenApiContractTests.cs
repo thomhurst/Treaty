@@ -5,7 +5,7 @@ using FluentAssertions;
 using Treaty.OpenApi;
 using TreatyLib = Treaty.Treaty;
 
-namespace Treaty.Tests;
+namespace Treaty.Tests.Integration.OpenApi;
 
 /// <summary>
 /// Tests that use actual OpenAPI specification files (YAML and JSON).
@@ -109,7 +109,7 @@ public class OpenApiSpecFileTests
 /// <summary>
 /// Tests mock server generation from actual OpenAPI spec files.
 /// </summary>
-public class OpenApiMockServerTests : IAsyncDisposable
+public class OpenApiMockServerFromSpecTests : IAsyncDisposable
 {
     private MockServer? _mockServer;
     private HttpClient? _client;

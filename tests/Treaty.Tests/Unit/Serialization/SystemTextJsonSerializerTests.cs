@@ -2,12 +2,12 @@ using System.Text.Json;
 using FluentAssertions;
 using Treaty.Serialization;
 
-namespace Treaty.Tests;
+namespace Treaty.Tests.Unit.Serialization;
 
-public class SerializerTests
+public class SystemTextJsonSerializerTests
 {
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForSimpleType_ReturnsCorrectSchema()
+    public void GetSchema_ForSimpleType_ReturnsCorrectSchema()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -25,7 +25,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForArrayType_ReturnsArraySchema()
+    public void GetSchema_ForArrayType_ReturnsArraySchema()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -40,7 +40,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForListType_ReturnsArraySchema()
+    public void GetSchema_ForListType_ReturnsArraySchema()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -54,7 +54,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForNullableType_IsNullable()
+    public void GetSchema_ForNullableType_IsNullable()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -68,7 +68,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForGuid_ReturnsStringWithUuidFormat()
+    public void GetSchema_ForGuid_ReturnsStringWithUuidFormat()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -82,7 +82,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForDateTime_ReturnsStringWithDateTimeFormat()
+    public void GetSchema_ForDateTime_ReturnsStringWithDateTimeFormat()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -96,7 +96,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForUri_ReturnsStringWithUriFormat()
+    public void GetSchema_ForUri_ReturnsStringWithUriFormat()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -110,7 +110,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_Serialize_UsesCamelCase()
+    public void Serialize_UsesCamelCase()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -125,7 +125,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_Deserialize_HandlesSuccessfully()
+    public void Deserialize_HandlesSuccessfully()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();
@@ -141,7 +141,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_WithCustomOptions_UsesOptions()
+    public void WithCustomOptions_UsesOptions()
     {
         // Arrange
         var options = new JsonSerializerOptions
@@ -160,7 +160,7 @@ public class SerializerTests
     }
 
     [Test]
-    public void SystemTextJsonSerializer_GetSchema_ForNestedTypes_BuildsCorrectly()
+    public void GetSchema_ForNestedTypes_BuildsCorrectly()
     {
         // Arrange
         var serializer = new SystemTextJsonSerializer();

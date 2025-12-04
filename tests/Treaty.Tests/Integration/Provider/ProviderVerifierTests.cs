@@ -4,13 +4,13 @@ using Treaty.Validation;
 using TreatyLib = Treaty.Treaty;
 using TreatyProvider = Treaty.Provider;
 
-namespace Treaty.Tests;
+namespace Treaty.Tests.Integration.Provider;
 
-public class ProviderIntegrationTests : IDisposable
+public class ProviderVerifierTests : IDisposable
 {
     private readonly TreatyProvider.ProviderVerifier<TestStartup> _provider;
 
-    public ProviderIntegrationTests()
+    public ProviderVerifierTests()
     {
         var contract = TreatyLib.DefineContract("TestApi")
             .ForEndpoint("/users")

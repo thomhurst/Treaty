@@ -7,9 +7,9 @@ using TreatyLib = Treaty.Treaty;
 using TreatyConsumer = Treaty.Consumer;
 using TreatyOpenApi = Treaty.OpenApi;
 
-namespace Treaty.Tests;
+namespace Treaty.Tests.Integration.Consumer;
 
-public class ConsumerIntegrationTests : IAsyncDisposable
+public class ConsumerVerifierTests : IAsyncDisposable
 {
     private TreatyOpenApi.MockServer? _mockServer;
     private TreatyConsumer.ConsumerVerifier? _consumer;
