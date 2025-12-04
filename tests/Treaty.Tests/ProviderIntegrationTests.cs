@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Treaty.Tests.TestApi;
 using Treaty.Validation;
-using Xunit;
 using TreatyLib = Treaty.Treaty;
 using TreatyProvider = Treaty.Provider;
 
@@ -40,35 +39,35 @@ public class ProviderIntegrationTests : IDisposable
             .Build();
     }
 
-    [Fact]
+    [Test]
     public async Task VerifyAsync_GetUsers_PassesValidation()
     {
         // Act & Assert - should not throw
         await _provider.VerifyAsync("/users", HttpMethod.Get);
     }
 
-    [Fact]
+    [Test]
     public async Task VerifyAsync_GetUserById_PassesValidation()
     {
         // Act & Assert - should not throw
         await _provider.VerifyAsync("/users/1", HttpMethod.Get);
     }
 
-    [Fact]
+    [Test]
     public async Task VerifyAsync_CreateUser_PassesValidation()
     {
         // Act & Assert - should not throw
         await _provider.VerifyAsync("/users", HttpMethod.Post, new CreateUserRequest("Test User", "test@example.com"));
     }
 
-    [Fact]
+    [Test]
     public async Task VerifyAsync_DeleteUser_PassesValidation()
     {
         // Act & Assert - should not throw
         await _provider.VerifyAsync("/users/1", HttpMethod.Delete);
     }
 
-    [Fact]
+    [Test]
     public async Task TryVerifyAsync_GetUsers_ReturnsSuccessResult()
     {
         // Act
@@ -79,7 +78,7 @@ public class ProviderIntegrationTests : IDisposable
         result.Violations.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public async Task TryVerifyAsync_GetUserById_ReturnsSuccessResult()
     {
         // Act
@@ -89,7 +88,7 @@ public class ProviderIntegrationTests : IDisposable
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task TryVerifyAsync_UndefinedEndpoint_ReturnsFailure()
     {
         // Act
@@ -101,7 +100,7 @@ public class ProviderIntegrationTests : IDisposable
             .Which.Message.Should().Contain("No contract definition found");
     }
 
-    [Fact]
+    [Test]
     public async Task VerifyAsync_WithPathParameter_ExtractsParameterCorrectly()
     {
         // Act & Assert - different path parameter values should work

@@ -1,13 +1,12 @@
 using FluentAssertions;
 using Treaty.Contracts;
-using Xunit;
 using TreatyLib = Treaty.Treaty;
 
 namespace Treaty.Tests;
 
 public class ContractBuilderTests
 {
-    [Fact]
+    [Test]
     public void DefineContract_WithSimpleEndpoint_CreatesContract()
     {
         // Arrange & Act
@@ -30,7 +29,7 @@ public class ContractBuilderTests
         endpoint.ResponseExpectations[0].StatusCode.Should().Be(200);
     }
 
-    [Fact]
+    [Test]
     public void DefineContract_WithMultipleEndpoints_CreatesContract()
     {
         // Arrange & Act
@@ -51,7 +50,7 @@ public class ContractBuilderTests
         contract.Endpoints.Should().HaveCount(3);
     }
 
-    [Fact]
+    [Test]
     public void DefineContract_WithDefaults_AppliesDefaults()
     {
         // Arrange & Act
@@ -70,7 +69,7 @@ public class ContractBuilderTests
         contract.Defaults.RequestHeaders.Should().ContainKey("Authorization");
     }
 
-    [Fact]
+    [Test]
     public void EndpointContract_Matches_WithExactPath()
     {
         // Arrange
@@ -88,7 +87,7 @@ public class ContractBuilderTests
         endpoint.Matches("/other", HttpMethod.Get).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndpointContract_Matches_WithPathParameter()
     {
         // Arrange
@@ -106,7 +105,7 @@ public class ContractBuilderTests
         endpoint.Matches("/users/", HttpMethod.Get).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndpointContract_ExtractPathParameters_ReturnsValues()
     {
         // Arrange
@@ -126,7 +125,7 @@ public class ContractBuilderTests
         pathParams.Should().ContainKey("postId").WhoseValue.Should().Be("456");
     }
 
-    [Fact]
+    [Test]
     public void DefineContract_WithHeaders_SetsHeaders()
     {
         // Arrange & Act
@@ -145,7 +144,7 @@ public class ContractBuilderTests
         endpoint.ResponseExpectations[0].ExpectedHeaders.Should().ContainKey("Content-Type");
     }
 
-    [Fact]
+    [Test]
     public void DefineContract_WithQueryParams_SetsQueryParams()
     {
         // Arrange & Act

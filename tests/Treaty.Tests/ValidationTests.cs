@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Treaty.Serialization;
 using Treaty.Validation;
-using Xunit;
 
 namespace Treaty.Tests;
 
@@ -9,7 +8,7 @@ public class ValidationTests
 {
     private readonly IJsonSerializer _serializer = new SystemTextJsonSerializer();
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_ValidJson_ReturnsNoViolations()
     {
         // Arrange
@@ -24,7 +23,7 @@ public class ValidationTests
         violations.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_MissingRequiredField_ReturnsViolation()
     {
         // Arrange
@@ -40,7 +39,7 @@ public class ValidationTests
             .Which.Type.Should().Be(ViolationType.MissingRequired);
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_InvalidType_ReturnsViolation()
     {
         // Arrange
@@ -56,7 +55,7 @@ public class ValidationTests
             .Which.Type.Should().Be(ViolationType.InvalidType);
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_InvalidGuidFormat_ReturnsViolation()
     {
         // Arrange - Guid types get uuid format validation
@@ -72,7 +71,7 @@ public class ValidationTests
             .Which.Type.Should().Be(ViolationType.InvalidFormat);
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_NullValue_WhenNotNullable_ReturnsViolation()
     {
         // Arrange
@@ -88,7 +87,7 @@ public class ValidationTests
             .Which.Type.Should().Be(ViolationType.UnexpectedNull);
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_NestedObject_ValidatesCorrectly()
     {
         // Arrange
@@ -111,7 +110,7 @@ public class ValidationTests
         violations.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_Array_ValidatesItems()
     {
         // Arrange
@@ -131,7 +130,7 @@ public class ValidationTests
         violations.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void TypeSchemaValidator_Array_InvalidItem_ReturnsViolation()
     {
         // Arrange
@@ -152,7 +151,7 @@ public class ValidationTests
             .Which.Path.Should().Contain("[1]");
     }
 
-    [Fact]
+    [Test]
     public void ContractViolationException_FormatsMessage_WithAllViolations()
     {
         // Arrange
@@ -172,7 +171,7 @@ public class ValidationTests
         exception.Violations.Should().HaveCount(2);
     }
 
-    [Fact]
+    [Test]
     public void ValidationResult_Success_IsValid()
     {
         // Arrange & Act
@@ -183,7 +182,7 @@ public class ValidationTests
         result.Violations.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ValidationResult_Failure_IsNotValid()
     {
         // Arrange
@@ -197,7 +196,7 @@ public class ValidationTests
         result.Violations.Should().ContainSingle();
     }
 
-    [Fact]
+    [Test]
     public void ValidationResult_ThrowIfInvalid_ThrowsWhenInvalid()
     {
         // Arrange

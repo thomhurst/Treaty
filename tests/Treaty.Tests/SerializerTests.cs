@@ -1,13 +1,12 @@
 using System.Text.Json;
 using FluentAssertions;
 using Treaty.Serialization;
-using Xunit;
 
 namespace Treaty.Tests;
 
 public class SerializerTests
 {
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForSimpleType_ReturnsCorrectSchema()
     {
         // Arrange
@@ -25,7 +24,7 @@ public class SerializerTests
         schema.Properties["name"].TypeSchema.SchemaType.Should().Be(JsonSchemaType.String);
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForArrayType_ReturnsArraySchema()
     {
         // Arrange
@@ -40,7 +39,7 @@ public class SerializerTests
         schema.ItemSchema!.SchemaType.Should().Be(JsonSchemaType.Object);
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForListType_ReturnsArraySchema()
     {
         // Arrange
@@ -54,7 +53,7 @@ public class SerializerTests
         schema.ItemSchema.Should().NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForNullableType_IsNullable()
     {
         // Arrange
@@ -68,7 +67,7 @@ public class SerializerTests
         schema.SchemaType.Should().Be(JsonSchemaType.Integer);
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForGuid_ReturnsStringWithUuidFormat()
     {
         // Arrange
@@ -82,7 +81,7 @@ public class SerializerTests
         schema.Format.Should().Be("uuid");
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForDateTime_ReturnsStringWithDateTimeFormat()
     {
         // Arrange
@@ -96,7 +95,7 @@ public class SerializerTests
         schema.Format.Should().Be("date-time");
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForUri_ReturnsStringWithUriFormat()
     {
         // Arrange
@@ -110,7 +109,7 @@ public class SerializerTests
         schema.Format.Should().Be("uri");
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_Serialize_UsesCamelCase()
     {
         // Arrange
@@ -125,7 +124,7 @@ public class SerializerTests
         json.Should().Contain("\"name\":");
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_Deserialize_HandlesSuccessfully()
     {
         // Arrange
@@ -141,7 +140,7 @@ public class SerializerTests
         user.Name.Should().Be("John");
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_WithCustomOptions_UsesOptions()
     {
         // Arrange
@@ -160,7 +159,7 @@ public class SerializerTests
         json.Should().Contain("\"name\":");
     }
 
-    [Fact]
+    [Test]
     public void SystemTextJsonSerializer_GetSchema_ForNestedTypes_BuildsCorrectly()
     {
         // Arrange

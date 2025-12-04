@@ -2,7 +2,6 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using Xunit;
 using Treaty.Validation;
 using TreatyLib = Treaty.Treaty;
 using TreatyConsumer = Treaty.Consumer;
@@ -10,7 +9,7 @@ using TreatyOpenApi = Treaty.OpenApi;
 
 namespace Treaty.Tests;
 
-public class ConsumerIntegrationTests : IAsyncLifetime
+public class ConsumerIntegrationTests : IAsyncDisposable
 {
     private TreatyOpenApi.MockServer? _mockServer;
     private TreatyConsumer.ConsumerVerifier? _consumer;
@@ -93,7 +92,8 @@ public class ConsumerIntegrationTests : IAsyncLifetime
                   format: email
         """;
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         // Start mock server
         var specPath = Path.GetTempFileName() + ".yaml";
@@ -130,13 +130,20 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         File.Delete(specPath);
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task Consumer_GetUsers_ValidRequestSucceeds()
     {
         // Arrange
@@ -149,7 +156,7 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_GetUserById_ValidRequestSucceeds()
     {
         // Arrange
@@ -162,7 +169,7 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_PostUser_ValidRequestSucceeds()
     {
         // Arrange
@@ -178,7 +185,7 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_PostUser_InvalidBody_ThrowsContractViolation()
     {
         // Arrange
@@ -188,15 +195,16 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         var json = JsonSerializer.Serialize(invalidBody);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<ContractViolationException>(
-            () => client.PostAsync("/users", content));
+        // Act
+        var act = async () => await client.PostAsync("/users", content);
 
-        exception.Violations.Should().ContainSingle()
+        // Assert
+        var exception = await act.Should().ThrowAsync<ContractViolationException>();
+        exception.Which.Violations.Should().ContainSingle()
             .Which.Message.Should().Contain("Email");
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_PostUser_MissingBody_ThrowsContractViolation()
     {
         // Arrange - rebuild consumer with required body expectation (required by default)
@@ -214,15 +222,16 @@ public class ConsumerIntegrationTests : IAsyncLifetime
 
         var client = consumer.CreateHttpClient();
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<ContractViolationException>(
-            () => client.PostAsync("/users", null));
+        // Act
+        var act = async () => await client.PostAsync("/users", null);
 
-        exception.Violations.Should().ContainSingle()
+        // Assert
+        var exception = await act.Should().ThrowAsync<ContractViolationException>();
+        exception.Which.Violations.Should().ContainSingle()
             .Which.Message.Should().Contain("required");
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_WithRequiredHeader_MissingHeader_ThrowsContractViolation()
     {
         // Arrange
@@ -240,15 +249,16 @@ public class ConsumerIntegrationTests : IAsyncLifetime
 
         var client = consumer.CreateHttpClient();
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<ContractViolationException>(
-            () => client.GetAsync("/users"));
+        // Act
+        var act = async () => await client.GetAsync("/users");
 
-        exception.Violations.Should().ContainSingle()
+        // Assert
+        var exception = await act.Should().ThrowAsync<ContractViolationException>();
+        exception.Which.Violations.Should().ContainSingle()
             .Which.Message.Should().Contain("Authorization");
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_WithRequiredHeader_ValidHeader_Succeeds()
     {
         // Arrange
@@ -274,7 +284,7 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_UndefinedEndpoint_PassesThrough()
     {
         // Consumer should pass through requests for endpoints not defined in the contract
@@ -290,7 +300,7 @@ public class ConsumerIntegrationTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact]
+    [Test]
     public async Task Consumer_CreateHandler_WorksWithCustomInnerHandler()
     {
         // Arrange

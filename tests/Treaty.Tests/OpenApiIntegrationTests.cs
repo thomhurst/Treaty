@@ -2,7 +2,6 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using Xunit;
 using Treaty.OpenApi;
 using TreatyLib = Treaty.Treaty;
 
@@ -16,7 +15,7 @@ public class OpenApiSpecFileTests
     private static string GetSpecPath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
-    [Fact]
+    [Test]
     public void FromOpenApiSpec_LoadsYamlFile_Successfully()
     {
         // Arrange
@@ -30,7 +29,7 @@ public class OpenApiSpecFileTests
         contract.Name.Should().Be("Petstore API");
     }
 
-    [Fact]
+    [Test]
     public void FromOpenApiSpec_LoadsJsonFile_Successfully()
     {
         // Arrange
@@ -44,7 +43,7 @@ public class OpenApiSpecFileTests
         contract.Name.Should().Be("Users API");
     }
 
-    [Fact]
+    [Test]
     public void FromOpenApiSpec_ContainsAllEndpoints_FromYamlSpec()
     {
         // Arrange
@@ -61,7 +60,7 @@ public class OpenApiSpecFileTests
         contract.FindEndpoint("/pets/123", HttpMethod.Delete).Should().NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public void FromOpenApiSpec_ContainsAllEndpoints_FromJsonSpec()
     {
         // Arrange
@@ -76,7 +75,7 @@ public class OpenApiSpecFileTests
         contract.FindEndpoint("/users/456", HttpMethod.Get).Should().NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public void FromOpenApiSpec_WithStream_LoadsYaml()
     {
         // Arrange
@@ -91,7 +90,7 @@ public class OpenApiSpecFileTests
         contract.Name.Should().Be("Petstore API");
     }
 
-    [Fact]
+    [Test]
     public void FromOpenApiSpec_WithStream_LoadsJson()
     {
         // Arrange
@@ -110,7 +109,7 @@ public class OpenApiSpecFileTests
 /// <summary>
 /// Tests mock server generation from actual OpenAPI spec files.
 /// </summary>
-public class OpenApiMockServerTests : IAsyncLifetime
+public class OpenApiMockServerTests : IAsyncDisposable
 {
     private MockServer? _mockServer;
     private HttpClient? _client;
@@ -118,7 +117,8 @@ public class OpenApiMockServerTests : IAsyncLifetime
     private static string GetSpecPath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         var specPath = GetSpecPath("petstore.yaml");
         _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
@@ -126,14 +126,22 @@ public class OpenApiMockServerTests : IAsyncLifetime
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         _client?.Dispose();
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        _client?.Dispose();
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task MockServer_FromYamlSpec_ListPets_ReturnsArray()
     {
         // Act
@@ -148,7 +156,7 @@ public class OpenApiMockServerTests : IAsyncLifetime
         pets.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromYamlSpec_GetPetById_ReturnsPetObject()
     {
         // Act
@@ -165,7 +173,7 @@ public class OpenApiMockServerTests : IAsyncLifetime
         pet.TryGetProperty("status", out _).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromYamlSpec_CreatePet_Returns201()
     {
         // Arrange
@@ -180,7 +188,7 @@ public class OpenApiMockServerTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromYamlSpec_UpdatePet_Returns200()
     {
         // Arrange
@@ -195,7 +203,7 @@ public class OpenApiMockServerTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromYamlSpec_DeletePet_Returns204()
     {
         // Act
@@ -205,7 +213,7 @@ public class OpenApiMockServerTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromYamlSpec_UndefinedEndpoint_Returns404WithDetails()
     {
         // Act
@@ -224,7 +232,7 @@ public class OpenApiMockServerTests : IAsyncLifetime
 /// <summary>
 /// Tests mock server with conditional responses using actual OpenAPI specs.
 /// </summary>
-public class OpenApiMockServerWithConditionsTests : IAsyncLifetime
+public class OpenApiMockServerWithConditionsTests : IAsyncDisposable
 {
     private MockServer? _mockServer;
     private HttpClient? _client;
@@ -232,7 +240,8 @@ public class OpenApiMockServerWithConditionsTests : IAsyncLifetime
     private static string GetSpecPath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         var specPath = GetSpecPath("petstore.yaml");
         _mockServer = TreatyLib.MockFromOpenApi(specPath)
@@ -246,14 +255,22 @@ public class OpenApiMockServerWithConditionsTests : IAsyncLifetime
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         _client?.Dispose();
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        _client?.Dispose();
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task MockServer_WithConditions_Returns404ForInvalidIds()
     {
         // Act
@@ -265,7 +282,7 @@ public class OpenApiMockServerWithConditionsTests : IAsyncLifetime
         response2.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_WithConditions_Returns200ForValidIds()
     {
         // Act
@@ -279,7 +296,7 @@ public class OpenApiMockServerWithConditionsTests : IAsyncLifetime
 /// <summary>
 /// Tests mock server from JSON OpenAPI spec.
 /// </summary>
-public class OpenApiJsonMockServerTests : IAsyncLifetime
+public class OpenApiJsonMockServerTests : IAsyncDisposable
 {
     private MockServer? _mockServer;
     private HttpClient? _client;
@@ -287,7 +304,8 @@ public class OpenApiJsonMockServerTests : IAsyncLifetime
     private static string GetSpecPath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         var specPath = GetSpecPath("users-api.json");
         _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
@@ -295,14 +313,22 @@ public class OpenApiJsonMockServerTests : IAsyncLifetime
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         _client?.Dispose();
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        _client?.Dispose();
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task MockServer_FromJsonSpec_ListUsers_ReturnsArray()
     {
         // Act
@@ -316,7 +342,7 @@ public class OpenApiJsonMockServerTests : IAsyncLifetime
         users.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromJsonSpec_GetUserById_ReturnsUserObject()
     {
         // Act
@@ -333,7 +359,7 @@ public class OpenApiJsonMockServerTests : IAsyncLifetime
         user.TryGetProperty("email", out _).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_FromJsonSpec_CreateUser_Returns201()
     {
         // Arrange
@@ -352,7 +378,7 @@ public class OpenApiJsonMockServerTests : IAsyncLifetime
 /// <summary>
 /// Tests OpenAPI contract validation against provider implementation.
 /// </summary>
-public class OpenApiProviderValidationTests : IAsyncLifetime
+public class OpenApiProviderValidationTests : IAsyncDisposable
 {
     private MockServer? _mockServer;
     private HttpClient? _client;
@@ -360,7 +386,8 @@ public class OpenApiProviderValidationTests : IAsyncLifetime
     private static string GetSpecPath(string fileName) =>
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         // Use the mock server as the "provider" to test against
         var specPath = GetSpecPath("petstore.yaml");
@@ -369,14 +396,22 @@ public class OpenApiProviderValidationTests : IAsyncLifetime
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         _client?.Dispose();
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        _client?.Dispose();
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task OpenApiContract_ValidatesProviderResponse_ForListPets()
     {
         // Arrange - Load contract from same spec
@@ -398,7 +433,7 @@ public class OpenApiProviderValidationTests : IAsyncLifetime
         json.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
-    [Fact]
+    [Test]
     public async Task OpenApiContract_ValidatesProviderResponse_ForGetPet()
     {
         // Arrange

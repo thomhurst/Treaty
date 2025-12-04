@@ -420,3 +420,4 @@ FodyWeavers.xsd
 .idea
 .claude
 requirements
+build_output

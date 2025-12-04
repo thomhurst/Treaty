@@ -1,13 +1,12 @@
 using System.Net;
 using System.Text.Json;
 using FluentAssertions;
-using Xunit;
 using TreatyLib = Treaty.Treaty;
 using TreatyOpenApi = Treaty.OpenApi;
 
 namespace Treaty.Tests;
 
-public class MockServerIntegrationTests : IAsyncLifetime
+public class MockServerIntegrationTests : IAsyncDisposable
 {
     private TreatyOpenApi.MockServer? _mockServer;
     private HttpClient? _client;
@@ -94,7 +93,8 @@ public class MockServerIntegrationTests : IAsyncLifetime
                   format: email
         """;
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         // Write spec to temp file
         var specPath = Path.GetTempFileName() + ".yaml";
@@ -109,14 +109,22 @@ public class MockServerIntegrationTests : IAsyncLifetime
         File.Delete(specPath);
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         _client?.Dispose();
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        _client?.Dispose();
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task MockServer_GetUsers_ReturnsArrayOfUsers()
     {
         // Act
@@ -131,7 +139,7 @@ public class MockServerIntegrationTests : IAsyncLifetime
         users.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_GetUserById_ReturnsUser()
     {
         // Act
@@ -148,7 +156,7 @@ public class MockServerIntegrationTests : IAsyncLifetime
         user.TryGetProperty("email", out _).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_UndefinedEndpoint_ReturnsDetailedError()
     {
         // Act
@@ -162,7 +170,7 @@ public class MockServerIntegrationTests : IAsyncLifetime
         content.Should().Contain("available_endpoints");
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_BaseUrl_IsSet()
     {
         // Assert
@@ -172,7 +180,7 @@ public class MockServerIntegrationTests : IAsyncLifetime
     }
 }
 
-public class MockServerWithConditionsTests : IAsyncLifetime
+public class MockServerWithConditionsTests : IAsyncDisposable
 {
     private TreatyOpenApi.MockServer? _mockServer;
     private HttpClient? _client;
@@ -208,7 +216,8 @@ public class MockServerWithConditionsTests : IAsyncLifetime
                   description: Bad request
         """;
 
-    public async Task InitializeAsync()
+    [Before(Test)]
+    public async Task Setup()
     {
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
@@ -226,14 +235,22 @@ public class MockServerWithConditionsTests : IAsyncLifetime
         File.Delete(specPath);
     }
 
-    public async Task DisposeAsync()
+    [After(Test)]
+    public async Task Cleanup()
     {
         _client?.Dispose();
         if (_mockServer != null)
             await _mockServer.DisposeAsync();
     }
 
-    [Fact]
+    public async ValueTask DisposeAsync()
+    {
+        _client?.Dispose();
+        if (_mockServer != null)
+            await _mockServer.DisposeAsync();
+    }
+
+    [Test]
     public async Task MockServer_WithCondition_Returns404ForZeroId()
     {
         // Act
@@ -243,7 +260,7 @@ public class MockServerWithConditionsTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_WithCondition_Returns400ForBadId()
     {
         // Act
@@ -253,7 +270,7 @@ public class MockServerWithConditionsTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact]
+    [Test]
     public async Task MockServer_WithCondition_Returns200ForNormalId()
     {
         // Act
