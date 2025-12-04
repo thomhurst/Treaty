@@ -106,7 +106,39 @@ public sealed class OpenApiContractBuilder
         }
 
         var name = _document.Info?.Title ?? "OpenAPI Contract";
-        return new Contract(name, endpoints, _jsonSerializer, null);
+        var metadata = BuildMetadata();
+        return new Contract(name, endpoints, _jsonSerializer, null, metadata);
+    }
+
+    private ContractMetadata? BuildMetadata()
+    {
+        var info = _document.Info;
+        if (info == null)
+            return null;
+
+        ContractContact? contact = null;
+        if (info.Contact != null)
+        {
+            contact = new ContractContact(
+                info.Contact.Name,
+                info.Contact.Email,
+                info.Contact.Url?.ToString());
+        }
+
+        ContractLicense? license = null;
+        if (info.License != null)
+        {
+            license = new ContractLicense(
+                info.License.Name,
+                info.License.Url?.ToString());
+        }
+
+        return new ContractMetadata(
+            version: info.Version,
+            description: info.Description,
+            contact: contact,
+            license: license,
+            termsOfService: info.TermsOfService?.ToString());
     }
 
     private EndpointContract BuildEndpointContract(

@@ -12,6 +12,7 @@ public sealed class ContractBuilder
     private IJsonSerializer _jsonSerializer = new SystemTextJsonSerializer();
     private readonly List<EndpointBuilder> _endpointBuilders = [];
     private ContractDefaultsBuilder? _defaultsBuilder;
+    private ContractMetadata? _metadata;
 
     internal ContractBuilder(string name = "Contract")
     {
@@ -37,6 +38,30 @@ public sealed class ContractBuilder
     public ContractBuilder WithJsonSerializer(IJsonSerializer serializer)
     {
         _jsonSerializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+        return this;
+    }
+
+    /// <summary>
+    /// Specifies metadata for this contract (version, description, contact info, etc.).
+    /// </summary>
+    /// <param name="configure">Action to configure metadata.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// var contract = Treaty.DefineContract("User API")
+    ///     .WithMetadata(m => m
+    ///         .Version("1.0.0")
+    ///         .Description("API for managing users"))
+    ///     .ForEndpoint("/users")
+    ///         // ...
+    ///     .Build();
+    /// </code>
+    /// </example>
+    public ContractBuilder WithMetadata(Action<ContractMetadataBuilder> configure)
+    {
+        var builder = new ContractMetadataBuilder();
+        configure(builder);
+        _metadata = builder.Build();
         return this;
     }
 
@@ -81,7 +106,7 @@ public sealed class ContractBuilder
     {
         var endpoints = _endpointBuilders.Select(b => b.Build(_jsonSerializer)).ToList();
         var defaults = _defaultsBuilder?.Build();
-        return new Contract(_name, endpoints, _jsonSerializer, defaults);
+        return new Contract(_name, endpoints, _jsonSerializer, defaults, _metadata);
     }
 }
 
@@ -130,5 +155,98 @@ public sealed class ContractDefaultsBuilder
     internal ContractDefaults Build()
     {
         return new ContractDefaults(_responseHeaders, _requestHeaders);
+    }
+}
+
+/// <summary>
+/// Builder for contract metadata.
+/// </summary>
+public sealed class ContractMetadataBuilder
+{
+    private string? _version;
+    private string? _description;
+    private string? _contactName;
+    private string? _contactEmail;
+    private string? _contactUrl;
+    private string? _licenseName;
+    private string? _licenseUrl;
+    private string? _termsOfService;
+
+    /// <summary>
+    /// Sets the API version.
+    /// </summary>
+    /// <param name="version">The version string (e.g., "1.0.0").</param>
+    /// <returns>This builder for chaining.</returns>
+    public ContractMetadataBuilder Version(string version)
+    {
+        _version = version;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the API description.
+    /// </summary>
+    /// <param name="description">A description of the API.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ContractMetadataBuilder Description(string description)
+    {
+        _description = description;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the contact information for the API.
+    /// </summary>
+    /// <param name="name">Contact name.</param>
+    /// <param name="email">Contact email.</param>
+    /// <param name="url">Contact URL.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ContractMetadataBuilder Contact(string? name = null, string? email = null, string? url = null)
+    {
+        _contactName = name;
+        _contactEmail = email;
+        _contactUrl = url;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the license information for the API.
+    /// </summary>
+    /// <param name="name">License name (e.g., "MIT").</param>
+    /// <param name="url">URL to the license.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ContractMetadataBuilder License(string name, string? url = null)
+    {
+        _licenseName = name;
+        _licenseUrl = url;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the URL to the Terms of Service.
+    /// </summary>
+    /// <param name="url">URL to the Terms of Service.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ContractMetadataBuilder TermsOfService(string url)
+    {
+        _termsOfService = url;
+        return this;
+    }
+
+    internal ContractMetadata Build()
+    {
+        ContractContact? contact = null;
+        if (_contactName != null || _contactEmail != null || _contactUrl != null)
+        {
+            contact = new ContractContact(_contactName, _contactEmail, _contactUrl);
+        }
+
+        ContractLicense? license = null;
+        if (_licenseName != null)
+        {
+            license = new ContractLicense(_licenseName, _licenseUrl);
+        }
+
+        return new ContractMetadata(_version, _description, contact, license, _termsOfService);
     }
 }

@@ -1,0 +1,34 @@
+openapi: '3.0.3'
+info:
+  title: Full Metadata API
+  description: An API with complete OpenAPI metadata for testing Treaty metadata extraction
+  version: '2.1.0'
+  contact:
+    name: API Support Team
+    email: support@example.com
+    url: https://example.com/support
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: https://example.com/terms
+servers:
+  - url: http://localhost:5000
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time

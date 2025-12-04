@@ -122,6 +122,95 @@ public class ContractBuilderTests
         contract.Name.Should().Be("Contract");
     }
 
+    #region Metadata Tests
+
+    [Test]
+    public void DefineContract_WithMetadata_SetsAllProperties()
+    {
+        // Arrange & Act
+        var contract = TreatyLib.DefineContract("User API")
+            .WithMetadata(m => m
+                .Version("1.2.3")
+                .Description("API for managing users")
+                .Contact(name: "API Team", email: "api@example.com", url: "https://example.com/support")
+                .License("MIT", "https://opensource.org/licenses/MIT")
+                .TermsOfService("https://example.com/tos"))
+            .ForEndpoint("/users")
+                .WithMethod(HttpMethod.Get)
+                .ExpectingResponse(r => r.WithStatus(200))
+            .Build();
+
+        // Assert
+        contract.Metadata.Should().NotBeNull();
+        contract.Metadata!.Version.Should().Be("1.2.3");
+        contract.Metadata.Description.Should().Be("API for managing users");
+        contract.Metadata.Contact.Should().NotBeNull();
+        contract.Metadata.Contact!.Name.Should().Be("API Team");
+        contract.Metadata.Contact.Email.Should().Be("api@example.com");
+        contract.Metadata.Contact.Url.Should().Be("https://example.com/support");
+        contract.Metadata.License.Should().NotBeNull();
+        contract.Metadata.License!.Name.Should().Be("MIT");
+        contract.Metadata.License.Url.Should().Be("https://opensource.org/licenses/MIT");
+        contract.Metadata.TermsOfService.Should().Be("https://example.com/tos");
+    }
+
+    [Test]
+    public void DefineContract_WithPartialMetadata_SetsOnlyProvided()
+    {
+        // Arrange & Act
+        var contract = TreatyLib.DefineContract("Simple API")
+            .WithMetadata(m => m
+                .Version("1.0.0")
+                .Description("A simple API"))
+            .ForEndpoint("/ping")
+                .WithMethod(HttpMethod.Get)
+                .ExpectingResponse(r => r.WithStatus(200))
+            .Build();
+
+        // Assert
+        contract.Metadata.Should().NotBeNull();
+        contract.Metadata!.Version.Should().Be("1.0.0");
+        contract.Metadata.Description.Should().Be("A simple API");
+        contract.Metadata.Contact.Should().BeNull();
+        contract.Metadata.License.Should().BeNull();
+        contract.Metadata.TermsOfService.Should().BeNull();
+    }
+
+    [Test]
+    public void DefineContract_WithoutMetadata_MetadataIsNull()
+    {
+        // Arrange & Act
+        var contract = TreatyLib.DefineContract()
+            .ForEndpoint("/users")
+                .WithMethod(HttpMethod.Get)
+                .ExpectingResponse(r => r.WithStatus(200))
+            .Build();
+
+        // Assert
+        contract.Metadata.Should().BeNull();
+    }
+
+    [Test]
+    public void DefineContract_WithContactOnly_SetsContact()
+    {
+        // Arrange & Act
+        var contract = TreatyLib.DefineContract()
+            .WithMetadata(m => m.Contact(email: "support@example.com"))
+            .ForEndpoint("/users")
+                .WithMethod(HttpMethod.Get)
+                .ExpectingResponse(r => r.WithStatus(200))
+            .Build();
+
+        // Assert
+        contract.Metadata.Should().NotBeNull();
+        contract.Metadata!.Contact.Should().NotBeNull();
+        contract.Metadata.Contact!.Name.Should().BeNull();
+        contract.Metadata.Contact.Email.Should().Be("support@example.com");
+        contract.Metadata.Contact.Url.Should().BeNull();
+    }
+
+    #endregion
+
     private record TestUser(int Id, string Name, string Email);
     private record CreateUserRequest(string Name, string Email);
 }

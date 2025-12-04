@@ -28,16 +28,24 @@ public sealed class Contract
     /// </summary>
     public ContractDefaults? Defaults { get; }
 
+    /// <summary>
+    /// Gets the contract metadata (version, description, contact info, etc.).
+    /// When loaded from OpenAPI, this is extracted from the info section.
+    /// </summary>
+    public ContractMetadata? Metadata { get; }
+
     internal Contract(
         string name,
         IReadOnlyList<EndpointContract> endpoints,
         IJsonSerializer jsonSerializer,
-        ContractDefaults? defaults)
+        ContractDefaults? defaults,
+        ContractMetadata? metadata = null)
     {
         Name = name;
         Endpoints = endpoints;
         JsonSerializer = jsonSerializer;
         Defaults = defaults;
+        Metadata = metadata;
     }
 
     /// <summary>

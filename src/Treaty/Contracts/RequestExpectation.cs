@@ -22,10 +22,20 @@ public sealed class RequestExpectation
     /// </summary>
     public bool IsRequired { get; }
 
-    internal RequestExpectation(string? contentType, ISchemaValidator? bodyValidator, bool isRequired)
+    /// <summary>
+    /// Gets the partial validation configuration, if any.
+    /// </summary>
+    public PartialValidationConfig? PartialValidation { get; }
+
+    internal RequestExpectation(
+        string? contentType,
+        ISchemaValidator? bodyValidator,
+        bool isRequired,
+        PartialValidationConfig? partialValidation = null)
     {
         ContentType = contentType;
         BodyValidator = bodyValidator;
         IsRequired = isRequired;
+        PartialValidation = partialValidation;
     }
 }

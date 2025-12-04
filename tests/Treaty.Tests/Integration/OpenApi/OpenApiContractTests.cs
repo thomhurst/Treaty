@@ -29,6 +29,55 @@ public class OpenApiSpecFileTests
         contract.Name.Should().Be("Petstore API");
     }
 
+    #region Metadata Extraction Tests
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsBasicMetadata_FromYaml()
+    {
+        // Arrange
+        var specPath = GetSpecPath("petstore.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert
+        contract.Metadata.Should().NotBeNull();
+        contract.Metadata!.Version.Should().Be("1.0.0");
+        contract.Metadata.Description.Should().Be("A sample API for testing Treaty OpenAPI integration");
+    }
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsFullMetadata_FromYaml()
+    {
+        // Arrange
+        var specPath = GetSpecPath("full-metadata.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert
+        contract.Name.Should().Be("Full Metadata API");
+        contract.Metadata.Should().NotBeNull();
+        contract.Metadata!.Version.Should().Be("2.1.0");
+        contract.Metadata.Description.Should().Be("An API with complete OpenAPI metadata for testing Treaty metadata extraction");
+
+        // Contact
+        contract.Metadata.Contact.Should().NotBeNull();
+        contract.Metadata.Contact!.Name.Should().Be("API Support Team");
+        contract.Metadata.Contact.Email.Should().Be("support@example.com");
+        contract.Metadata.Contact.Url.Should().Be("https://example.com/support");
+
+        // License
+        contract.Metadata.License.Should().NotBeNull();
+        contract.Metadata.License!.Name.Should().Be("Apache 2.0");
+        contract.Metadata.License.Url.Should().Be("https://www.apache.org/licenses/LICENSE-2.0.html");
+
+        // Terms of Service
+        contract.Metadata.TermsOfService.Should().Be("https://example.com/terms");
+    }
+
+    #endregion
+
     [Test]
     public void FromOpenApiSpec_LoadsJsonFile_Successfully()
     {
