@@ -36,27 +36,35 @@ public sealed class ProviderState
     }
 
     /// <summary>
-    /// Creates a provider state from a name and an anonymous object containing parameters.
+    /// Creates a provider state from a name and an anonymous object or dictionary containing parameters.
     /// </summary>
     /// <param name="name">The state name.</param>
-    /// <param name="parameters">An anonymous object containing parameters.</param>
+    /// <param name="parameters">An anonymous object or dictionary containing parameters.</param>
     /// <returns>A new provider state.</returns>
     public static ProviderState Create(string name, object? parameters = null)
     {
         if (parameters == null)
             return new ProviderState(name);
 
-        var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        // Handle dictionary directly
+        if (parameters is IReadOnlyDictionary<string, object> readOnlyDict)
+            return new ProviderState(name, readOnlyDict);
+
+        if (parameters is IDictionary<string, object> dict)
+            return new ProviderState(name, new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase));
+
+        // Handle anonymous objects via reflection
+        var resultDict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         foreach (var prop in parameters.GetType().GetProperties())
         {
             var value = prop.GetValue(parameters);
             if (value != null)
             {
-                dict[prop.Name] = value;
+                resultDict[prop.Name] = value;
             }
         }
 
-        return new ProviderState(name, dict);
+        return new ProviderState(name, resultDict);
     }
 
     /// <summary>

@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Treaty.Consumer;
 using Treaty.Contracts;
+using Treaty.Mocking;
 using Treaty.OpenApi;
+using Treaty.Pact;
 using Treaty.Provider;
 using Treaty.Serialization;
 
@@ -123,4 +125,131 @@ public static class Treaty
     /// <returns>A mock server builder for configuration.</returns>
     public static MockServerBuilder MockFromOpenApi(Stream specStream, OpenApiFormat format = OpenApiFormat.Yaml)
         => new(specStream, format);
+
+    /// <summary>
+    /// Creates a mock server from a Treaty contract.
+    /// Use this to develop your consumer using the same contract used for verification.
+    /// </summary>
+    /// <param name="contract">The contract to use for generating mock responses.</param>
+    /// <returns>A mock server builder for configuration.</returns>
+    /// <example>
+    /// <code>
+    /// var contract = Treaty.DefineContract()
+    ///     .ForEndpoint("/users/{id}")
+    ///         .WithMethod(HttpMethod.Get)
+    ///         .ExpectingResponse(r => r
+    ///             .WithStatus(200)
+    ///             .WithJsonBody&lt;User&gt;())
+    ///     .Build();
+    ///
+    /// var mock = Treaty.MockFromContract(contract)
+    ///     .ForEndpoint("/users/{id}")
+    ///         .When(req => req.PathParam("id") == "0").Return(404)
+    ///         .Otherwise().Return(200)
+    ///     .Build();
+    ///
+    /// await mock.StartAsync();
+    /// var baseUrl = mock.BaseUrl;
+    /// </code>
+    /// </example>
+    public static ContractMockServerBuilder MockFromContract(Contract contract)
+        => new(contract);
+
+    /// <summary>
+    /// Compares two contracts and returns a diff describing all changes.
+    /// Use this to detect breaking changes between contract versions.
+    /// </summary>
+    /// <param name="oldContract">The baseline (old) contract.</param>
+    /// <param name="newContract">The new contract to compare.</param>
+    /// <returns>A diff containing all detected changes with severity levels.</returns>
+    /// <example>
+    /// <code>
+    /// var oldContract = Treaty.FromOpenApiSpec("api-v1.yaml").Build();
+    /// var newContract = Treaty.FromOpenApiSpec("api-v2.yaml").Build();
+    ///
+    /// var diff = Treaty.CompareContracts(oldContract, newContract);
+    ///
+    /// if (diff.HasBreakingChanges)
+    /// {
+    ///     Console.WriteLine("Breaking changes detected!");
+    ///     foreach (var change in diff.BreakingChanges)
+    ///     {
+    ///         Console.WriteLine($"  - {change.Description}");
+    ///     }
+    /// }
+    ///
+    /// // Or throw if breaking changes exist
+    /// diff.ThrowIfBreaking();
+    /// </code>
+    /// </example>
+    public static ContractDiff CompareContracts(Contract oldContract, Contract newContract)
+        => ContractComparer.Compare(oldContract, newContract);
+
+    /// <summary>
+    /// Imports a Pact contract from a file and converts it to a Treaty contract.
+    /// </summary>
+    /// <param name="filePath">Path to the Pact JSON file.</param>
+    /// <returns>A Treaty contract built from the Pact file.</returns>
+    /// <example>
+    /// <code>
+    /// var contract = Treaty.FromPact("consumer-provider.json");
+    ///
+    /// // Use for provider verification
+    /// var verifier = Treaty.ForProvider&lt;MyApi&gt;()
+    ///     .WithContract(contract)
+    ///     .Build();
+    /// </code>
+    /// </example>
+    public static Contract FromPact(string filePath)
+        => PactImporter.FromFile(filePath);
+
+    /// <summary>
+    /// Imports a Pact contract from a JSON string.
+    /// </summary>
+    /// <param name="json">The Pact JSON content.</param>
+    /// <returns>A Treaty contract built from the Pact JSON.</returns>
+    public static Contract FromPactJson(string json)
+        => PactImporter.FromJson(json);
+
+    /// <summary>
+    /// Imports a Pact contract from a stream.
+    /// </summary>
+    /// <param name="stream">Stream containing the Pact JSON.</param>
+    /// <returns>A Treaty contract built from the Pact stream.</returns>
+    public static Contract FromPactStream(Stream stream)
+        => PactImporter.FromStream(stream);
+
+    /// <summary>
+    /// Exports a Treaty contract to Pact JSON format.
+    /// </summary>
+    /// <param name="contract">The contract to export.</param>
+    /// <param name="consumerName">Name of the consumer application.</param>
+    /// <param name="providerName">Name of the provider application.</param>
+    /// <returns>A JSON string in Pact format.</returns>
+    /// <example>
+    /// <code>
+    /// var contract = Treaty.DefineContract("Users API")
+    ///     .ForEndpoint("/users/{id}")
+    ///         .WithMethod(HttpMethod.Get)
+    ///         .ExpectingResponse(r => r
+    ///             .WithStatus(200)
+    ///             .WithJsonBody&lt;User&gt;())
+    ///     .Build();
+    ///
+    /// var pactJson = Treaty.ToPactJson(contract, "UserService", "UsersAPI");
+    /// File.WriteAllText("consumer-provider-pact.json", pactJson);
+    /// </code>
+    /// </example>
+    public static string ToPactJson(Contract contract, string consumerName, string providerName)
+        => PactExporter.ToJson(contract, consumerName, providerName);
+
+    /// <summary>
+    /// Exports a Treaty contract to a Pact JSON file.
+    /// </summary>
+    /// <param name="contract">The contract to export.</param>
+    /// <param name="filePath">Path where the Pact file will be written.</param>
+    /// <param name="consumerName">Name of the consumer application.</param>
+    /// <param name="providerName">Name of the provider application.</param>
+    public static void ToPactFile(Contract contract, string filePath, string consumerName, string providerName)
+        => PactExporter.ToFile(contract, filePath, consumerName, providerName);
 }

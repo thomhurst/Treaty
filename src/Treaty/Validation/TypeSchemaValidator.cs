@@ -47,7 +47,12 @@ internal sealed class TypeSchemaValidator : ISchemaValidator
     public string GenerateSample()
     {
         var sample = GenerateSampleValue(_schema);
-        return _serializer.Serialize(sample, _schema.ClrType);
+        // Use generic serialization since sample is Dictionary/object[], not the actual CLR type
+        // The dictionary keys are already in JSON property names (e.g., camelCase)
+        return JsonSerializer.Serialize(sample, new JsonSerializerOptions
+        {
+            WriteIndented = false
+        });
     }
 
     private void ValidateNode(
