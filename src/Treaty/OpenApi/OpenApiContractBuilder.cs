@@ -149,9 +149,11 @@ public sealed class OpenApiContractBuilder
     {
         // Build request expectation
         RequestExpectation? requestExpectation = null;
+        object? requestBodyExample = null;
         if (operation.RequestBody != null)
         {
             requestExpectation = BuildRequestExpectation(operation.RequestBody);
+            requestBodyExample = ExtractRequestBodyExample(operation.RequestBody);
         }
 
         // Build response expectations
@@ -171,22 +173,149 @@ public sealed class OpenApiContractBuilder
             }
         }
 
-        // Build header expectations
+        // Build header expectations and extract examples
         var headers = new Dictionary<string, HeaderExpectation>(StringComparer.OrdinalIgnoreCase);
+        var headerExamples = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Header))
         {
             headers[param.Name] = new HeaderExpectation(param.Name, param.Required, null, null);
+            var example = ExtractParameterExample(param);
+            if (example != null)
+            {
+                headerExamples[param.Name] = example.ToString() ?? "";
+            }
         }
 
-        // Build query parameter expectations
+        // Build query parameter expectations and extract examples
         var queryParams = new Dictionary<string, QueryParameterExpectation>(StringComparer.OrdinalIgnoreCase);
+        var queryExamples = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
         {
             var type = OpenApiSchemaToQueryParamType(param.Schema);
             queryParams[param.Name] = new QueryParameterExpectation(param.Name, param.Required, type, null);
+            var example = ExtractParameterExample(param);
+            if (example != null)
+            {
+                queryExamples[param.Name] = example;
+            }
         }
 
-        return new EndpointContract(path, method, requestExpectation, responseExpectations, headers, queryParams);
+        // Extract path parameter examples (from operation parameters and path-level parameters)
+        var pathParamExamples = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var allPathParams = operation.Parameters
+            .Where(p => p.In == ParameterLocation.Path)
+            .Concat(pathParameters?.Where(p => p.In == ParameterLocation.Path) ?? []);
+
+        foreach (var param in allPathParams)
+        {
+            var example = ExtractParameterExample(param);
+            if (example != null && !pathParamExamples.ContainsKey(param.Name))
+            {
+                pathParamExamples[param.Name] = example;
+            }
+        }
+
+        // Build ExampleData if we have any examples
+        ExampleData? exampleData = null;
+        if (pathParamExamples.Count > 0 || queryExamples.Count > 0 || headerExamples.Count > 0 || requestBodyExample != null)
+        {
+            exampleData = new ExampleData(pathParamExamples, queryExamples, headerExamples, requestBodyExample);
+        }
+
+        return new EndpointContract(path, method, requestExpectation, responseExpectations, headers, queryParams, exampleData);
+    }
+
+    private object? ExtractRequestBodyExample(OpenApiRequestBody requestBody)
+    {
+        // Try application/json first
+        if (requestBody.Content.TryGetValue("application/json", out var mediaType))
+        {
+            return ExtractMediaTypeExample(mediaType);
+        }
+
+        // Fall back to first content type
+        if (requestBody.Content.Count > 0)
+        {
+            return ExtractMediaTypeExample(requestBody.Content.First().Value);
+        }
+
+        return null;
+    }
+
+    private object? ExtractMediaTypeExample(OpenApiMediaType mediaType)
+    {
+        // Check for direct example
+        if (mediaType.Example != null)
+        {
+            return ConvertOpenApiAny(mediaType.Example);
+        }
+
+        // Check for named examples (use first one)
+        if (mediaType.Examples?.Count > 0)
+        {
+            var firstExample = mediaType.Examples.First().Value;
+            if (firstExample?.Value != null)
+            {
+                return ConvertOpenApiAny(firstExample.Value);
+            }
+        }
+
+        // Check schema example
+        if (mediaType.Schema?.Example != null)
+        {
+            return ConvertOpenApiAny(mediaType.Schema.Example);
+        }
+
+        return null;
+    }
+
+    private object? ExtractParameterExample(OpenApiParameter parameter)
+    {
+        // Check for direct example
+        if (parameter.Example != null)
+        {
+            return ConvertOpenApiAny(parameter.Example);
+        }
+
+        // Check for named examples (use first one)
+        if (parameter.Examples?.Count > 0)
+        {
+            var firstExample = parameter.Examples.First().Value;
+            if (firstExample?.Value != null)
+            {
+                return ConvertOpenApiAny(firstExample.Value);
+            }
+        }
+
+        // Check schema example
+        if (parameter.Schema?.Example != null)
+        {
+            return ConvertOpenApiAny(parameter.Schema.Example);
+        }
+
+        return null;
+    }
+
+    private object? ConvertOpenApiAny(Microsoft.OpenApi.Any.IOpenApiAny? openApiAny)
+    {
+        if (openApiAny == null)
+            return null;
+
+        return openApiAny switch
+        {
+            Microsoft.OpenApi.Any.OpenApiString s => s.Value,
+            Microsoft.OpenApi.Any.OpenApiInteger i => i.Value,
+            Microsoft.OpenApi.Any.OpenApiLong l => l.Value,
+            Microsoft.OpenApi.Any.OpenApiFloat f => f.Value,
+            Microsoft.OpenApi.Any.OpenApiDouble d => d.Value,
+            Microsoft.OpenApi.Any.OpenApiBoolean b => b.Value,
+            Microsoft.OpenApi.Any.OpenApiNull => null,
+            Microsoft.OpenApi.Any.OpenApiArray arr => arr.Select(ConvertOpenApiAny).ToList(),
+            Microsoft.OpenApi.Any.OpenApiObject obj => obj.ToDictionary(
+                kvp => kvp.Key,
+                kvp => ConvertOpenApiAny(kvp.Value)),
+            _ => openApiAny.ToString()
+        };
     }
 
     private RequestExpectation BuildRequestExpectation(OpenApiRequestBody requestBody)

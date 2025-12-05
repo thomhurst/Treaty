@@ -78,6 +78,138 @@ public class OpenApiSpecFileTests
 
     #endregion
 
+    #region Example Extraction Tests
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsPathParameterExample()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert - GET /users/{userId} should have path param example
+        var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
+        getEndpoint.Should().NotBeNull();
+        getEndpoint!.ExampleData.Should().NotBeNull();
+        getEndpoint.ExampleData!.PathParameters.Should().ContainKey("userId");
+        getEndpoint.ExampleData.PathParameters["userId"].Should().Be(123);
+    }
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsQueryParameterExamples()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert - GET /users should have query param examples
+        var listEndpoint = contract.FindEndpoint("/users", HttpMethod.Get);
+        listEndpoint.Should().NotBeNull();
+        listEndpoint!.ExampleData.Should().NotBeNull();
+        listEndpoint.ExampleData!.QueryParameters.Should().ContainKey("limit");
+        listEndpoint.ExampleData.QueryParameters["limit"].Should().Be(10);
+        listEndpoint.ExampleData.QueryParameters.Should().ContainKey("status");
+        listEndpoint.ExampleData.QueryParameters["status"].Should().Be("active");
+    }
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsHeaderParameterExample()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert - GET /users/{userId} should have header example
+        var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
+        getEndpoint.Should().NotBeNull();
+        getEndpoint!.ExampleData.Should().NotBeNull();
+        getEndpoint.ExampleData!.Headers.Should().ContainKey("X-Request-Id");
+        getEndpoint.ExampleData.Headers["X-Request-Id"].Should().Be("req-abc-123");
+    }
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsRequestBodyExample()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert - POST /users should have request body example
+        var postEndpoint = contract.FindEndpoint("/users", HttpMethod.Post);
+        postEndpoint.Should().NotBeNull();
+        postEndpoint!.ExampleData.Should().NotBeNull();
+        postEndpoint.ExampleData!.RequestBody.Should().NotBeNull();
+
+        var body = postEndpoint.ExampleData.RequestBody as Dictionary<string, object?>;
+        body.Should().NotBeNull();
+        body!["username"].Should().Be("johndoe");
+        body["email"].Should().Be("john@example.com");
+        body["role"].Should().Be("admin");
+    }
+
+    [Test]
+    public void FromOpenApiSpec_ExtractsRequestBodyFromNamedExamples()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+
+        // Act
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Assert - PUT /users/{userId} should have request body from named examples (uses first one)
+        var putEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Put);
+        putEndpoint.Should().NotBeNull();
+        putEndpoint!.ExampleData.Should().NotBeNull();
+        putEndpoint.ExampleData!.RequestBody.Should().NotBeNull();
+
+        var body = putEndpoint.ExampleData.RequestBody as Dictionary<string, object?>;
+        body.Should().NotBeNull();
+        body!["username"].Should().Be("janedoe"); // From "full-update" example
+    }
+
+    [Test]
+    public void FromOpenApiSpec_EndpointWithExamples_CanGenerateExamplePath()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Act
+        var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
+
+        // Assert - Should be able to generate example path from extracted example
+        getEndpoint.Should().NotBeNull();
+        var examplePath = getEndpoint!.GetExamplePath();
+        examplePath.Should().Be("/users/123");
+    }
+
+    [Test]
+    public void FromOpenApiSpec_EndpointWithExamples_CanGenerateExampleUrl()
+    {
+        // Arrange
+        var specPath = GetSpecPath("with-examples.yaml");
+        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+
+        // Act
+        var listEndpoint = contract.FindEndpoint("/users", HttpMethod.Get);
+
+        // Assert - Should be able to generate example URL with query params
+        listEndpoint.Should().NotBeNull();
+        var exampleUrl = listEndpoint!.GetExampleUrl();
+        exampleUrl.Should().Contain("limit=10");
+        exampleUrl.Should().Contain("status=active");
+    }
+
+    #endregion
+
     [Test]
     public void FromOpenApiSpec_LoadsJsonFile_Successfully()
     {
