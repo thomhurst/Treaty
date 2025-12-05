@@ -186,8 +186,9 @@ internal sealed class MatcherSchemaValidator : ISchemaValidator
             }
         }
 
-        // Check for unexpected properties (unless IgnoreExtraFields is set)
-        if (partialValidation?.IgnoreExtraFields != true)
+        // Check for unexpected properties (only in strict mode)
+        // By default, extra fields are ignored for better forward compatibility
+        if (partialValidation?.StrictMode == true)
         {
             foreach (var (actualProp, _) in obj)
             {

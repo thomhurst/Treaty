@@ -151,6 +151,7 @@ public sealed class RequestPartialValidationBuilder<T> : RequestPartialValidatio
     private readonly List<string> _propertiesToValidate = [];
     private readonly Dictionary<string, IMatcher> _propertyMatchers = new();
     private bool _ignoreExtraFields;
+    private bool _strictMode;
 
     /// <summary>
     /// Specifies which properties to validate. Only these properties will be checked.
@@ -178,9 +179,27 @@ public sealed class RequestPartialValidationBuilder<T> : RequestPartialValidatio
     }
 
     /// <summary>
-    /// Specifies that extra fields in the request (not defined in the schema) should be ignored.
+    /// Enables strict validation mode. Extra fields not defined in the schema will cause violations.
+    /// By default, Treaty uses lenient mode where extra fields are ignored for better forward compatibility.
     /// </summary>
     /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .WithJsonBody&lt;CreateUserRequest&gt;(v => v.StrictMode())
+    /// </code>
+    /// </example>
+    public RequestPartialValidationBuilder<T> StrictMode()
+    {
+        _strictMode = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Specifies that extra fields in the request (not defined in the schema) should be ignored.
+    /// This is now the default behavior. This method is kept for backward compatibility.
+    /// </summary>
+    /// <returns>This builder for chaining.</returns>
+    [Obsolete("Extra fields are now ignored by default (lenient mode). This method is no longer needed. Use StrictMode() to reject extra fields.")]
     public RequestPartialValidationBuilder<T> IgnoreExtraFields()
     {
         _ignoreExtraFields = true;
@@ -221,6 +240,6 @@ public sealed class RequestPartialValidationBuilder<T> : RequestPartialValidatio
             matcherConfig = new MatcherValidationConfig(_propertyMatchers);
         }
 
-        return new PartialValidationConfig(_propertiesToValidate, _ignoreExtraFields, matcherConfig);
+        return new PartialValidationConfig(_propertiesToValidate, _ignoreExtraFields, matcherConfig, _strictMode);
     }
 }

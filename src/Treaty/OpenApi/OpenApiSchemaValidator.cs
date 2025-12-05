@@ -213,7 +213,9 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         }
 
         // Check for unexpected fields
-        if (partialValidation?.IgnoreExtraFields != true && schema.AdditionalPropertiesAllowed == false)
+        // Respect explicit additionalProperties: false in OpenAPI spec, OR explicit StrictMode
+        // Otherwise, extra fields are ignored by default (lenient mode)
+        if (schema.AdditionalPropertiesAllowed == false || partialValidation?.StrictMode == true)
         {
             foreach (var propName in obj.Select(p => p.Key))
             {

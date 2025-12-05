@@ -60,7 +60,14 @@ public sealed class PartialValidationConfig
     /// <summary>
     /// Gets whether to ignore extra fields not defined in the schema.
     /// </summary>
+    [Obsolete("Use StrictMode instead. Extra fields are now ignored by default (lenient mode). Set StrictMode = true to reject extra fields.")]
     public bool IgnoreExtraFields { get; }
+
+    /// <summary>
+    /// Gets whether strict validation is enabled. When true, extra fields not defined in the schema will cause violations.
+    /// Default is false (lenient mode - extra fields are ignored for better forward compatibility).
+    /// </summary>
+    public bool StrictMode { get; }
 
     /// <summary>
     /// Gets the matcher overrides for specific properties.
@@ -70,10 +77,12 @@ public sealed class PartialValidationConfig
     internal PartialValidationConfig(
         IReadOnlyList<string> propertiesToValidate,
         bool ignoreExtraFields,
-        MatcherValidationConfig? matcherConfig = null)
+        MatcherValidationConfig? matcherConfig = null,
+        bool strictMode = false)
     {
         PropertiesToValidate = propertiesToValidate;
         IgnoreExtraFields = ignoreExtraFields;
+        StrictMode = strictMode;
         MatcherConfig = matcherConfig;
     }
 }

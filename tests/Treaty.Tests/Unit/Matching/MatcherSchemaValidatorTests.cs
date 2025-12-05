@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Treaty.Contracts;
 using Treaty.Matching;
 using Treaty.Validation;
 
@@ -162,9 +163,29 @@ public class MatcherSchemaValidatorTests
     }
 
     [Test]
-    public void Validate_UnexpectedProperty_ReturnsViolation()
+    public void Validate_UnexpectedProperty_WithStrictMode_ReturnsViolation()
     {
         // Arrange
+        var schema = MatcherSchema.FromObject(new
+        {
+            id = Match.Guid()
+        });
+        var validator = new MatcherSchemaValidator(schema);
+        var json = """{"id": "550e8400-e29b-41d4-a716-446655440000", "unexpected": "value"}""";
+        var strictConfig = new PartialValidationConfig([], false, null, strictMode: true);
+
+        // Act
+        var violations = validator.Validate(json, Endpoint, strictConfig);
+
+        // Assert
+        violations.Should().ContainSingle()
+            .Which.Type.Should().Be(ViolationType.UnexpectedField);
+    }
+
+    [Test]
+    public void Validate_UnexpectedProperty_WithLenientMode_ReturnsNoViolation()
+    {
+        // Arrange - By default (lenient mode), extra fields are ignored for better forward compatibility
         var schema = MatcherSchema.FromObject(new
         {
             id = Match.Guid()
@@ -175,9 +196,8 @@ public class MatcherSchemaValidatorTests
         // Act
         var violations = validator.Validate(json, Endpoint);
 
-        // Assert
-        violations.Should().ContainSingle()
-            .Which.Type.Should().Be(ViolationType.UnexpectedField);
+        // Assert - No violations because extra fields are ignored by default
+        violations.Should().BeEmpty();
     }
 
     [Test]

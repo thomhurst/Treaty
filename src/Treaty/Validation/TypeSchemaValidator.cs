@@ -181,8 +181,9 @@ internal sealed class TypeSchemaValidator : ISchemaValidator
             }
         }
 
-        // Check for unexpected fields
-        if (partialValidation?.IgnoreExtraFields != true && !schema.AdditionalPropertiesAllowed)
+        // Check for unexpected fields (only in strict mode)
+        // By default, extra fields are ignored for better forward compatibility
+        if (partialValidation?.StrictMode == true && !schema.AdditionalPropertiesAllowed)
         {
             foreach (var propName in obj.Select(p => p.Key))
             {

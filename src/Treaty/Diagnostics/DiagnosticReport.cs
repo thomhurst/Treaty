@@ -186,7 +186,7 @@ public sealed class DiagnosticReport
                 ViolationType.UnexpectedNull =>
                     $"The field '{GetFieldName(violation.Path)}' should not be null. Check your data.",
                 ViolationType.UnexpectedField =>
-                    $"The field '{GetFieldName(violation.Path)}' is not in the contract. Use .IgnoreExtraFields() if this is expected.",
+                    $"The field '{GetFieldName(violation.Path)}' is not in the contract. This violation occurs in strict mode or when additionalProperties is false.",
                 ViolationType.UnexpectedStatusCode =>
                     $"The API returned status {violation.Actual}. Expected: {violation.Expected}. Check your API logic.",
                 ViolationType.MissingHeader =>

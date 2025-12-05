@@ -105,7 +105,7 @@ public static class DiagnosticFormatter
                 $"Return a non-null value, or update the contract to allow null.",
 
             ViolationType.UnexpectedField =>
-                $"Remove this field from the response, or use .IgnoreExtraFields() in your contract.",
+                $"This field is not defined in the contract. Extra fields are rejected in strict mode or when additionalProperties is false in the OpenAPI spec.",
 
             ViolationType.InvalidContentType =>
                 $"Set Content-Type to '{violation.Expected}'.",

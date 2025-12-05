@@ -155,7 +155,7 @@ public class DiagnosticFormatterTests
     [Arguments(ViolationType.MissingHeader, "header")]
     [Arguments(ViolationType.InvalidHeaderValue, "header value")]
     [Arguments(ViolationType.UnexpectedNull, "null")]
-    [Arguments(ViolationType.UnexpectedField, "IgnoreExtraFields")]
+    [Arguments(ViolationType.UnexpectedField, "strict mode")]
     [Arguments(ViolationType.InvalidContentType, "Content-Type")]
     [Arguments(ViolationType.MissingQueryParameter, "query parameter")]
     [Arguments(ViolationType.InvalidQueryParameterValue, "query parameter")]
