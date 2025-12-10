@@ -1,9 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Readers;
+using Treaty.Contracts;
 using Treaty.Mocking;
-using Treaty.Serialization;
 
 namespace Treaty.OpenApi;
 
@@ -12,36 +10,23 @@ namespace Treaty.OpenApi;
 /// </summary>
 public sealed class MockServerBuilder
 {
-    private readonly OpenApiDocument _document;
-    private IJsonSerializer _jsonSerializer = new SystemTextJsonSerializer();
+    private readonly ApiContract _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private bool _useHttps;
     private int? _minLatencyMs;
     private int? _maxLatencyMs;
     private AuthConfig? _authConfig;
     private readonly Dictionary<string, Func<object>> _customGenerators = new();
-    private readonly Dictionary<string, MockEndpointConfig> _endpointConfigs = new();
+    private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs = new();
 
     internal MockServerBuilder(string specPath)
-        : this(File.OpenRead(specPath), Path.GetExtension(specPath).ToLowerInvariant() == ".json" ? OpenApiFormat.Json : OpenApiFormat.Yaml)
     {
+        _contract = Contract.FromOpenApi(specPath).Build();
     }
 
     internal MockServerBuilder(Stream specStream, OpenApiFormat format)
     {
-        var reader = new OpenApiStreamReader();
-        _document = reader.Read(specStream, out _);
-    }
-
-    /// <summary>
-    /// Specifies a custom JSON serializer for the mock server.
-    /// </summary>
-    /// <param name="serializer">The JSON serializer to use.</param>
-    /// <returns>This builder for chaining.</returns>
-    public MockServerBuilder WithJsonSerializer(IJsonSerializer serializer)
-    {
-        _jsonSerializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
-        return this;
+        _contract = Contract.FromOpenApi(specStream, format).Build();
     }
 
     /// <summary>
@@ -122,7 +107,7 @@ public sealed class MockServerBuilder
     /// <returns>A builder for configuring endpoint-specific responses.</returns>
     public MockEndpointBuilder ForEndpoint(string pathTemplate)
     {
-        var config = new MockEndpointConfig();
+        var config = new ContractMockEndpointConfig();
         _endpointConfigs[pathTemplate] = config;
         return new MockEndpointBuilder(this, config);
     }
@@ -133,9 +118,8 @@ public sealed class MockServerBuilder
     /// <returns>The configured mock server.</returns>
     public IMockServer Build()
     {
-        return new OpenApiMockServer(
-            _document,
-            _jsonSerializer,
+        return new ContractMockServer(
+            _contract,
             _loggerFactory,
             _useHttps,
             _minLatencyMs,
@@ -152,9 +136,9 @@ public sealed class MockServerBuilder
 public sealed class MockEndpointBuilder
 {
     private readonly MockServerBuilder _parent;
-    private readonly MockEndpointConfig _config;
+    private readonly ContractMockEndpointConfig _config;
 
-    internal MockEndpointBuilder(MockServerBuilder parent, MockEndpointConfig config)
+    internal MockEndpointBuilder(MockServerBuilder parent, ContractMockEndpointConfig config)
     {
         _parent = parent;
         _config = config;
@@ -199,10 +183,10 @@ public sealed class MockEndpointBuilder
 public sealed class MockResponseBuilder
 {
     private readonly MockEndpointBuilder _parent;
-    private readonly MockEndpointConfig _config;
+    private readonly ContractMockEndpointConfig _config;
     private readonly Func<MockRequestContext, bool> _condition;
 
-    internal MockResponseBuilder(MockEndpointBuilder parent, MockEndpointConfig config, Func<MockRequestContext, bool> condition)
+    internal MockResponseBuilder(MockEndpointBuilder parent, ContractMockEndpointConfig config, Func<MockRequestContext, bool> condition)
     {
         _parent = parent;
         _config = config;
@@ -216,7 +200,7 @@ public sealed class MockResponseBuilder
     /// <returns>The parent endpoint builder.</returns>
     public MockEndpointBuilder Return(int statusCode)
     {
-        _config.ResponseRules.Add(new MockResponseRule(_condition, statusCode, null));
+        _config.ResponseRules.Add(new ContractMockResponseRule(_condition, statusCode, null));
         return _parent;
     }
 
@@ -228,7 +212,7 @@ public sealed class MockResponseBuilder
     /// <returns>The parent endpoint builder.</returns>
     public MockEndpointBuilder Return(int statusCode, object body)
     {
-        _config.ResponseRules.Add(new MockResponseRule(_condition, statusCode, body));
+        _config.ResponseRules.Add(new ContractMockResponseRule(_condition, statusCode, body));
         return _parent;
     }
 }
@@ -349,24 +333,5 @@ internal sealed class AuthConfig
     {
         RequiredHeader = requiredHeader;
         MissingStatusCode = missingStatusCode;
-    }
-}
-
-internal sealed class MockEndpointConfig
-{
-    public List<MockResponseRule> ResponseRules { get; } = [];
-}
-
-internal sealed class MockResponseRule
-{
-    public Func<MockRequestContext, bool> Condition { get; }
-    public int StatusCode { get; }
-    public object? Body { get; }
-
-    public MockResponseRule(Func<MockRequestContext, bool> condition, int statusCode, object? body)
-    {
-        Condition = condition;
-        StatusCode = statusCode;
-        Body = body;
     }
 }
