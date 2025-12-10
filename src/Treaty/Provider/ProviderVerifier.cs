@@ -15,7 +15,7 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
     private readonly IHost _host;
     private readonly HttpClient _client;
 
-    internal ProviderVerifier(Contract contract, ILoggerFactory loggerFactory, IStateHandler? stateHandler = null)
+    internal ProviderVerifier(ApiContract contract, ILoggerFactory loggerFactory, IStateHandler? stateHandler = null)
         : base(contract, loggerFactory, stateHandler)
     {
         var builder = new HostBuilder()

@@ -24,18 +24,28 @@ Note: The project uses TUnit as the test framework. Tests must be run via the bu
 
 Treaty is an OpenAPI-first contract testing framework for .NET.
 
-### Entry Point
-`Treaty.cs` is the main static class providing factory methods:
-- `OpenApi(path)` / `OpenApi(stream, format)` - Load contracts from OpenAPI YAML/JSON
-- `MockServer(path)` / `MockServer(contract)` - Create mock servers
-- `ForProvider<TStartup>()` - Create provider verifier for API testing
-- `ForConsumer()` - Create consumer verifier for client testing
-- `CompareContracts(old, new)` - Detect breaking changes between contract versions
+### Entry Points
+The library provides domain-specific static classes as entry points:
+
+**Contract** (`src/Treaty/Contract.cs`)
+- `Contract.FromOpenApi(path)` / `Contract.FromOpenApi(stream, format)` - Load contracts from OpenAPI YAML/JSON
+- `Contract.Compare(old, new)` - Detect breaking changes between contract versions
+
+**MockServer** (`src/Treaty/MockServer.cs`)
+- `MockServer.FromOpenApi(path)` / `MockServer.FromOpenApi(stream, format)` - Create mock server from OpenAPI spec
+- `MockServer.FromContract(contract)` - Create mock server from loaded contract
+
+**ProviderVerifier** (`src/Treaty/ProviderVerifier.cs`)
+- `ProviderVerifier.ForTestServer<TStartup>()` - Create TestServer-based verifier for API testing
+- `ProviderVerifier.ForHttpClient()` - Create HTTP-based verifier for live API testing
+
+**ConsumerVerifier** (`src/Treaty/ConsumerVerifier.cs`)
+- `ConsumerVerifier.Create()` - Create consumer verifier for client testing
 
 ### Key Abstractions
 
 **Contracts** (`src/Treaty/Contracts/`)
-- `Contract` - Immutable contract with endpoints, metadata, and defaults
+- `ApiContract` - Immutable contract with endpoints, metadata, and defaults
 - `EndpointContract` - Single endpoint definition with request/response expectations
 - `ContractComparer` - Detects breaking changes between contract versions
 
@@ -50,7 +60,7 @@ Treaty is an OpenAPI-first contract testing framework for .NET.
 - Supports bulk verification with parallel execution
 
 **Consumer Verification** (`src/Treaty/Consumer/`)
-- `ConsumerVerifier` - Validates outgoing HTTP requests against contracts
+- `ConsumerValidationClient` - Validates outgoing HTTP requests against contracts
 - `ContractValidatingHandler` - DelegatingHandler that validates requests
 
 **Mock Servers** (`src/Treaty/Mocking/`)

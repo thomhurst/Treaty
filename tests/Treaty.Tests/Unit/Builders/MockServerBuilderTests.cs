@@ -1,13 +1,12 @@
 using System.Net;
 using FluentAssertions;
-using TreatyLib = Treaty.Treaty;
-using TreatyOpenApi = Treaty.OpenApi;
+using Treaty.OpenApi;
 
 namespace Treaty.Tests.Unit.Builders;
 
 public class MockServerBuilderTests : IAsyncDisposable
 {
-    private TreatyOpenApi.MockServer? _mockServer;
+    private OpenApiMockServer? _mockServer;
     private HttpClient? _client;
 
     private const string TestOpenApiSpec = """
@@ -65,7 +64,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .Otherwise().Return(200)
@@ -89,7 +88,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .Otherwise().Return(200)
@@ -113,7 +112,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .WithAuth(auth => auth
                 .RequireHeader("Authorization")
                 .WhenMissing().Return(401))
@@ -137,7 +136,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .WithAuth(auth => auth
                 .RequireHeader("Authorization")
                 .WhenMissing().Return(401))
@@ -163,7 +162,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         var specPath = await WriteSpecToTempFile();
         var customCorrelationId = "custom-correlation-12345";
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .WithCustomGenerator("correlationId", () => customCorrelationId)
             .Build();
 
@@ -187,7 +186,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .When(req => req.PathParam("id") == "401").Return(401)
@@ -241,7 +240,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, specWithQuery);
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/search")
                 .When(req => string.IsNullOrEmpty(req.QueryParam("q"))).Return(400)
                 .Otherwise().Return(200)
@@ -266,7 +265,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.Header("X-Admin") == "true").Return(200)
                 .Otherwise().Return(404)

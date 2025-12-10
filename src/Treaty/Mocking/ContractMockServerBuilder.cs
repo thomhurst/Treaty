@@ -10,7 +10,7 @@ namespace Treaty.Mocking;
 /// </summary>
 public sealed class ContractMockServerBuilder
 {
-    private readonly Contract _contract;
+    private readonly ApiContract _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private bool _useHttps;
     private int? _minLatencyMs;
@@ -19,7 +19,7 @@ public sealed class ContractMockServerBuilder
     private readonly Dictionary<string, Func<object>> _customGenerators = new();
     private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs = new();
 
-    internal ContractMockServerBuilder(Contract contract)
+    internal ContractMockServerBuilder(ApiContract contract)
     {
         _contract = contract ?? throw new ArgumentNullException(nameof(contract));
     }

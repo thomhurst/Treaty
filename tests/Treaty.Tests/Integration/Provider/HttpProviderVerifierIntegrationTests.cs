@@ -3,8 +3,6 @@ using FluentAssertions;
 using Treaty.OpenApi;
 using Treaty.Provider;
 using Treaty.Provider.Resilience;
-using TreatyLib = Treaty.Treaty;
-using TreatyOpenApi = Treaty.OpenApi;
 
 namespace Treaty.Tests.Integration.Provider;
 
@@ -13,7 +11,7 @@ namespace Treaty.Tests.Integration.Provider;
 /// </summary>
 public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
 {
-    private TreatyOpenApi.MockServer? _mockServer;
+    private OpenApiMockServer? _mockServer;
     private HttpProviderVerifier? _verifier;
 
     private const string TestOpenApiSpec = """
@@ -118,7 +116,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         // Build without custom rules - let the mock server use spec-defined status codes
         // GET /users/{id} -> 200 from spec
         // DELETE /users/{id} -> 204 from spec
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
             .Build();
@@ -127,9 +125,9 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
 
         // Build contract for verifier
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .Build();
@@ -226,14 +224,14 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
         // Create verifier with bearer token
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithBearerToken("test-token-123")
@@ -252,13 +250,13 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithApiKey("my-api-key", "X-API-Key")
@@ -277,13 +275,13 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithBasicAuth("user", "pass")
@@ -307,13 +305,13 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithRetryPolicy(new RetryPolicyOptions
@@ -337,13 +335,13 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithRetryPolicy() // Default options
@@ -366,13 +364,13 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpOptions(opts => opts.WithTimeout(TimeSpan.FromSeconds(60)))
@@ -391,13 +389,13 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpOptions(opts => opts.FollowRedirects(true, maxRedirects: 10))
@@ -420,11 +418,11 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
         using var customClient = new HttpClient
         {
@@ -432,7 +430,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             Timeout = TimeSpan.FromSeconds(30)
         };
 
-        _verifier = TreatyLib.ForHttpProvider()
+        _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpClient(customClient)

@@ -85,7 +85,7 @@ public sealed class OpenApiContractBuilder
     /// Builds the contract from the OpenAPI specification.
     /// </summary>
     /// <returns>The built contract.</returns>
-    public Contract Build()
+    public ApiContract Build()
     {
         var endpoints = new List<EndpointContract>();
 
@@ -107,7 +107,7 @@ public sealed class OpenApiContractBuilder
 
         var name = _document.Info?.Title ?? "OpenAPI Contract";
         var metadata = BuildMetadata();
-        return new Contract(name, endpoints, _jsonSerializer, null, metadata);
+        return new ApiContract(name, endpoints, _jsonSerializer, null, metadata);
     }
 
     private ContractMetadata? BuildMetadata()

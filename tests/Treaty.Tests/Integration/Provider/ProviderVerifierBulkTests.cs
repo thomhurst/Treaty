@@ -3,7 +3,6 @@ using FluentAssertions;
 using Treaty.OpenApi;
 using Treaty.Provider;
 using Treaty.Tests.TestApi;
-using TreatyLib = Treaty.Treaty;
 
 namespace Treaty.Tests.Integration.Provider;
 
@@ -60,9 +59,9 @@ public class ProviderVerifierBulkTests : IDisposable
     public ProviderVerifierBulkTests()
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _verifier = TreatyLib.ForProvider<TestStartup>()
+        _verifier = ProviderVerifier.ForTestServer<TestStartup>()
             .WithContract(contract)
             .Build();
     }
@@ -112,9 +111,9 @@ public class ProviderVerifierBulkTests : IDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithMissingExampleData));
-        var contractWithMissingExampleData = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contractWithMissingExampleData = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        using var verifier = TreatyLib.ForProvider<TestStartup>()
+        using var verifier = ProviderVerifier.ForTestServer<TestStartup>()
             .WithContract(contractWithMissingExampleData)
             .Build();
 
@@ -167,9 +166,9 @@ public class ProviderVerifierBulkTests : IDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithFailure));
-        var contractWithFailure = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contractWithFailure = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        using var verifier = TreatyLib.ForProvider<TestStartup>()
+        using var verifier = ProviderVerifier.ForTestServer<TestStartup>()
             .WithContract(contractWithFailure)
             .Build();
 

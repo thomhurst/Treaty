@@ -6,7 +6,7 @@ namespace Treaty.Contracts;
 /// Represents a contract definition containing endpoint expectations.
 /// Contracts are immutable once built and define the expected behavior of an API.
 /// </summary>
-public sealed class Contract
+public sealed class ApiContract
 {
     /// <summary>
     /// Gets the name of the contract.
@@ -34,7 +34,7 @@ public sealed class Contract
     /// </summary>
     public ContractMetadata? Metadata { get; }
 
-    internal Contract(
+    internal ApiContract(
         string name,
         IReadOnlyList<EndpointContract> endpoints,
         IJsonSerializer jsonSerializer,

@@ -14,11 +14,11 @@ namespace Treaty.OpenApi;
 /// <summary>
 /// An in-memory mock server generated from an OpenAPI specification.
 /// </summary>
-public sealed class MockServer : IAsyncDisposable
+public sealed class OpenApiMockServer : IAsyncDisposable
 {
     private readonly OpenApiDocument _document;
     private readonly IJsonSerializer _serializer;
-    private readonly ILogger _logger;
+    private readonly ILogger<OpenApiMockServer> _logger;
     private readonly bool _useHttps;
     private readonly int? _minLatencyMs;
     private readonly int? _maxLatencyMs;
@@ -34,7 +34,7 @@ public sealed class MockServer : IAsyncDisposable
     /// </summary>
     public string? BaseUrl { get; private set; }
 
-    internal MockServer(
+    internal OpenApiMockServer(
         OpenApiDocument document,
         IJsonSerializer serializer,
         ILoggerFactory loggerFactory,
@@ -47,7 +47,7 @@ public sealed class MockServer : IAsyncDisposable
     {
         _document = document;
         _serializer = serializer;
-        _logger = loggerFactory.CreateLogger<MockServer>();
+        _logger = loggerFactory.CreateLogger<OpenApiMockServer>();
         _useHttps = useHttps;
         _minLatencyMs = minLatencyMs;
         _maxLatencyMs = maxLatencyMs;

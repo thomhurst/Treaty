@@ -24,7 +24,7 @@ public abstract class TreatyTestBase<TStartup> : IDisposable where TStartup : cl
     /// Gets the contract to be verified.
     /// Override this to return your contract definition.
     /// </summary>
-    protected abstract Contract Contract { get; }
+    protected abstract ApiContract Contract { get; }
 
     /// <summary>
     /// Gets the state handler for provider states, if any.

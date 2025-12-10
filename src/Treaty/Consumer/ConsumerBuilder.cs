@@ -9,7 +9,7 @@ namespace Treaty.Consumer;
 /// </summary>
 public sealed class ConsumerBuilder
 {
-    private Contract? _contract;
+    private ApiContract? _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private string _baseUrl = "http://localhost";
 
@@ -20,7 +20,7 @@ public sealed class ConsumerBuilder
     /// </summary>
     /// <param name="contract">The contract to use for verification.</param>
     /// <returns>This builder for chaining.</returns>
-    public ConsumerBuilder WithContract(Contract contract)
+    public ConsumerBuilder WithContract(ApiContract contract)
     {
         _contract = contract ?? throw new ArgumentNullException(nameof(contract));
         return this;
@@ -49,15 +49,15 @@ public sealed class ConsumerBuilder
     }
 
     /// <summary>
-    /// Builds the consumer verifier.
+    /// Builds the consumer validation client.
     /// </summary>
-    /// <returns>The configured consumer verifier.</returns>
+    /// <returns>The configured consumer validation client.</returns>
     /// <exception cref="InvalidOperationException">Thrown if no contract was specified.</exception>
-    public ConsumerVerifier Build()
+    public ConsumerValidationClient Build()
     {
         if (_contract == null)
             throw new InvalidOperationException("A contract must be specified using WithContract().");
 
-        return new ConsumerVerifier(_contract, _baseUrl, _loggerFactory);
+        return new ConsumerValidationClient(_contract, _baseUrl, _loggerFactory);
     }
 }

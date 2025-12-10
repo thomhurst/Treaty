@@ -2,18 +2,16 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Treaty.Consumer;
 using Treaty.OpenApi;
 using Treaty.Validation;
-using TreatyLib = Treaty.Treaty;
-using TreatyConsumer = Treaty.Consumer;
-using TreatyOpenApi = Treaty.OpenApi;
 
 namespace Treaty.Tests.Integration.Consumer;
 
 public class ConsumerVerifierTests : IAsyncDisposable
 {
-    private TreatyOpenApi.MockServer? _mockServer;
-    private TreatyConsumer.ConsumerVerifier? _consumer;
+    private OpenApiMockServer? _mockServer;
+    private ConsumerValidationClient? _consumer;
 
     private const string TestOpenApiSpec = """
         openapi: '3.0.3'
@@ -100,14 +98,14 @@ public class ConsumerVerifierTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         // Create consumer verifier with contract from OpenAPI spec
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _consumer = TreatyLib.ForConsumer()
+        _consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer.BaseUrl!)
             .Build();
@@ -228,9 +226,9 @@ public class ConsumerVerifierTests : IAsyncDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        var consumer = TreatyLib.ForConsumer()
+        var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
             .Build();
@@ -270,9 +268,9 @@ public class ConsumerVerifierTests : IAsyncDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        var consumer = TreatyLib.ForConsumer()
+        var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
             .Build();
@@ -308,9 +306,9 @@ public class ConsumerVerifierTests : IAsyncDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        var consumer = TreatyLib.ForConsumer()
+        var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
             .Build();

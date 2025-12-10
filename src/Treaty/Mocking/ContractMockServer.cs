@@ -15,7 +15,7 @@ namespace Treaty.Mocking;
 /// </summary>
 public sealed class ContractMockServer : IAsyncDisposable
 {
-    private readonly Contract _contract;
+    private readonly ApiContract _contract;
     private readonly ILogger _logger;
     private readonly bool _useHttps;
     private readonly int? _minLatencyMs;
@@ -33,7 +33,7 @@ public sealed class ContractMockServer : IAsyncDisposable
     public string? BaseUrl { get; private set; }
 
     internal ContractMockServer(
-        Contract contract,
+        ApiContract contract,
         ILoggerFactory loggerFactory,
         bool useHttps,
         int? minLatencyMs,

@@ -11,7 +11,7 @@ public static class ContractComparer
     /// <param name="oldContract">The baseline (old) contract.</param>
     /// <param name="newContract">The new contract to compare.</param>
     /// <returns>A diff containing all detected changes.</returns>
-    public static ContractDiff Compare(Contract oldContract, Contract newContract)
+    public static ContractDiff Compare(ApiContract oldContract, ApiContract newContract)
     {
         ArgumentNullException.ThrowIfNull(oldContract);
         ArgumentNullException.ThrowIfNull(newContract);
@@ -24,7 +24,7 @@ public static class ContractComparer
         return new ContractDiff(oldContract.Name, newContract.Name, changes);
     }
 
-    private static void CompareEndpoints(Contract oldContract, Contract newContract, List<ContractChange> changes)
+    private static void CompareEndpoints(ApiContract oldContract, ApiContract newContract, List<ContractChange> changes)
     {
         var oldEndpoints = oldContract.Endpoints.ToDictionary(
             e => NormalizeEndpointKey(e.PathTemplate, e.Method),

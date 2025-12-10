@@ -12,7 +12,7 @@ namespace Treaty.Provider;
 public sealed class HttpProviderBuilder
 {
     private Uri? _baseUri;
-    private Contract? _contract;
+    private ApiContract? _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private IStateHandler? _stateHandler;
     private IAuthenticationProvider? _authProvider;
@@ -52,7 +52,7 @@ public sealed class HttpProviderBuilder
     /// Specifies the contract to verify against.
     /// </summary>
     /// <param name="contract">The contract.</param>
-    public HttpProviderBuilder WithContract(Contract contract)
+    public HttpProviderBuilder WithContract(ApiContract contract)
     {
         _contract = contract ?? throw new ArgumentNullException(nameof(contract));
         return this;

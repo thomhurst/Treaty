@@ -4,15 +4,15 @@ using Treaty.Contracts;
 namespace Treaty.Consumer;
 
 /// <summary>
-/// Verifies that consumer HTTP client code makes requests that conform to contracts.
+/// Validates that consumer HTTP client code makes requests that conform to contracts.
 /// </summary>
-public sealed class ConsumerVerifier
+public sealed class ConsumerValidationClient
 {
-    private readonly Contract _contract;
+    private readonly ApiContract _contract;
     private readonly string _baseUrl;
     private readonly ILoggerFactory _loggerFactory;
 
-    internal ConsumerVerifier(Contract contract, string baseUrl, ILoggerFactory loggerFactory)
+    internal ConsumerValidationClient(ApiContract contract, string baseUrl, ILoggerFactory loggerFactory)
     {
         _contract = contract;
         _baseUrl = baseUrl;

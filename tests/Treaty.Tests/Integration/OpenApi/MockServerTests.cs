@@ -1,14 +1,13 @@
 using System.Net;
 using System.Text.Json;
 using FluentAssertions;
-using TreatyLib = Treaty.Treaty;
-using TreatyOpenApi = Treaty.OpenApi;
+using Treaty.OpenApi;
 
 namespace Treaty.Tests.Integration.OpenApi;
 
 public class MockServerTests : IAsyncDisposable
 {
-    private TreatyOpenApi.MockServer? _mockServer;
+    private OpenApiMockServer? _mockServer;
     private HttpClient? _client;
     private const string TestOpenApiSpec = """
         openapi: '3.0.3'
@@ -100,7 +99,7 @@ public class MockServerTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath).Build();
+        _mockServer = MockServer.FromOpenApi(specPath).Build();
         await _mockServer.StartAsync();
 
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
@@ -182,7 +181,7 @@ public class MockServerTests : IAsyncDisposable
 
 public class MockServerWithConditionsTests : IAsyncDisposable
 {
-    private TreatyOpenApi.MockServer? _mockServer;
+    private OpenApiMockServer? _mockServer;
     private HttpClient? _client;
     private const string TestOpenApiSpec = """
         openapi: '3.0.3'
@@ -222,7 +221,7 @@ public class MockServerWithConditionsTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockServer(specPath)
+        _mockServer = MockServer.FromOpenApi(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .When(req => req.PathParam("id") == "bad").Return(400)

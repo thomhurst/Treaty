@@ -11,7 +11,7 @@ namespace Treaty.Tests.Unit.Provider;
 
 public class HttpProviderBuilderTests
 {
-    private static Contract CreateTestContract()
+    private static ApiContract CreateTestContract()
     {
         const string spec = """
             openapi: '3.0.3'
@@ -26,7 +26,7 @@ public class HttpProviderBuilderTests
                       description: OK
             """;
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(spec));
-        return Treaty.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        return Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
     }
 
     #region WithBaseUrl Tests

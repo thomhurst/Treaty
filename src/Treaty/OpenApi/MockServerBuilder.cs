@@ -130,9 +130,9 @@ public sealed class MockServerBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public MockServer Build()
+    public OpenApiMockServer Build()
     {
-        return new MockServer(
+        return new OpenApiMockServer(
             _document,
             _jsonSerializer,
             _loggerFactory,
@@ -189,7 +189,7 @@ public sealed class MockEndpointBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public MockServer Build() => _parent.Build();
+    public OpenApiMockServer Build() => _parent.Build();
 }
 
 /// <summary>

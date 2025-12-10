@@ -1,15 +1,14 @@
 using System.Text;
 using FluentAssertions;
 using Treaty.OpenApi;
+using Treaty.Provider;
 using Treaty.Tests.TestApi;
-using TreatyLib = Treaty.Treaty;
-using TreatyProvider = Treaty.Provider;
 
 namespace Treaty.Tests.Integration.Provider;
 
 public class ProviderVerifierTests : IDisposable
 {
-    private readonly TreatyProvider.ProviderVerifier<TestStartup> _provider;
+    private readonly ProviderVerifier<TestStartup> _provider;
 
     private const string TestApiSpec = """
         openapi: '3.0.3'
@@ -90,9 +89,9 @@ public class ProviderVerifierTests : IDisposable
     public ProviderVerifierTests()
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _provider = TreatyLib.ForProvider<TestStartup>()
+        _provider = ProviderVerifier.ForTestServer<TestStartup>()
             .WithContract(contract)
             .Build();
     }

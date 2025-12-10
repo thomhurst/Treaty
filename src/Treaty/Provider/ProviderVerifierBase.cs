@@ -13,7 +13,7 @@ public abstract class ProviderVerifierBase : IProviderVerifier
     /// <summary>
     /// The contract to verify against.
     /// </summary>
-    protected readonly Contract _contract;
+    protected readonly ApiContract _contract;
 
     /// <summary>
     /// Logger for diagnostic output.
@@ -42,7 +42,7 @@ public abstract class ProviderVerifierBase : IProviderVerifier
     /// <param name="loggerFactory">Logger factory for diagnostic output.</param>
     /// <param name="stateHandler">Optional state handler for provider states.</param>
     protected ProviderVerifierBase(
-        Contract contract,
+        ApiContract contract,
         ILoggerFactory loggerFactory,
         IStateHandler? stateHandler)
     {
