@@ -82,8 +82,44 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         // Handle anyOf, oneOf, allOf
         if (schema.AnyOf?.Count > 0 || schema.OneOf?.Count > 0)
         {
-            // For anyOf/oneOf, we just need to pass one of them
             var subSchemas = schema.AnyOf?.Count > 0 ? schema.AnyOf : schema.OneOf;
+
+            // Try discriminator-based resolution first (strict mode)
+            if (TryGetDiscriminatorSchema(node, schema, subSchemas!, out var discriminatorSchema, out var discriminatorValue))
+            {
+                if (discriminatorValue == null)
+                {
+                    // Discriminator property missing from object
+                    violations.Add(new ContractViolation(
+                        endpoint,
+                        $"{jsonPath}.{schema.Discriminator!.PropertyName}",
+                        $"Missing required discriminator property '{schema.Discriminator.PropertyName}'",
+                        ViolationType.MissingRequired,
+                        schema.Discriminator.PropertyName,
+                        "missing"));
+                    return;
+                }
+
+                if (discriminatorSchema == null)
+                {
+                    // Discriminator value doesn't map to any schema
+                    var validValues = GetValidDiscriminatorValues(schema, subSchemas!);
+                    violations.Add(new ContractViolation(
+                        endpoint,
+                        $"{jsonPath}.{schema.Discriminator!.PropertyName}",
+                        $"Discriminator value '{discriminatorValue}' does not match any known schema",
+                        ViolationType.DiscriminatorMismatch,
+                        string.Join(", ", validValues),
+                        discriminatorValue));
+                    return;
+                }
+
+                // Validate ONLY against the discriminator-selected schema
+                ValidateNode(node, discriminatorSchema, endpoint, jsonPath, violations, partialValidation);
+                return;
+            }
+
+            // Fallback to sequential matching (no discriminator present)
             var anyValid = false;
             foreach (var subSchema in subSchemas!)
             {
@@ -626,5 +662,110 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             "boolean" => "Boolean",
             _ => schema.Properties?.Count > 0 ? "Object" : null
         };
+    }
+
+    /// <summary>
+    /// Attempts to resolve a schema using the discriminator.
+    /// </summary>
+    /// <param name="node">The JSON node being validated.</param>
+    /// <param name="schema">The parent schema with oneOf/anyOf.</param>
+    /// <param name="subSchemas">The list of subschemas from oneOf/anyOf.</param>
+    /// <param name="discriminatorSchema">The resolved schema if successful.</param>
+    /// <param name="discriminatorValue">The discriminator property value found.</param>
+    /// <returns>True if discriminator resolution was attempted (discriminator present), false otherwise.</returns>
+    private static bool TryGetDiscriminatorSchema(
+        JsonNode? node,
+        OpenApiSchema schema,
+        IList<OpenApiSchema> subSchemas,
+        out OpenApiSchema? discriminatorSchema,
+        out string? discriminatorValue)
+    {
+        discriminatorSchema = null;
+        discriminatorValue = null;
+
+        // Check if discriminator is defined
+        if (schema.Discriminator?.PropertyName == null)
+        {
+            return false; // No discriminator, use fallback
+        }
+
+        // Verify node is an object
+        if (node is not JsonObject jsonObj)
+        {
+            return false; // Can't use discriminator on non-objects
+        }
+
+        var propName = schema.Discriminator.PropertyName;
+
+        // Read discriminator property value
+        if (!jsonObj.TryGetPropertyValue(propName, out var propNode) ||
+            propNode?.GetValueKind() != JsonValueKind.String)
+        {
+            // Discriminator property missing or not a string - this is an error
+            return true; // discriminatorValue is null, caller will handle
+        }
+
+        discriminatorValue = propNode.GetValue<string>();
+        var discValue = discriminatorValue; // Local copy for lambda
+
+        // Check explicit mapping first
+        if (schema.Discriminator.Mapping != null &&
+            schema.Discriminator.Mapping.TryGetValue(discriminatorValue, out var schemaRef))
+        {
+            discriminatorSchema = ResolveSchemaFromReference(schemaRef, subSchemas);
+            return true;
+        }
+
+        // Fallback: match discriminator value to schema name (implicit mapping)
+        discriminatorSchema = subSchemas.FirstOrDefault(s =>
+            GetSchemaName(s)?.Equals(discValue, StringComparison.OrdinalIgnoreCase) == true);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Resolves a schema from a reference string within the subschemas.
+    /// </summary>
+    private static OpenApiSchema? ResolveSchemaFromReference(string reference, IList<OpenApiSchema> subSchemas)
+    {
+        // Reference format: "#/components/schemas/SchemaName"
+        var schemaName = reference.Split('/').LastOrDefault();
+        if (schemaName == null) return null;
+
+        // Find in subSchemas by Reference.Id or matching name
+        return subSchemas.FirstOrDefault(s =>
+            s.Reference?.Id?.Equals(schemaName, StringComparison.OrdinalIgnoreCase) == true ||
+            GetSchemaName(s)?.Equals(schemaName, StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    /// <summary>
+    /// Gets the name of a schema from its reference or title.
+    /// </summary>
+    private static string? GetSchemaName(OpenApiSchema schema)
+    {
+        // Try Reference.Id first (for $ref schemas)
+        if (schema.Reference?.Id != null)
+            return schema.Reference.Id;
+
+        // Fall back to Title
+        return schema.Title;
+    }
+
+    /// <summary>
+    /// Gets the valid discriminator values for error reporting.
+    /// </summary>
+    private static IEnumerable<string> GetValidDiscriminatorValues(OpenApiSchema schema, IList<OpenApiSchema> subSchemas)
+    {
+        // Return explicit mapping keys if present
+        if (schema.Discriminator?.Mapping?.Count > 0)
+        {
+            return schema.Discriminator.Mapping.Keys;
+        }
+
+        // Otherwise, return schema names from subSchemas
+        return subSchemas
+            .Select(GetSchemaName)
+            .Where(name => name != null)
+            .Cast<string>();
     }
 }

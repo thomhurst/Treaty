@@ -118,5 +118,8 @@ public enum ViolationType
     InvalidQueryParameterValue,
 
     /// <summary>Verification timed out.</summary>
-    Timeout
+    Timeout,
+
+    /// <summary>The discriminator value doesn't match any known schema.</summary>
+    DiscriminatorMismatch
 }

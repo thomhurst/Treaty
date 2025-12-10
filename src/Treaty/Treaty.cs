@@ -107,6 +107,27 @@ public static class Treaty
         => new();
 
     /// <summary>
+    /// Creates an HTTP provider verifier for testing a live API against a contract.
+    /// Use this when you need to verify an external API or deployed service.
+    /// </summary>
+    /// <returns>An HTTP provider builder for configuration.</returns>
+    /// <example>
+    /// <code>
+    /// var contract = Treaty.OpenApi("api-spec.yaml").Build();
+    ///
+    /// using var provider = Treaty.ForHttpProvider()
+    ///     .WithBaseUrl("https://api.staging.example.com")
+    ///     .WithContract(contract)
+    ///     .WithBearerToken("my-token")
+    ///     .WithRetryPolicy()
+    ///     .Build();
+    ///
+    /// await provider.VerifyAsync("/users/123", HttpMethod.Get);
+    /// </code>
+    /// </example>
+    public static HttpProviderBuilder ForHttpProvider() => new();
+
+    /// <summary>
     /// Creates a consumer verifier for testing your HTTP client code against a contract.
     /// Use this when you are consuming an API and want to verify your client calls are correct.
     /// </summary>
