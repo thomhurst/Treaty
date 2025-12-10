@@ -116,6 +116,10 @@ public static class DiagnosticFormatter
             ViolationType.InvalidQueryParameterValue =>
                 $"Ensure the query parameter value matches the expected type.",
 
+            ViolationType.DiscriminatorMismatch =>
+                $"The discriminator value '{violation.Actual}' doesn't match any schema. " +
+                $"Valid values are: {violation.Expected}. Check that your discriminator property matches a defined schema.",
+
             _ => null
         };
     }
@@ -141,6 +145,7 @@ public static class DiagnosticFormatter
             ViolationType.InvalidContentType => "⚠",
             ViolationType.MissingQueryParameter => "✗",
             ViolationType.InvalidQueryParameterValue => "⚠",
+            ViolationType.DiscriminatorMismatch => "✗",
             _ => "•"
         };
     }

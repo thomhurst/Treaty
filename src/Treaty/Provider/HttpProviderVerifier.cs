@@ -119,13 +119,16 @@ public sealed class HttpProviderVerifier : ProviderVerifierBase
     /// <inheritdoc />
     public override void Dispose()
     {
-        if (!_disposed)
+        lock (_disposeLock)
         {
-            if (_ownsClient)
+            if (!_disposed)
             {
-                _client.Dispose();
+                if (_ownsClient)
+                {
+                    _client.Dispose();
+                }
+                _disposed = true;
             }
-            _disposed = true;
         }
     }
 }

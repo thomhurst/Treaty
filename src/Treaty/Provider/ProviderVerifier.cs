@@ -42,11 +42,14 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
     /// <inheritdoc />
     public override void Dispose()
     {
-        if (!_disposed)
+        lock (_disposeLock)
         {
-            _client.Dispose();
-            _host.Dispose();
-            _disposed = true;
+            if (!_disposed)
+            {
+                _client.Dispose();
+                _host.Dispose();
+                _disposed = true;
+            }
         }
     }
 }

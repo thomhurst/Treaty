@@ -23,7 +23,7 @@ public sealed class ContractMockServer : IAsyncDisposable
     private readonly AuthConfig? _authConfig;
     private readonly Dictionary<string, Func<object>> _customGenerators;
     private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs;
-    private readonly Random _random = new();
+    private readonly object _lock = new();
 
     private WebApplication? _app;
 
@@ -57,20 +57,30 @@ public sealed class ContractMockServer : IAsyncDisposable
     /// </summary>
     /// <param name="port">Optional port number. If not specified, a random available port is used.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <remarks>
+    /// This method is not thread-safe. Do not call StartAsync concurrently with StopAsync or DisposeAsync.
+    /// </remarks>
     public async Task StartAsync(int? port = null, CancellationToken cancellationToken = default)
     {
-        var builder = WebApplication.CreateBuilder();
-        var host = port.HasValue ? "localhost" : "127.0.0.1";
-        builder.WebHost.UseUrls($"{(_useHttps ? "https" : "http")}://{host}:{port ?? 0}");
-        builder.Logging.ClearProviders();
+        WebApplication app;
+        lock (_lock)
+        {
+            if (_app != null)
+                throw new InvalidOperationException("The mock server is already started.");
 
-        _app = builder.Build();
+            var builder = WebApplication.CreateBuilder();
+            var host = port.HasValue ? "localhost" : "127.0.0.1";
+            builder.WebHost.UseUrls($"{(_useHttps ? "https" : "http")}://{host}:{port ?? 0}");
+            builder.Logging.ClearProviders();
 
-        _app.MapFallback(HandleRequestAsync);
+            app = builder.Build();
+            app.MapFallback(HandleRequestAsync);
+            _app = app;
+        }
 
-        await _app.StartAsync(cancellationToken);
+        await app.StartAsync(cancellationToken);
 
-        var serverAddresses = _app.Services.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>()
+        var serverAddresses = app.Services.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>()
             .Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>();
         BaseUrl = serverAddresses?.Addresses.FirstOrDefault() ?? $"{(_useHttps ? "https" : "http")}://localhost:{port}";
 
@@ -80,11 +90,20 @@ public sealed class ContractMockServer : IAsyncDisposable
     /// <summary>
     /// Stops the mock server.
     /// </summary>
+    /// <remarks>
+    /// This method is not thread-safe. Do not call StopAsync concurrently with StartAsync or DisposeAsync.
+    /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        if (_app != null)
+        WebApplication? app;
+        lock (_lock)
         {
-            await _app.StopAsync(cancellationToken);
+            app = _app;
+        }
+
+        if (app != null)
+        {
+            await app.StopAsync(cancellationToken);
             _logger.LogInformation("[Treaty] Contract mock server stopped");
         }
     }
@@ -109,10 +128,10 @@ public sealed class ContractMockServer : IAsyncDisposable
             }
         }
 
-        // Simulate latency
+        // Simulate latency (using Random.Shared for thread safety)
         if (_minLatencyMs.HasValue && _maxLatencyMs.HasValue)
         {
-            var delay = _random.Next(_minLatencyMs.Value, _maxLatencyMs.Value);
+            var delay = Random.Shared.Next(_minLatencyMs.Value, _maxLatencyMs.Value);
             await Task.Delay(delay);
         }
 
@@ -234,9 +253,10 @@ public sealed class ContractMockServer : IAsyncDisposable
                 return obj.ToJsonString();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // If we can't parse/modify, return original
+            // Log the exception but continue with original JSON
+            _logger.LogWarning(ex, "[Treaty] Contract Mock: Failed to apply custom generators to response JSON");
         }
         return json;
     }
@@ -302,10 +322,17 @@ public sealed class ContractMockServer : IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        if (_app != null)
+        WebApplication? app;
+        lock (_lock)
         {
-            await _app.StopAsync();
-            await _app.DisposeAsync();
+            app = _app;
+            _app = null;
+        }
+
+        if (app != null)
+        {
+            await app.StopAsync();
+            await app.DisposeAsync();
         }
     }
 }

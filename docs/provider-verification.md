@@ -319,6 +319,83 @@ Suggestions:
   -> Check that 'age' returns the correct type (integer).
 ```
 
+## Common Gotchas
+
+### State Handler Lifecycle
+
+State handlers run **before each endpoint** verification, not once per test run. If you have expensive setup:
+
+```csharp
+// BAD: This runs for EVERY endpoint
+.ForState("database is seeded", async () => await SeedEntireDatabase())
+
+// GOOD: Use test fixtures for expensive setup
+public class ContractTests : IAsyncLifetime
+{
+    public async Task InitializeAsync() => await SeedEntireDatabase();
+    public async Task DisposeAsync() => await CleanupDatabase();
+}
+```
+
+### Teardown Order
+
+State teardown runs in **reverse order** of setup. If setup is A → B → C, teardown is C → B → A.
+
+### Thread Safety
+
+- `ProviderVerifier` is **not thread-safe**. Create one instance per test.
+- When using `ParallelExecution = true`, each parallel verification shares the same state handler instance. Ensure your state handlers are thread-safe.
+- Progress callbacks (`IProgress<T>`) may arrive out-of-order during parallel execution.
+
+### HttpProviderVerifier Specifics
+
+When using `Treaty.ForHttpProvider()` against live APIs:
+
+1. **Request cloning**: Requests are cloned for retries. This adds slight overhead.
+2. **HttpClient ownership**: If you provide your own `HttpClient` via `.WithHttpClient()`, Treaty won't dispose it.
+3. **Certificate validation**: Use `.SkipCertificateValidation()` only in development/testing.
+
+### Multiple Authentication Methods
+
+Calling multiple auth methods overwrites the previous one:
+
+```csharp
+// Only BasicAuth is used - BearerToken is overwritten
+.WithBearerToken("token")
+.WithBasicAuth("user", "pass")  // This wins
+```
+
+Use `CompositeAuthProvider` if you need multiple auth methods:
+
+```csharp
+.WithAuthentication(new CompositeAuthProvider(
+    new BearerTokenAuthProvider("token"),
+    new CustomHeadersAuthProvider(headers)))
+```
+
+### Retry Policy Behavior
+
+Retries only happen for **transient** errors:
+- `HttpRequestException` (network failures)
+- `TaskCanceledException` with `TimeoutException` inner (request timeouts)
+
+Non-transient errors (4xx, 5xx HTTP responses) are **not retried** by default.
+
+### Bulk Verification Without Example Data
+
+Endpoints without example data are **skipped by default**:
+
+```csharp
+// This endpoint has a path parameter but no example
+.ForEndpoint("/users/{id}")  // Skipped!
+
+// Fix: Add example data
+.ForEndpoint("/users/{id}")
+    .WithExampleData(e => e.WithPathParam("id", "123"))
+```
+
+Set `SkipEndpointsWithoutExampleData = false` to fail instead of skip.
+
 ## Next Steps
 
 - [Consumer Verification](consumer-verification.md) - Testing API clients

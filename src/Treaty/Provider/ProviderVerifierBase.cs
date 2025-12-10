@@ -31,6 +31,11 @@ public abstract class ProviderVerifierBase : IProviderVerifier
     protected bool _disposed;
 
     /// <summary>
+    /// Lock object for thread-safe disposal.
+    /// </summary>
+    protected readonly object _disposeLock = new();
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ProviderVerifierBase"/> class.
     /// </summary>
     /// <param name="contract">The contract to verify against.</param>
