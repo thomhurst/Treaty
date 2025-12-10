@@ -9,7 +9,6 @@ A modern, lightweight contract testing framework for .NET that uses OpenAPI spec
 - **Consumer Mocking** - Generate spec-compliant mock servers for parallel development
 - **Request Validation** - Catch client errors before they hit the server
 - **No Central Server** - Works entirely in your test suite, no infrastructure required
-- **Lenient by Default** - Extra fields are ignored for better forward compatibility
 
 ## Quick Start
 
