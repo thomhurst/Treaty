@@ -1,25 +1,37 @@
+using System.Text;
 using FluentAssertions;
 using Treaty.Contracts;
+using Treaty.OpenApi;
 
 namespace Treaty.Tests.Unit.Contracts;
 
 public class ContractComparerTests
 {
+    private static Contract BuildContract(string yaml)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+        return Treaty.OpenApi(stream, OpenApiFormat.Yaml).Build();
+    }
+
     [Test]
     public void Compare_IdenticalContracts_ReturnsNoDifferences()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string spec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        var oldContract = BuildContract(spec);
+        var newContract = BuildContract(spec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -34,20 +46,39 @@ public class ContractComparerTests
     public void Compare_EndpointRemoved_DetectsBreakingChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .ForEndpoint("/products")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+              /products:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -63,20 +94,39 @@ public class ContractComparerTests
     public void Compare_EndpointAdded_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .ForEndpoint("/products")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+              /products:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -92,18 +142,36 @@ public class ContractComparerTests
     public void Compare_SuccessStatusCodeRemoved_DetectsBreakingChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                    '201':
+                      description: Created
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -118,18 +186,36 @@ public class ContractComparerTests
     public void Compare_ErrorStatusCodeRemoved_DetectsWarning()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-                .ExpectingResponse(r => r.WithStatus(404))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                    '404':
+                      description: Not Found
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -145,18 +231,36 @@ public class ContractComparerTests
     public void Compare_StatusCodeAdded_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                    '201':
+                      description: Created
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -171,18 +275,43 @@ public class ContractComparerTests
     public void Compare_RequiredRequestBodyAdded_DetectsBreakingChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  responses:
+                    '201':
+                      description: Created
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(r => r.WithJsonBody<CreateUserRequest>())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  requestBody:
+                    required: true
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  responses:
+                    '201':
+                      description: Created
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -197,18 +326,43 @@ public class ContractComparerTests
     public void Compare_OptionalRequestBodyAdded_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  responses:
+                    '201':
+                      description: Created
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(r => r.WithJsonBody<CreateUserRequest>().Optional())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  requestBody:
+                    required: false
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  responses:
+                    '201':
+                      description: Created
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -222,19 +376,52 @@ public class ContractComparerTests
     public void Compare_RequestBodyBecameRequired_DetectsBreakingChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(r => r.WithJsonBody<CreateUserRequest>().Optional())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  requestBody:
+                    required: false
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  responses:
+                    '201':
+                      description: Created
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(r => r.WithJsonBody<CreateUserRequest>())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  requestBody:
+                    required: true
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  responses:
+                    '201':
+                      description: Created
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -248,19 +435,52 @@ public class ContractComparerTests
     public void Compare_RequestBodyBecameOptional_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(r => r.WithJsonBody<CreateUserRequest>())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  requestBody:
+                    required: true
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  responses:
+                    '201':
+                      description: Created
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(r => r.WithJsonBody<CreateUserRequest>().Optional())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                post:
+                  requestBody:
+                    required: false
+                    content:
+                      application/json:
+                        schema:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  responses:
+                    '201':
+                      description: Created
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -274,18 +494,40 @@ public class ContractComparerTests
     public void Compare_RequiredRequestHeaderAdded_DetectsBreakingChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .WithHeader("Authorization")
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  parameters:
+                    - name: Authorization
+                      in: header
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -300,18 +542,40 @@ public class ContractComparerTests
     public void Compare_RequestHeaderRemoved_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .WithHeader("Authorization")
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  parameters:
+                    - name: Authorization
+                      in: header
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -325,21 +589,56 @@ public class ContractComparerTests
     public void Compare_ResponseBodyTypeChanged_DetectsBreakingChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<User[]>())
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                      content:
+                        application/json:
+                          schema:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<UserResponse>())
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+                            properties:
+                              users:
+                                type: array
+                                items:
+                                  type: object
+                              total:
+                                type: integer
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -347,27 +646,53 @@ public class ContractComparerTests
         // Assert
         diff.BreakingChanges.Should().HaveCount(1);
         diff.BreakingChanges[0].Type.Should().Be(ContractChangeType.ResponseFieldTypeChanged);
-        diff.BreakingChanges[0].OldValue.Should().Be("User[]");
-        diff.BreakingChanges[0].NewValue.Should().Be("UserResponse");
+        diff.BreakingChanges[0].OldValue.Should().Be("Array");
+        diff.BreakingChanges[0].NewValue.Should().Be("Object");
     }
 
     [Test]
     public void Compare_ResponseBodySchemaAdded_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<User[]>())
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                      content:
+                        application/json:
+                          schema:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -381,19 +706,45 @@ public class ContractComparerTests
     public void Compare_ResponseBodySchemaRemoved_DetectsWarning()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<User[]>())
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                      content:
+                        application/json:
+                          schema:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -407,17 +758,46 @@ public class ContractComparerTests
     public void Compare_PathParameterEndpoints_MatchesCorrectly()
     {
         // Arrange - endpoints with different param names but same pattern
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users/{userId}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users/{userId}:
+                get:
+                  parameters:
+                    - name: userId
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users/{id}:
+                get:
+                  parameters:
+                    - name: id
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -430,11 +810,20 @@ public class ContractComparerTests
     public void Compare_NullOldContract_ThrowsArgumentNullException()
     {
         // Arrange
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string spec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var newContract = BuildContract(spec);
 
         // Act
         var act = () => ContractComparer.Compare(null!, newContract);
@@ -448,11 +837,20 @@ public class ContractComparerTests
     public void Compare_NullNewContract_ThrowsArgumentNullException()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string spec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(spec);
 
         // Act
         var act = () => ContractComparer.Compare(oldContract, null!);
@@ -466,13 +864,29 @@ public class ContractComparerTests
     public void GetSummary_WithBreakingChanges_ContainsBreakingSection()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Old API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Old API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("New API").Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: New API
+              version: '1.0'
+            paths: {}
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -487,13 +901,29 @@ public class ContractComparerTests
     public void ThrowIfBreaking_WithBreakingChanges_ThrowsException()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API").Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths: {}
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         var diff = ContractComparer.Compare(oldContract, newContract);
 
@@ -509,20 +939,39 @@ public class ContractComparerTests
     public void ThrowIfBreaking_WithoutBreakingChanges_DoesNotThrow()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .ForEndpoint("/products")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+              /products:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         var diff = ContractComparer.Compare(oldContract, newContract);
 
@@ -537,19 +986,38 @@ public class ContractComparerTests
     public void Compare_ResponseHeaderAdded_DetectsInfoChange()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithHeader("X-Request-Id"))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                      headers:
+                        X-Request-Id:
+                          schema:
+                            type: string
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -564,19 +1032,38 @@ public class ContractComparerTests
     public void Compare_ResponseHeaderRemoved_DetectsWarning()
     {
         // Arrange
-        var oldContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithHeader("X-Request-Id"))
-            .Build();
+        const string oldSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+                      headers:
+                        X-Request-Id:
+                          schema:
+                            type: string
+            """;
 
-        var newContract = Treaty.DefineContract("Test API")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        const string newSpec = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        var oldContract = BuildContract(oldSpec);
+        var newContract = BuildContract(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -585,23 +1072,5 @@ public class ContractComparerTests
         diff.Warnings.Should().HaveCount(1);
         diff.Warnings[0].Type.Should().Be(ContractChangeType.ResponseHeaderRemoved);
         diff.Warnings[0].FieldName.Should().Be("X-Request-Id");
-    }
-
-    private class User
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    private class UserResponse
-    {
-        public User[] Users { get; set; } = [];
-        public int Total { get; set; }
-    }
-
-    private class CreateUserRequest
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
     }
 }

@@ -188,6 +188,25 @@ public static class ContractComparer
                 oldValue: oldType.Name,
                 newValue: newType.Name));
         }
+        else
+        {
+            // Fall back to schema type name comparison (for OpenAPI schemas)
+            var oldSchemaType = oldResponse.BodyValidator?.SchemaTypeName;
+            var newSchemaType = newResponse.BodyValidator?.SchemaTypeName;
+
+            if (oldSchemaType != null && newSchemaType != null && oldSchemaType != newSchemaType)
+            {
+                changes.Add(new ContractChange(
+                    ChangeSeverity.Breaking,
+                    ContractChangeType.ResponseFieldTypeChanged,
+                    $"Response body type changed from {oldSchemaType} to {newSchemaType} for {endpoint} (status {oldResponse.StatusCode})",
+                    path: endpoint.PathTemplate,
+                    method: endpoint.Method,
+                    location: ChangeLocation.ResponseBody,
+                    oldValue: oldSchemaType,
+                    newValue: newSchemaType));
+            }
+        }
     }
 
     private static void CompareResponseHeaders(

@@ -1,4 +1,6 @@
+using System.Text;
 using FluentAssertions;
+using Treaty.OpenApi;
 using Treaty.Tests.TestApi;
 using TreatyLib = Treaty.Treaty;
 using TreatyProvider = Treaty.Provider;
@@ -9,29 +11,86 @@ public class ProviderVerifierTests : IDisposable
 {
     private readonly TreatyProvider.ProviderVerifier<TestStartup> _provider;
 
+    private const string TestApiSpec = """
+        openapi: '3.0.3'
+        info:
+          title: TestApi
+          version: '1.0'
+        paths:
+          /users:
+            get:
+              responses:
+                '200':
+                  description: List of users
+                  content:
+                    application/json:
+                      schema:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/CreateUserRequest'
+              responses:
+                '201':
+                  description: User created
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+          /users/{id}:
+            get:
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '200':
+                  description: User details
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+            delete:
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '204':
+                  description: User deleted
+        components:
+          schemas:
+            User:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                email:
+                  type: string
+            CreateUserRequest:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+        """;
+
     public ProviderVerifierTests()
     {
-        var contract = TreatyLib.DefineContract("TestApi")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser[]>())
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser>())
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(req => req.WithJsonBody<CreateUserRequest>())
-                .ExpectingResponse(r => r
-                    .WithStatus(201)
-                    .WithJsonBody<TestUser>())
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Delete)
-                .ExpectingResponse(r => r.WithStatus(204))
-            .Build();
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         _provider = TreatyLib.ForProvider<TestStartup>()
             .WithContract(contract)
@@ -56,7 +115,7 @@ public class ProviderVerifierTests : IDisposable
     public async Task VerifyAsync_CreateUser_PassesValidation()
     {
         // Act & Assert - should not throw
-        await _provider.VerifyAsync("/users", HttpMethod.Post, new CreateUserRequest("Test User", "test@example.com"));
+        await _provider.VerifyAsync("/users", HttpMethod.Post, new { name = "Test User", email = "test@example.com" });
     }
 
     [Test]
@@ -112,7 +171,4 @@ public class ProviderVerifierTests : IDisposable
     {
         _provider.Dispose();
     }
-
-    private record TestUser(int Id, string Name, string Email);
-    private record CreateUserRequest(string Name, string Email);
 }

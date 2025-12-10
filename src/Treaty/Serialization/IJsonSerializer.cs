@@ -46,18 +46,4 @@ public interface IJsonSerializer
     /// <param name="json">The JSON string to parse.</param>
     /// <returns>The parsed JsonNode.</returns>
     JsonNode? Parse(string json);
-
-    /// <summary>
-    /// Gets a schema representation for the given type.
-    /// </summary>
-    /// <typeparam name="T">The type to get the schema for.</typeparam>
-    /// <returns>A schema representation of the type.</returns>
-    JsonTypeSchema GetSchema<T>();
-
-    /// <summary>
-    /// Gets a schema representation for the given type.
-    /// </summary>
-    /// <param name="type">The type to get the schema for.</param>
-    /// <returns>A schema representation of the type.</returns>
-    JsonTypeSchema GetSchema(Type type);
 }

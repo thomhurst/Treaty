@@ -1,4 +1,6 @@
+using System.Text;
 using FluentAssertions;
+using Treaty.OpenApi;
 using Treaty.Provider;
 using Treaty.Tests.TestApi;
 using TreatyLib = Treaty.Treaty;
@@ -9,21 +11,56 @@ public class ProviderVerifierBulkTests : IDisposable
 {
     private ProviderVerifier<TestStartup> _verifier = null!;
 
+    private const string TestApiSpec = """
+        openapi: '3.0.3'
+        info:
+          title: TestConsumer
+          version: '1.0'
+        paths:
+          /users/{id}:
+            get:
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                  example: 1
+              responses:
+                '200':
+                  description: User details
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+          /users:
+            get:
+              responses:
+                '200':
+                  description: List of users
+                  content:
+                    application/json:
+                      schema:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        components:
+          schemas:
+            User:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                email:
+                  type: string
+        """;
+
     public ProviderVerifierBulkTests()
     {
-        var contract = TreatyLib.DefineContract("TestConsumer")
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .WithExamplePathParams(new { id = 1 })
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser>())
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser[]>())
-            .Build();
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         _verifier = TreatyLib.ForProvider<TestStartup>()
             .WithContract(contract)
@@ -51,14 +88,31 @@ public class ProviderVerifierBulkTests : IDisposable
     public async Task VerifyAllAsync_WithSkippedEndpoints_CountsSkipped()
     {
         // Arrange - Create contract with missing example data
-        var contractWithMissingExampleData = TreatyLib.DefineContract("TestConsumer")
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                // No example data provided
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser>())
-            .Build();
+        const string specWithMissingExampleData = """
+            openapi: '3.0.3'
+            info:
+              title: TestConsumer
+              version: '1.0'
+            paths:
+              /users/{id}:
+                get:
+                  parameters:
+                    - name: id
+                      in: path
+                      required: true
+                      schema:
+                        type: integer
+                  responses:
+                    '200':
+                      description: User details
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+            """;
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithMissingExampleData));
+        var contractWithMissingExampleData = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         using var verifier = TreatyLib.ForProvider<TestStartup>()
             .WithContract(contractWithMissingExampleData)
@@ -86,18 +140,34 @@ public class ProviderVerifierBulkTests : IDisposable
     public async Task VerifyAllAsync_WithStopOnFirstFailure_StopsAfterFirstFailure()
     {
         // Arrange
-        var contractWithFailure = TreatyLib.DefineContract("TestConsumer")
-            .ForEndpoint("/nonexistent")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser>())
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<TestUser[]>())
-            .Build();
+        const string specWithFailure = """
+            openapi: '3.0.3'
+            info:
+              title: TestConsumer
+              version: '1.0'
+            paths:
+              /nonexistent:
+                get:
+                  responses:
+                    '200':
+                      description: Should fail
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+              /users:
+                get:
+                  responses:
+                    '200':
+                      description: List of users
+                      content:
+                        application/json:
+                          schema:
+                            type: array
+            """;
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithFailure));
+        var contractWithFailure = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         using var verifier = TreatyLib.ForProvider<TestStartup>()
             .WithContract(contractWithFailure)
@@ -163,6 +233,4 @@ public class ProviderVerifierBulkTests : IDisposable
         var endpointResult = result.Results.First();
         endpointResult.ToString().Should().Contain(endpointResult.Endpoint.Method.Method);
     }
-
-    private record TestUser(int Id, string Name, string Email);
 }

@@ -18,6 +18,8 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
     public Type? ExpectedType => null;
 
+    public string? SchemaTypeName => GetSchemaTypeName(_schema);
+
     public OpenApiSchemaValidator(OpenApiSchema schema, IJsonSerializer serializer)
     {
         _schema = schema;
@@ -606,6 +608,23 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             Microsoft.OpenApi.Any.OpenApiArray arr => arr.Select(ConvertOpenApiAny).ToArray(),
             Microsoft.OpenApi.Any.OpenApiObject obj => obj.ToDictionary(kv => kv.Key, kv => ConvertOpenApiAny(kv.Value)),
             _ => any?.ToString()
+        };
+    }
+
+    private static string? GetSchemaTypeName(OpenApiSchema schema)
+    {
+        var schemaType = schema.Type?.ToLowerInvariant();
+
+        // Return normalized type name with first letter capitalized
+        return schemaType switch
+        {
+            "object" => "Object",
+            "array" => "Array",
+            "string" => "String",
+            "integer" => "Integer",
+            "number" => "Number",
+            "boolean" => "Boolean",
+            _ => schema.Properties?.Count > 0 ? "Object" : null
         };
     }
 }

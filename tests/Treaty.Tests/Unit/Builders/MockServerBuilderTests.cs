@@ -65,7 +65,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .Otherwise().Return(200)
@@ -89,7 +89,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .Otherwise().Return(200)
@@ -113,7 +113,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .WithAuth(auth => auth
                 .RequireHeader("Authorization")
                 .WhenMissing().Return(401))
@@ -137,7 +137,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .WithAuth(auth => auth
                 .RequireHeader("Authorization")
                 .WhenMissing().Return(401))
@@ -163,7 +163,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         var specPath = await WriteSpecToTempFile();
         var customCorrelationId = "custom-correlation-12345";
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .WithCustomGenerator("correlationId", () => customCorrelationId)
             .Build();
 
@@ -187,7 +187,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .When(req => req.PathParam("id") == "401").Return(401)
@@ -241,7 +241,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, specWithQuery);
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/search")
                 .When(req => string.IsNullOrEmpty(req.QueryParam("q"))).Return(400)
                 .Otherwise().Return(200)
@@ -266,7 +266,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         // Arrange
         var specPath = await WriteSpecToTempFile();
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.Header("X-Admin") == "true").Return(200)
                 .Otherwise().Return(404)

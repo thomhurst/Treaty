@@ -100,7 +100,7 @@ public class MockServerTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
+        _mockServer = TreatyLib.MockServer(specPath).Build();
         await _mockServer.StartAsync();
 
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
@@ -222,7 +222,7 @@ public class MockServerWithConditionsTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/users/{id}")
                 .When(req => req.PathParam("id") == "0").Return(404)
                 .When(req => req.PathParam("id") == "bad").Return(400)

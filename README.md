@@ -1,11 +1,10 @@
 # Treaty
 
-A modern, lightweight, code-first contract testing framework for .NET. Treaty helps ensure your APIs stay in sync with their contracts by validating producers and enabling consumers to build against reliable mocks.
+A modern, lightweight contract testing framework for .NET that uses OpenAPI specifications as the source of truth. Treaty helps ensure your APIs stay in sync with their contracts by validating producers and enabling consumers to build against reliable mocks.
 
 ## Features
 
-- **OpenAPI Integration** - Use your existing OpenAPI/Swagger specs as the source of truth
-- **Code-First Contracts** - Define contracts in C# with a fluent, type-safe API
+- **OpenAPI First** - Your OpenAPI/Swagger specs are the single source of truth
 - **Provider Verification** - Verify your API implementation matches the contract
 - **Consumer Mocking** - Generate spec-compliant mock servers for parallel development
 - **Request Validation** - Catch client errors before they hit the server
@@ -20,22 +19,15 @@ A modern, lightweight, code-first contract testing framework for .NET. Treaty he
 dotnet add package Treaty
 ```
 
-### Define a Contract
+### Load a Contract from OpenAPI
 
 ```csharp
-var contract = Treaty.DefineContract("Users API")
+// Load contract from OpenAPI spec (YAML or JSON)
+var contract = Treaty.OpenApi("api-spec.yaml").Build();
+
+// Or filter to specific endpoints
+var contract = Treaty.OpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
-        .WithMethod(HttpMethod.Get)
-        .ExpectingResponse(r => r
-            .WithStatus(200)
-            .WithJsonBody<User>())
-    .ForEndpoint("/users")
-        .WithMethod(HttpMethod.Post)
-        .ExpectingRequest(r => r
-            .WithJsonBody<CreateUserRequest>())
-        .ExpectingResponse(r => r
-            .WithStatus(201)
-            .WithJsonBody<User>())
     .Build();
 ```
 
@@ -43,6 +35,8 @@ var contract = Treaty.DefineContract("Users API")
 
 ```csharp
 // In your test class
+var contract = Treaty.OpenApi("api-spec.yaml").Build();
+
 var provider = Treaty.ForProvider<Startup>()
     .WithContract(contract)
     .Build();
@@ -57,27 +51,64 @@ var results = await provider.VerifyAllAsync();
 ### Mock for Consumer Development
 
 ```csharp
-// Start a mock server from your contract
-var mockServer = Treaty.MockFromContract(contract).Build();
+// Start a mock server directly from OpenAPI
+var mockServer = Treaty.MockServer("api-spec.yaml").Build();
 await mockServer.StartAsync();
 
 // Use the mock server URL in your client tests
 var client = new HttpClient { BaseAddress = new Uri(mockServer.BaseUrl!) };
 var response = await client.GetAsync("/users/1");
-// Response body is auto-generated based on the contract schema
+// Response body is auto-generated based on the OpenAPI schema
+
+// Or create a mock from an already-loaded contract
+var contract = Treaty.OpenApi("api-spec.yaml").Build();
+var mockServer = Treaty.MockServer(contract).Build();
 ```
 
-### Using OpenAPI Specs
+### Conditional Mock Responses
 
 ```csharp
-// Load contract from OpenAPI spec
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var mockServer = Treaty.MockServer("api-spec.yaml")
     .ForEndpoint("/users/{id}")
+        .When(req => req.PathParam("id") == "0").Return(404)
+        .Otherwise().Return(200)
+    .Build();
+```
+
+### Consumer Request Validation
+
+```csharp
+var contract = Treaty.OpenApi("api-spec.yaml").Build();
+
+var consumer = Treaty.ForConsumer()
+    .WithContract(contract)
+    .WithBaseUrl("https://api.example.com")
     .Build();
 
-// Or start a mock server directly from OpenAPI
-var mockServer = Treaty.MockFromOpenApi("api-spec.yaml").Build();
-await mockServer.StartAsync();
+// HttpClient validates all requests against the contract
+var client = consumer.CreateHttpClient();
+await client.GetAsync("/users/1"); // Validated against contract
+```
+
+### Contract Comparison (Breaking Change Detection)
+
+```csharp
+var oldContract = Treaty.OpenApi("api-v1.yaml").Build();
+var newContract = Treaty.OpenApi("api-v2.yaml").Build();
+
+var diff = Treaty.CompareContracts(oldContract, newContract);
+
+if (diff.HasBreakingChanges)
+{
+    Console.WriteLine("Breaking changes detected!");
+    foreach (var change in diff.BreakingChanges)
+    {
+        Console.WriteLine($"  - {change.Description}");
+    }
+}
+
+// Or throw if breaking changes exist
+diff.ThrowIfBreaking();
 ```
 
 ## Validation Modes
@@ -87,36 +118,7 @@ Treaty uses **lenient validation by default** - extra fields in responses are ig
 - If a producer adds a new optional field, consumer tests won't break
 - Tests focus on the fields you care about, not implementation details
 
-### Strict Mode (Opt-in)
-
-When you need strict validation:
-
-```csharp
-.ExpectingResponse(r => r
-    .WithStatus(200)
-    .WithJsonBody<User>(v => v.StrictMode())) // Extra fields will cause violations
-```
-
 OpenAPI specs with `additionalProperties: false` are automatically validated strictly.
-
-## Matchers
-
-Use matchers for flexible validation:
-
-```csharp
-.ExpectingResponse(r => r
-    .WithStatus(200)
-    .WithMatcherSchema(new {
-        id = Match.Guid(),
-        name = Match.NonEmptyString(),
-        email = Match.Email(),
-        age = Match.Integer(min: 0, max: 150),
-        status = Match.OneOf("active", "inactive"),
-        createdAt = Match.DateTime()
-    }))
-```
-
-Available matchers: `Guid()`, `Email()`, `Integer()`, `Decimal()`, `DateTime()`, `DateOnly()`, `TimeOnly()`, `Uri()`, `Regex()`, `OneOf()`, `NonEmptyString()`, `Boolean()`, `Any()`, `Null()`, and more.
 
 ## Documentation
 
@@ -125,14 +127,13 @@ Available matchers: `Guid()`, `Email()`, `Integer()`, `Decimal()`, `DateTime()`,
 - [Consumer Verification](docs/consumer-verification.md)
 - [Mock Server](docs/mock-server.md)
 - [OpenAPI Integration](docs/openapi-integration.md)
-- [Matchers](docs/matchers.md)
 - [Validation Modes](docs/validation-modes.md)
 
 ## Why Treaty?
 
 | Feature | Treaty | Pact |
 |---------|--------|------|
-| Contract Source | OpenAPI/Code-first | Consumer-driven |
+| Contract Source | OpenAPI specs | Consumer-driven |
 | Central Server | Not required | Pact Broker needed |
 | Setup Complexity | Single NuGet package | Multiple components |
 | .NET Integration | Native, first-class | Via wrapper libraries |

@@ -6,6 +6,7 @@ This guide will help you set up Treaty and write your first contract test.
 
 - .NET 8.0 or later
 - A test framework (xUnit, NUnit, TUnit, or MSTest)
+- An OpenAPI specification for your API
 
 ## Installation
 
@@ -18,34 +19,32 @@ dotnet add package Treaty
 ## Core Concepts
 
 ### Contract
-A contract defines the expected behavior of an API, including endpoints, request/response formats, and status codes.
+A contract defines the expected behavior of an API, including endpoints, request/response formats, and status codes. In Treaty, contracts are loaded from OpenAPI specifications.
 
 ### Endpoint
 An endpoint represents a single API operation (e.g., `GET /users/{id}`).
 
-### Expectation
-Expectations define what a valid request or response looks like for an endpoint.
-
-### Matcher
-Matchers provide flexible validation rules (e.g., "any valid email", "integer between 1-100").
+### Schema Validation
+Treaty validates requests and responses against the schemas defined in your OpenAPI spec.
 
 ## Your First Contract
 
-Let's create a simple contract for a Users API:
+Let's load a contract from an OpenAPI specification:
 
 ```csharp
 using Treaty;
+using Treaty.OpenApi;
 
-// Define the response type
-public record User(int Id, string Name, string Email);
+// Load contract from OpenAPI spec
+var contract = Treaty.OpenApi("api-spec.yaml").Build();
 
-// Create the contract
-var contract = Treaty.DefineContract("Users API")
+// Or load from a stream
+using var stream = File.OpenRead("api-spec.yaml");
+var contract = Treaty.OpenApi(stream, OpenApiFormat.Yaml).Build();
+
+// Filter to specific endpoints if needed
+var contract = Treaty.OpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
-        .WithMethod(HttpMethod.Get)
-        .ExpectingResponse(r => r
-            .WithStatus(200)
-            .WithJsonBody<User>())
     .Build();
 ```
 
@@ -61,7 +60,9 @@ public class UserApiTests
     [Test]
     public async Task Api_ReturnsValidUserResponse()
     {
-        // Arrange - Create provider verifier pointing to your API
+        // Arrange - Load contract and create provider verifier
+        var contract = Treaty.OpenApi("api-spec.yaml").Build();
+
         var provider = Treaty.ForProvider<Startup>()
             .WithContract(contract)
             .Build();
@@ -81,12 +82,12 @@ using Treaty;
 
 public class UserClientTests : IAsyncDisposable
 {
-    private ContractMockServer _mockServer;
+    private MockServer _mockServer;
 
     [Before(Test)]
     public async Task Setup()
     {
-        _mockServer = Treaty.MockFromContract(contract).Build();
+        _mockServer = Treaty.MockServer("api-spec.yaml").Build();
         await _mockServer.StartAsync();
     }
 
@@ -136,4 +137,5 @@ Suggestions:
 - [Provider Verification](provider-verification.md) - Deep dive into testing your API
 - [Consumer Verification](consumer-verification.md) - Testing API clients
 - [Mock Server](mock-server.md) - Advanced mock server configuration
-- [Matchers](matchers.md) - Flexible validation with matchers
+- [OpenAPI Integration](openapi-integration.md) - Working with OpenAPI specs
+- [Validation Modes](validation-modes.md) - Lenient vs strict validation

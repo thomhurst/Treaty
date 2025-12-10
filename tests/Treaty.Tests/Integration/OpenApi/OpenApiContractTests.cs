@@ -16,13 +16,13 @@ public class OpenApiSpecFileTests
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
     [Test]
-    public void FromOpenApiSpec_LoadsYamlFile_Successfully()
+    public void OpenApi_LoadsYamlFile_Successfully()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert
         contract.Should().NotBeNull();
@@ -32,13 +32,13 @@ public class OpenApiSpecFileTests
     #region Metadata Extraction Tests
 
     [Test]
-    public void FromOpenApiSpec_ExtractsBasicMetadata_FromYaml()
+    public void OpenApi_ExtractsBasicMetadata_FromYaml()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert
         contract.Metadata.Should().NotBeNull();
@@ -47,13 +47,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ExtractsFullMetadata_FromYaml()
+    public void OpenApi_ExtractsFullMetadata_FromYaml()
     {
         // Arrange
         var specPath = GetSpecPath("full-metadata.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert
         contract.Name.Should().Be("Full Metadata API");
@@ -81,13 +81,13 @@ public class OpenApiSpecFileTests
     #region Example Extraction Tests
 
     [Test]
-    public void FromOpenApiSpec_ExtractsPathParameterExample()
+    public void OpenApi_ExtractsPathParameterExample()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert - GET /users/{userId} should have path param example
         var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
@@ -98,13 +98,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ExtractsQueryParameterExamples()
+    public void OpenApi_ExtractsQueryParameterExamples()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert - GET /users should have query param examples
         var listEndpoint = contract.FindEndpoint("/users", HttpMethod.Get);
@@ -117,13 +117,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ExtractsHeaderParameterExample()
+    public void OpenApi_ExtractsHeaderParameterExample()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert - GET /users/{userId} should have header example
         var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
@@ -134,13 +134,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ExtractsRequestBodyExample()
+    public void OpenApi_ExtractsRequestBodyExample()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert - POST /users should have request body example
         var postEndpoint = contract.FindEndpoint("/users", HttpMethod.Post);
@@ -156,13 +156,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ExtractsRequestBodyFromNamedExamples()
+    public void OpenApi_ExtractsRequestBodyFromNamedExamples()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert - PUT /users/{userId} should have request body from named examples (uses first one)
         var putEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Put);
@@ -176,11 +176,11 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_EndpointWithExamples_CanGenerateExamplePath()
+    public void OpenApi_EndpointWithExamples_CanGenerateExamplePath()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Act
         var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
@@ -192,11 +192,11 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_EndpointWithExamples_CanGenerateExampleUrl()
+    public void OpenApi_EndpointWithExamples_CanGenerateExampleUrl()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Act
         var listEndpoint = contract.FindEndpoint("/users", HttpMethod.Get);
@@ -211,13 +211,13 @@ public class OpenApiSpecFileTests
     #endregion
 
     [Test]
-    public void FromOpenApiSpec_LoadsJsonFile_Successfully()
+    public void OpenApi_LoadsJsonFile_Successfully()
     {
         // Arrange
         var specPath = GetSpecPath("users-api.json");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert
         contract.Should().NotBeNull();
@@ -225,13 +225,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ContainsAllEndpoints_FromYamlSpec()
+    public void OpenApi_ContainsAllEndpoints_FromYamlSpec()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert - should have endpoints for /pets and /pets/{petId}
         contract.FindEndpoint("/pets", HttpMethod.Get).Should().NotBeNull();
@@ -242,13 +242,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_ContainsAllEndpoints_FromJsonSpec()
+    public void OpenApi_ContainsAllEndpoints_FromJsonSpec()
     {
         // Arrange
         var specPath = GetSpecPath("users-api.json");
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Assert
         contract.FindEndpoint("/users", HttpMethod.Get).Should().NotBeNull();
@@ -257,14 +257,14 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_WithStream_LoadsYaml()
+    public void OpenApi_WithStream_LoadsYaml()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
         using var stream = File.OpenRead(specPath);
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(stream, OpenApiFormat.Yaml).Build();
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         // Assert
         contract.Should().NotBeNull();
@@ -272,14 +272,14 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void FromOpenApiSpec_WithStream_LoadsJson()
+    public void OpenApi_WithStream_LoadsJson()
     {
         // Arrange
         var specPath = GetSpecPath("users-api.json");
         using var stream = File.OpenRead(specPath);
 
         // Act
-        var contract = TreatyLib.FromOpenApiSpec(stream, OpenApiFormat.Json).Build();
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Json).Build();
 
         // Assert
         contract.Should().NotBeNull();
@@ -302,7 +302,7 @@ public class OpenApiMockServerFromSpecTests : IAsyncDisposable
     public async Task Setup()
     {
         var specPath = GetSpecPath("petstore.yaml");
-        _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
+        _mockServer = TreatyLib.MockServer(specPath).Build();
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
@@ -425,7 +425,7 @@ public class OpenApiMockServerWithConditionsTests : IAsyncDisposable
     public async Task Setup()
     {
         var specPath = GetSpecPath("petstore.yaml");
-        _mockServer = TreatyLib.MockFromOpenApi(specPath)
+        _mockServer = TreatyLib.MockServer(specPath)
             .ForEndpoint("/pets/{petId}")
                 .When(req => req.PathParam("petId") == "0").Return(404)
                 .When(req => req.PathParam("petId") == "999").Return(404)
@@ -489,7 +489,7 @@ public class OpenApiJsonMockServerTests : IAsyncDisposable
     public async Task Setup()
     {
         var specPath = GetSpecPath("users-api.json");
-        _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
+        _mockServer = TreatyLib.MockServer(specPath).Build();
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
@@ -572,7 +572,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         // Use the mock server as the "provider" to test against
         var specPath = GetSpecPath("petstore.yaml");
-        _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
+        _mockServer = TreatyLib.MockServer(specPath).Build();
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
@@ -597,7 +597,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         // Arrange - Load contract from same spec
         var specPath = GetSpecPath("petstore.yaml");
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Act - Get response from provider (mock server)
         var response = await _client!.GetAsync("/pets");
@@ -619,7 +619,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
-        var contract = TreatyLib.FromOpenApiSpec(specPath).Build();
+        var contract = TreatyLib.OpenApi(specPath).Build();
 
         // Act
         var response = await _client!.GetAsync("/pets/1");

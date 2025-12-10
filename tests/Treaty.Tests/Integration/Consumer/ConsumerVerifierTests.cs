@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Treaty.OpenApi;
 using Treaty.Validation;
 using TreatyLib = Treaty.Treaty;
 using TreatyConsumer = Treaty.Consumer;
@@ -99,28 +100,12 @@ public class ConsumerVerifierTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = TreatyLib.MockFromOpenApi(specPath).Build();
+        _mockServer = TreatyLib.MockServer(specPath).Build();
         await _mockServer.StartAsync();
 
-        // Create consumer verifier with contract matching the OpenAPI spec
-        var contract = TreatyLib.DefineContract("TestApi")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<UserDto[]>())
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(req => req.WithJsonBody<CreateUserDto>())
-                .ExpectingResponse(r => r
-                    .WithStatus(201)
-                    .WithJsonBody<UserDto>())
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<UserDto>())
-            .Build();
+        // Create consumer verifier with contract from OpenAPI spec
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         _consumer = TreatyLib.ForConsumer()
             .WithContract(contract)
@@ -174,7 +159,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
     {
         // Arrange
         var client = _consumer!.CreateHttpClient();
-        var newUser = new CreateUserDto("John Doe", "john@example.com");
+        var newUser = new { name = "John Doe", email = "john@example.com" };
         var json = JsonSerializer.Serialize(newUser);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -201,26 +186,14 @@ public class ConsumerVerifierTests : IAsyncDisposable
         // Assert
         var exception = await act.Should().ThrowAsync<ContractViolationException>();
         exception.Which.Violations.Should().ContainSingle()
-            .Which.Message.Should().Contain("Email");
+            .Which.Message.Should().Contain("email");
     }
 
     [Test]
     public async Task Consumer_PostUser_MissingBody_ThrowsContractViolation()
     {
-        // Arrange - rebuild consumer with required body expectation (required by default)
-        var contract = TreatyLib.DefineContract("TestApi")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Post)
-                .ExpectingRequest(req => req.WithJsonBody<CreateUserDto>())
-                .ExpectingResponse(r => r.WithStatus(201))
-            .Build();
-
-        var consumer = TreatyLib.ForConsumer()
-            .WithContract(contract)
-            .WithBaseUrl(_mockServer!.BaseUrl!)
-            .Build();
-
-        var client = consumer.CreateHttpClient();
+        // Arrange - same consumer, required body from OpenAPI spec
+        var client = _consumer!.CreateHttpClient();
 
         // Act
         var act = async () => await client.PostAsync("/users", null);
@@ -234,13 +207,28 @@ public class ConsumerVerifierTests : IAsyncDisposable
     [Test]
     public async Task Consumer_WithRequiredHeader_MissingHeader_ThrowsContractViolation()
     {
-        // Arrange
-        var contract = TreatyLib.DefineContract("TestApi")
-            .WithDefaults(d => d.AllRequestsHaveHeader("Authorization"))
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        // Arrange - create spec with required Authorization header
+        const string specWithAuth = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  parameters:
+                    - name: Authorization
+                      in: header
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         var consumer = TreatyLib.ForConsumer()
             .WithContract(contract)
@@ -261,13 +249,28 @@ public class ConsumerVerifierTests : IAsyncDisposable
     [Test]
     public async Task Consumer_WithRequiredHeader_ValidHeader_Succeeds()
     {
-        // Arrange
-        var contract = TreatyLib.DefineContract("TestApi")
-            .WithDefaults(d => d.AllRequestsHaveHeader("Authorization"))
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        // Arrange - create spec with required Authorization header
+        const string specWithAuth = """
+            openapi: '3.0.3'
+            info:
+              title: Test API
+              version: '1.0'
+            paths:
+              /users:
+                get:
+                  parameters:
+                    - name: Authorization
+                      in: header
+                      required: true
+                      schema:
+                        type: string
+                  responses:
+                    '200':
+                      description: OK
+            """;
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         var consumer = TreatyLib.ForConsumer()
             .WithContract(contract)
@@ -304,11 +307,8 @@ public class ConsumerVerifierTests : IAsyncDisposable
     public async Task Consumer_CreateHandler_WorksWithCustomInnerHandler()
     {
         // Arrange
-        var contract = TreatyLib.DefineContract("TestApi")
-            .ForEndpoint("/users")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r.WithStatus(200))
-            .Build();
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
+        var contract = TreatyLib.OpenApi(stream, OpenApiFormat.Yaml).Build();
 
         var consumer = TreatyLib.ForConsumer()
             .WithContract(contract)
@@ -327,14 +327,4 @@ public class ConsumerVerifierTests : IAsyncDisposable
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
-
-    // DTOs for type-safe request/response validation
-    private record UserDto(
-        [property: System.Text.Json.Serialization.JsonPropertyName("id")] int Id,
-        [property: System.Text.Json.Serialization.JsonPropertyName("name")] string Name,
-        [property: System.Text.Json.Serialization.JsonPropertyName("email")] string Email);
-
-    private record CreateUserDto(
-        [property: System.Text.Json.Serialization.JsonPropertyName("name")] string Name,
-        [property: System.Text.Json.Serialization.JsonPropertyName("email")] string Email);
 }

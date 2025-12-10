@@ -13,6 +13,12 @@ public interface ISchemaValidator
     Type? ExpectedType { get; }
 
     /// <summary>
+    /// Gets the root schema type name (e.g., "object", "array", "string", "integer", "number", "boolean").
+    /// Used for contract comparison when ExpectedType is not available.
+    /// </summary>
+    string? SchemaTypeName { get; }
+
+    /// <summary>
     /// Validates the given JSON content against the schema.
     /// </summary>
     /// <param name="json">The JSON content to validate.</param>
