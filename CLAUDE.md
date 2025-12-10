@@ -50,7 +50,7 @@ The library provides domain-specific static classes as entry points:
 - `ContractComparer` - Detects breaking changes between contract versions
 
 **OpenAPI** (`src/Treaty/OpenApi/`)
-- `OpenContractDefinitionBuilder` - Builds contracts from OpenAPI specs
+- `OpenApiContractBuilder` - Builds contracts from OpenAPI specs
 - `OpenApiSchemaValidator` - Validates JSON against OpenAPI schemas
 - `MockServer` / `MockServerBuilder` - Mock server from OpenAPI specs
 

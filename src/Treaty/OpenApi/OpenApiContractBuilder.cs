@@ -11,7 +11,7 @@ namespace Treaty.OpenApi;
 /// <summary>
 /// Builder for creating contracts from OpenAPI specifications.
 /// </summary>
-public sealed class OpenContractDefinitionBuilder
+public sealed class OpenApiContractBuilder
 {
     private readonly OpenApiDocument _document;
     private readonly ILogger _logger;
@@ -19,12 +19,12 @@ public sealed class OpenContractDefinitionBuilder
     private readonly HashSet<string> _includedEndpoints = [];
     private readonly HashSet<string> _excludedEndpoints = [];
 
-    internal OpenContractDefinitionBuilder(string specPath)
+    internal OpenApiContractBuilder(string specPath)
         : this(File.OpenRead(specPath), Path.GetExtension(specPath).ToLowerInvariant() == ".json" ? OpenApiFormat.Json : OpenApiFormat.Yaml)
     {
     }
 
-    internal OpenContractDefinitionBuilder(Stream specStream, OpenApiFormat format)
+    internal OpenApiContractBuilder(Stream specStream, OpenApiFormat format)
     {
         _logger = NullLogger.Instance;
 
@@ -53,7 +53,7 @@ public sealed class OpenContractDefinitionBuilder
     /// </summary>
     /// <param name="serializer">The JSON serializer to use.</param>
     /// <returns>This builder for chaining.</returns>
-    public OpenContractDefinitionBuilder WithJsonSerializer(IJsonSerializer serializer)
+    public OpenApiContractBuilder WithJsonSerializer(IJsonSerializer serializer)
     {
         _jsonSerializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         return this;
@@ -64,7 +64,7 @@ public sealed class OpenContractDefinitionBuilder
     /// </summary>
     /// <param name="pathTemplate">The path template to include.</param>
     /// <returns>This builder for chaining.</returns>
-    public OpenContractDefinitionBuilder ForEndpoint(string pathTemplate)
+    public OpenApiContractBuilder ForEndpoint(string pathTemplate)
     {
         _includedEndpoints.Add(pathTemplate);
         return this;
@@ -75,7 +75,7 @@ public sealed class OpenContractDefinitionBuilder
     /// </summary>
     /// <param name="pathTemplate">The path template to exclude.</param>
     /// <returns>This builder for chaining.</returns>
-    public OpenContractDefinitionBuilder ExcludeEndpoint(string pathTemplate)
+    public OpenApiContractBuilder ExcludeEndpoint(string pathTemplate)
     {
         _excludedEndpoints.Add(pathTemplate);
         return this;

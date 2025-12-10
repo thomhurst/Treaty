@@ -20,7 +20,7 @@ public static class Contract
     ///     .Build();
     /// </code>
     /// </example>
-    public static OpenContractDefinitionBuilder FromOpenApi(string specPath)
+    public static OpenApiContractBuilder FromOpenApi(string specPath)
         => new(specPath);
 
     /// <summary>
@@ -29,7 +29,7 @@ public static class Contract
     /// <param name="specStream">Stream containing the OpenAPI specification.</param>
     /// <param name="format">The format of the specification (yaml or json).</param>
     /// <returns>An OpenAPI contract builder for customization.</returns>
-    public static OpenContractDefinitionBuilder FromOpenApi(Stream specStream, OpenApiFormat format = OpenApiFormat.Yaml)
+    public static OpenApiContractBuilder FromOpenApi(Stream specStream, OpenApiFormat format = OpenApiFormat.Yaml)
         => new(specStream, format);
 
     /// <summary>
