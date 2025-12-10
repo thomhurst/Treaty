@@ -11,7 +11,7 @@ namespace Treaty.Tests.Unit.Provider;
 
 public class HttpProviderBuilderTests
 {
-    private static ApiContract CreateTestContract()
+    private static ContractDefinition CreateTestContract()
     {
         const string spec = """
             openapi: '3.0.3'

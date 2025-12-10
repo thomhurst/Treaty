@@ -15,7 +15,7 @@ namespace Treaty.Mocking;
 /// </summary>
 public sealed class ContractMockServer : IMockServer
 {
-    private readonly ApiContract _contract;
+    private readonly ContractDefinition _contract;
     private readonly ILogger _logger;
     private readonly bool _useHttps;
     private readonly int? _minLatencyMs;
@@ -33,7 +33,7 @@ public sealed class ContractMockServer : IMockServer
     public string? BaseUrl { get; private set; }
 
     internal ContractMockServer(
-        ApiContract contract,
+        ContractDefinition contract,
         ILoggerFactory loggerFactory,
         bool useHttps,
         int? minLatencyMs,

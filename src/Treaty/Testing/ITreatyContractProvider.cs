@@ -12,5 +12,5 @@ public interface ITreatyContractProvider
     /// Gets the contract to be verified.
     /// </summary>
     /// <returns>The contract instance.</returns>
-    ApiContract GetContract();
+    ContractDefinition GetContract();
 }

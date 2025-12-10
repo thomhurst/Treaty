@@ -184,6 +184,7 @@ public sealed class ContractChange
         NewValue = newValue;
     }
 
+    /// <inheritdoc/>
     public override string ToString() => $"[{Severity}] {Description}";
 }
 
@@ -214,33 +215,73 @@ public enum ChangeSeverity
 public enum ContractChangeType
 {
     // Endpoint-level changes
+
+    /// <summary>A new endpoint was added to the contract.</summary>
     EndpointAdded,
+
+    /// <summary>An endpoint was removed from the contract (breaking change).</summary>
     EndpointRemoved,
+
+    /// <summary>The HTTP method of an endpoint changed.</summary>
     EndpointMethodChanged,
 
     // Response field changes
+
+    /// <summary>A new field was added to a response body.</summary>
     ResponseFieldAdded,
+
+    /// <summary>A field was removed from a response body (breaking change for consumers).</summary>
     ResponseFieldRemoved,
+
+    /// <summary>The type of a response field changed.</summary>
     ResponseFieldTypeChanged,
+
+    /// <summary>A response field was changed to allow null values.</summary>
     ResponseFieldMadeNullable,
+
+    /// <summary>A response field no longer allows null values (breaking change).</summary>
     ResponseFieldMadeNonNullable,
 
     // Request field changes
+
+    /// <summary>A new field was added to a request body.</summary>
     RequestFieldAdded,
+
+    /// <summary>A field was removed from a request body.</summary>
     RequestFieldRemoved,
+
+    /// <summary>The type of a request field changed.</summary>
     RequestFieldTypeChanged,
+
+    /// <summary>A request field was changed from optional to required (breaking change).</summary>
     RequestFieldMadeRequired,
+
+    /// <summary>A request field was changed from required to optional.</summary>
     RequestFieldMadeOptional,
 
     // Status code changes
+
+    /// <summary>A new response status code was added.</summary>
     ResponseStatusCodeAdded,
+
+    /// <summary>A response status code was removed (breaking change).</summary>
     ResponseStatusCodeRemoved,
+
+    /// <summary>A response status code was changed.</summary>
     ResponseStatusCodeChanged,
 
     // Header changes
+
+    /// <summary>A new header was added to a response.</summary>
     ResponseHeaderAdded,
+
+    /// <summary>A header was removed from a response.</summary>
     ResponseHeaderRemoved,
+
+    /// <summary>A new header was added to a request.</summary>
     RequestHeaderAdded,
+
+    /// <summary>A header was removed from a request.</summary>
     RequestHeaderRemoved
 }
 

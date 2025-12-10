@@ -18,7 +18,7 @@ public sealed class HttpProviderVerifier : ProviderVerifierBase
 
     internal HttpProviderVerifier(
         Uri baseUri,
-        ApiContract contract,
+        ContractDefinition contract,
         ILoggerFactory loggerFactory,
         IStateHandler? stateHandler,
         IAuthenticationProvider? authProvider,

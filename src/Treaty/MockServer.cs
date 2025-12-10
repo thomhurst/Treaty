@@ -58,6 +58,6 @@ public static class MockServer
     /// var baseUrl = mock.BaseUrl;
     /// </code>
     /// </example>
-    public static ContractMockServerBuilder FromContract(ApiContract contract)
+    public static ContractMockServerBuilder FromContract(ContractDefinition contract)
         => new(contract);
 }

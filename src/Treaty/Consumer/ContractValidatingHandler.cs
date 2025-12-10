@@ -9,10 +9,10 @@ namespace Treaty.Consumer;
 /// </summary>
 internal sealed class ContractValidatingHandler : DelegatingHandler
 {
-    private readonly ApiContract _contract;
+    private readonly ContractDefinition _contract;
     private readonly ILogger _logger;
 
-    public ContractValidatingHandler(ApiContract contract, ILoggerFactory loggerFactory)
+    public ContractValidatingHandler(ContractDefinition contract, ILoggerFactory loggerFactory)
     {
         _contract = contract;
         _logger = loggerFactory.CreateLogger<ContractValidatingHandler>();

@@ -18,7 +18,7 @@ public sealed class EndpointTest
     /// <summary>
     /// Gets the full contract containing this endpoint.
     /// </summary>
-    public ApiContract Contract { get; }
+    public ContractDefinition Contract { get; }
 
     /// <summary>
     /// Gets the display name for this test case.
@@ -30,7 +30,7 @@ public sealed class EndpointTest
     /// </summary>
     /// <param name="endpoint">The endpoint contract.</param>
     /// <param name="contract">The parent contract.</param>
-    public EndpointTest(EndpointContract endpoint, ApiContract contract)
+    public EndpointTest(EndpointContract endpoint, ContractDefinition contract)
     {
         Endpoint = endpoint;
         Contract = contract;

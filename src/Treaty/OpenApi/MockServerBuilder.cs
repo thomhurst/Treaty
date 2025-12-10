@@ -10,7 +10,7 @@ namespace Treaty.OpenApi;
 /// </summary>
 public sealed class MockServerBuilder
 {
-    private readonly ApiContract _contract;
+    private readonly ContractDefinition _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private bool _useHttps;
     private int? _minLatencyMs;

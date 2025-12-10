@@ -593,7 +593,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     }
 
     [Test]
-    public async Task OpenApiContract_ValidatesProviderResponse_ForListPets()
+    public async Task OpenContractDefinition_ValidatesProviderResponse_ForListPets()
     {
         // Arrange - Load contract from same spec
         var specPath = GetSpecPath("petstore.yaml");
@@ -615,7 +615,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     }
 
     [Test]
-    public async Task OpenApiContract_ValidatesProviderResponse_ForGetPet()
+    public async Task OpenContractDefinition_ValidatesProviderResponse_ForGetPet()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");

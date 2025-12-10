@@ -6,14 +6,30 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Package metadata -->
     <PackageId>Treaty</PackageId>
-    <Title>Treaty - Modern Contract Testing for .NET</Title>
-    <Description>A modern, lightweight, code-first contract testing framework for .NET. Treaty enables teams to verify that APIs meet their contracts and allows consumers to develop against mock APIs before providers are ready.</Description>
-    <Authors>Treaty Contributors</Authors>
-    <PackageTags>contract-testing;api-testing;openapi;mock-server;testing</PackageTags>
+    <Title>Treaty - OpenAPI Contract Testing for .NET</Title>
+    <Description>A modern, lightweight contract testing framework for .NET that uses OpenAPI specifications as the source of truth. Treaty helps ensure your APIs stay in sync with their contracts by validating producers and enabling consumers to build against reliable mocks.</Description>
+    <Authors>Tom Longhurst</Authors>
+    <Copyright>Copyright (c) Tom Longhurst</Copyright>
+    <PackageTags>contract-testing;api-testing;openapi;swagger;mock-server;testing;pact;consumer-driven;provider-verification</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/thomhurst/treaty</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/thomhurst/treaty</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Source Link for debugging -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Treaty.Tests" />

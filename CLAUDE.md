@@ -45,12 +45,12 @@ The library provides domain-specific static classes as entry points:
 ### Key Abstractions
 
 **Contracts** (`src/Treaty/Contracts/`)
-- `ApiContract` - Immutable contract with endpoints, metadata, and defaults
+- `ContractDefinition` - Immutable contract with endpoints, metadata, and defaults
 - `EndpointContract` - Single endpoint definition with request/response expectations
 - `ContractComparer` - Detects breaking changes between contract versions
 
 **OpenAPI** (`src/Treaty/OpenApi/`)
-- `OpenApiContractBuilder` - Builds contracts from OpenAPI specs
+- `OpenContractDefinitionBuilder` - Builds contracts from OpenAPI specs
 - `OpenApiSchemaValidator` - Validates JSON against OpenAPI schemas
 - `MockServer` / `MockServerBuilder` - Mock server from OpenAPI specs
 

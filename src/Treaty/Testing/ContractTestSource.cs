@@ -42,7 +42,7 @@ public static class ContractTestSource
     /// </param>
     /// <returns>Enumerable of endpoint tests.</returns>
     public static IEnumerable<EndpointTest> GetEndpointTests(
-        ApiContract contract,
+        ContractDefinition contract,
         bool includeEndpointsWithoutExampleData = false)
     {
         return contract.Endpoints
@@ -73,7 +73,7 @@ public static class ContractTestSource
     /// <param name="method">The HTTP method to filter by.</param>
     /// <returns>Enumerable of endpoint tests.</returns>
     public static IEnumerable<EndpointTest> GetEndpointTestsByMethod(
-        ApiContract contract,
+        ContractDefinition contract,
         HttpMethod method)
     {
         return contract.Endpoints
@@ -88,7 +88,7 @@ public static class ContractTestSource
     /// <param name="pathPrefix">The path prefix to filter by.</param>
     /// <returns>Enumerable of endpoint tests.</returns>
     public static IEnumerable<EndpointTest> GetEndpointTestsByPath(
-        ApiContract contract,
+        ContractDefinition contract,
         string pathPrefix)
     {
         return contract.Endpoints
@@ -103,7 +103,7 @@ public static class ContractTestSource
     /// <param name="filter">The filter predicate.</param>
     /// <returns>Enumerable of endpoint tests.</returns>
     public static IEnumerable<EndpointTest> GetEndpointTests(
-        ApiContract contract,
+        ContractDefinition contract,
         Func<EndpointContract, bool> filter)
     {
         return contract.Endpoints

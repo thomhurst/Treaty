@@ -7,7 +7,7 @@ namespace Treaty.Tests.Unit.Contracts;
 
 public class ContractComparerTests
 {
-    private static ApiContract BuildContract(string yaml)
+    private static ContractDefinition BuildContract(string yaml)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
         return Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();

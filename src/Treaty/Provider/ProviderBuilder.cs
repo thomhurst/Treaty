@@ -13,7 +13,7 @@ namespace Treaty.Provider;
 /// <typeparam name="TStartup">The startup class of the API being verified.</typeparam>
 public sealed class ProviderBuilder<TStartup> where TStartup : class
 {
-    private ApiContract? _contract;
+    private ContractDefinition? _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private IStateHandler? _stateHandler;
     private readonly List<Action<IServiceCollection>> _serviceConfigurations = [];
@@ -31,7 +31,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// </summary>
     /// <param name="contract">The contract to use for verification.</param>
     /// <returns>This builder for chaining.</returns>
-    public ProviderBuilder<TStartup> WithContract(ApiContract contract)
+    public ProviderBuilder<TStartup> WithContract(ContractDefinition contract)
     {
         _contract = contract ?? throw new ArgumentNullException(nameof(contract));
         return this;

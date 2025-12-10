@@ -18,7 +18,7 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
     private readonly HttpClient _client;
 
     internal ProviderVerifier(
-        ApiContract contract,
+        ContractDefinition contract,
         ILoggerFactory loggerFactory,
         IStateHandler? stateHandler = null,
         IEnumerable<Action<IServiceCollection>>? serviceConfigurations = null,

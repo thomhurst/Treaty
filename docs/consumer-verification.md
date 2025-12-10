@@ -109,7 +109,7 @@ using Treaty.Mocking;
 
 public class UserClientTests : IAsyncDisposable
 {
-    private readonly ApiContract _contract;
+    private readonly ContractDefinition _contract;
     private readonly ContractMockServer _mockServer;
     private readonly HttpClient _client;
 
@@ -244,7 +244,7 @@ public abstract class ApiClientTestBase : IAsyncDisposable
     protected ContractMockServer MockServer { get; private set; }
     protected HttpClient Client { get; private set; }
 
-    protected abstract ApiContract Contract { get; }
+    protected abstract ContractDefinition Contract { get; }
 
     [Before(Test)]
     public async Task BaseSetup()
