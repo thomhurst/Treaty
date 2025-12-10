@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Treaty.Contracts;
@@ -15,7 +17,14 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
     private readonly IHost _host;
     private readonly HttpClient _client;
 
-    internal ProviderVerifier(ApiContract contract, ILoggerFactory loggerFactory, IStateHandler? stateHandler = null)
+    internal ProviderVerifier(
+        ApiContract contract,
+        ILoggerFactory loggerFactory,
+        IStateHandler? stateHandler = null,
+        IEnumerable<Action<IServiceCollection>>? serviceConfigurations = null,
+        IEnumerable<Action<IConfigurationBuilder>>? configurationActions = null,
+        IEnumerable<Action<IWebHostBuilder>>? webHostConfigurations = null,
+        string? environment = null)
         : base(contract, loggerFactory, stateHandler)
     {
         var builder = new HostBuilder()
@@ -24,6 +33,42 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
                 webBuilder
                     .UseTestServer()
                     .UseStartup<TStartup>();
+
+                // Apply environment if specified
+                if (!string.IsNullOrEmpty(environment))
+                {
+                    webBuilder.UseEnvironment(environment);
+                }
+
+                // Apply configuration overrides
+                if (configurationActions != null)
+                {
+                    foreach (var configAction in configurationActions)
+                    {
+                        webBuilder.ConfigureAppConfiguration(configAction);
+                    }
+                }
+
+                // Apply service configurations (run after Startup.ConfigureServices)
+                if (serviceConfigurations != null)
+                {
+                    webBuilder.ConfigureServices(services =>
+                    {
+                        foreach (var serviceConfig in serviceConfigurations)
+                        {
+                            serviceConfig(services);
+                        }
+                    });
+                }
+
+                // Apply custom web host configurations
+                if (webHostConfigurations != null)
+                {
+                    foreach (var webHostConfig in webHostConfigurations)
+                    {
+                        webHostConfig(webBuilder);
+                    }
+                }
             });
 
         _host = builder.Build();

@@ -4,35 +4,36 @@ A one-page guide to all Treaty entry points and common patterns.
 
 ## Entry Points
 
-All Treaty APIs start from the static `Treaty` class:
+Treaty provides domain-specific static classes as entry points:
 
 ```csharp
 using Treaty;
 ```
 
-| Method | Purpose | Returns |
-|--------|---------|---------|
-| `Treaty.OpenApi(path)` | Load contract from file | `OpenApiContractBuilder` |
-| `Treaty.OpenApi(stream, format)` | Load contract from stream | `OpenApiContractBuilder` |
-| `Treaty.MockServer(path)` | Create mock server from file | `MockServerBuilder` |
-| `Treaty.MockServer(contract)` | Create mock server from contract | `MockServerBuilder` |
-| `Treaty.ForProvider<TStartup>()` | Create TestServer-based verifier | `ProviderBuilder<T>` |
-| `Treaty.ForHttpProvider()` | Create HTTP-based verifier | `HttpProviderBuilder` |
-| `Treaty.ForConsumer()` | Create consumer verifier | `ConsumerBuilder` |
-| `Treaty.CompareContracts(old, new)` | Detect breaking changes | `ContractDiff` |
+| Class | Method | Purpose | Returns |
+|-------|--------|---------|---------|
+| `Contract` | `FromOpenApi(path)` | Load contract from file | `OpenApiContractBuilder` |
+| `Contract` | `FromOpenApi(stream, format)` | Load contract from stream | `OpenApiContractBuilder` |
+| `Contract` | `Compare(old, new)` | Detect breaking changes | `ContractDiff` |
+| `MockServer` | `FromOpenApi(path)` | Create mock server from file | `MockServerBuilder` |
+| `MockServer` | `FromOpenApi(stream, format)` | Create mock server from stream | `MockServerBuilder` |
+| `MockServer` | `FromContract(contract)` | Create mock server from contract | `ContractMockServerBuilder` |
+| `ProviderVerifier` | `ForTestServer<TStartup>()` | Create TestServer-based verifier | `ProviderBuilder<T>` |
+| `ProviderVerifier` | `ForHttpClient()` | Create HTTP-based verifier | `HttpProviderBuilder` |
+| `ConsumerVerifier` | `Create()` | Create consumer verifier | `ConsumerBuilder` |
 
 ## Loading Contracts
 
 ```csharp
 // From file
-var contract = Treaty.OpenApi("api-spec.yaml").Build();
+var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
 // From stream
 using var stream = File.OpenRead("api-spec.yaml");
-var contract = Treaty.OpenApi(stream, OpenApiFormat.Yaml).Build();
+var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
 // With endpoint filter
-var contract = Treaty.OpenApi("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .Build();
 ```
@@ -42,7 +43,7 @@ var contract = Treaty.OpenApi("api-spec.yaml")
 ### TestServer (In-Process)
 
 ```csharp
-using var provider = Treaty.ForProvider<Startup>()
+using var provider = ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", () => SeedUser()))
@@ -58,7 +59,7 @@ var result = await provider.VerifyAllAsync();
 ### HTTP (Live API)
 
 ```csharp
-using var provider = Treaty.ForHttpProvider()
+using var provider = ProviderVerifier.ForHttpClient()
     .WithBaseUrl("https://api.staging.example.com")
     .WithContract(contract)
     .WithBearerToken("your-token")
@@ -98,7 +99,7 @@ await provider.VerifyAllAsync();
 
 ```csharp
 // Create validating HTTP client
-var httpClient = Treaty.ForConsumer()
+var httpClient = ConsumerVerifier.Create()
     .WithContract(contract)
     .CreateHttpClient();
 
@@ -109,13 +110,13 @@ var response = await httpClient.GetAsync("/users/123");
 ## Mock Server
 
 ```csharp
-// Basic mock server
-await using var server = Treaty.MockServer("api-spec.yaml").Build();
+// Basic mock server from OpenAPI
+await using var server = MockServer.FromOpenApi("api-spec.yaml").Build();
 await server.StartAsync();
 var baseUrl = server.BaseUrl; // e.g., "http://127.0.0.1:5001"
 
-// With customizations
-await using var server = Treaty.MockServer(contract)
+// Mock server from contract with customizations
+await using var server = MockServer.FromContract(contract)
     .UseHttps()
     .WithLatency(50, 200) // 50-200ms delay
     .RequireHeader("Authorization")
@@ -128,10 +129,10 @@ await using var server = Treaty.MockServer(contract)
 ## Contract Comparison
 
 ```csharp
-var oldContract = Treaty.OpenApi("v1/api-spec.yaml").Build();
-var newContract = Treaty.OpenApi("v2/api-spec.yaml").Build();
+var oldContract = Contract.FromOpenApi("v1/api-spec.yaml").Build();
+var newContract = Contract.FromOpenApi("v2/api-spec.yaml").Build();
 
-var diff = Treaty.CompareContracts(oldContract, newContract);
+var diff = Contract.Compare(oldContract, newContract);
 
 if (diff.HasBreakingChanges)
 {
@@ -230,7 +231,7 @@ var bulkResult = await provider.VerifyAllAsync(
 var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
-Treaty.ForProvider<Startup>()
+ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
     .Build();

@@ -24,20 +24,13 @@ using Treaty;
 public class UserApiProviderTests : IDisposable
 {
     private readonly ProviderVerifier<Startup> _provider;
-    private readonly Contract _contract;
 
     public UserApiProviderTests()
     {
-        _contract = Treaty.DefineContract("Users API")
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<User>())
-            .Build();
+        var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-        _provider = Treaty.ForProvider<Startup>()
-            .WithContract(_contract)
+        _provider = ProviderVerifier.ForTestServer<Startup>()
+            .WithContract(contract)
             .Build();
     }
 
@@ -99,15 +92,10 @@ if (!result.IsValid)
 Verify all endpoints at once using `VerifyAllAsync`:
 
 ```csharp
-var contract = Treaty.DefineContract("Users API")
-    .ForEndpoint("/users/{id}")
-        .WithMethod(HttpMethod.Get)
-        .WithExampleData(e => e.WithPathParameter("id", "1"))
-        .ExpectingResponse(r => r.WithStatus(200).WithJsonBody<User>())
-    .ForEndpoint("/users")
-        .WithMethod(HttpMethod.Post)
-        .WithExampleData(e => e.WithRequestBody(new { name = "Test", email = "test@example.com" }))
-        .ExpectingResponse(r => r.WithStatus(201).WithJsonBody<User>())
+var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+
+var provider = ProviderVerifier.ForTestServer<Startup>()
+    .WithContract(contract)
     .Build();
 
 var results = await provider.VerifyAllAsync();
@@ -166,21 +154,12 @@ var results = await provider.VerifyAsync(
 
 Provider states set up test data before verification. This is useful when endpoints require specific database state.
 
-### Defining States in Contract
-
-```csharp
-var contract = Treaty.DefineContract("Users API")
-    .ForEndpoint("/users/{id}")
-        .WithMethod(HttpMethod.Get)
-        .GivenProviderState("a user exists", new { id = 1 })
-        .ExpectingResponse(r => r.WithStatus(200).WithJsonBody<User>())
-    .Build();
-```
-
 ### Handling States
 
 ```csharp
-var provider = Treaty.ForProvider<Startup>()
+var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+
+var provider = ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", async parameters =>
@@ -228,7 +207,7 @@ public class TestStateHandler : IStateHandler
 }
 
 // Usage
-var provider = Treaty.ForProvider<Startup>()
+var provider = ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .WithStateHandler(new TestStateHandler(testDb))
     .Build();
@@ -245,7 +224,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
     builder.SetMinimumLevel(LogLevel.Debug);
 });
 
-var provider = Treaty.ForProvider<Startup>()
+var provider = ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
     .Build();
@@ -349,7 +328,7 @@ State teardown runs in **reverse order** of setup. If setup is A → B → C, te
 
 ### HttpProviderVerifier Specifics
 
-When using `Treaty.ForHttpProvider()` against live APIs:
+When using `ProviderVerifier.ForHttpClient()` against live APIs:
 
 1. **Request cloning**: Requests are cloned for retries. This adds slight overhead.
 2. **HttpClient ownership**: If you provide your own `HttpClient` via `.WithHttpClient()`, Treaty won't dispose it.

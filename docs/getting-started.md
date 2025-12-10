@@ -36,14 +36,14 @@ using Treaty;
 using Treaty.OpenApi;
 
 // Load contract from OpenAPI spec
-var contract = Treaty.OpenApi("api-spec.yaml").Build();
+var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
 // Or load from a stream
 using var stream = File.OpenRead("api-spec.yaml");
-var contract = Treaty.OpenApi(stream, OpenApiFormat.Yaml).Build();
+var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
 // Filter to specific endpoints if needed
-var contract = Treaty.OpenApi("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .Build();
 ```
@@ -61,9 +61,9 @@ public class UserApiTests
     public async Task Api_ReturnsValidUserResponse()
     {
         // Arrange - Load contract and create provider verifier
-        var contract = Treaty.OpenApi("api-spec.yaml").Build();
+        var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-        var provider = Treaty.ForProvider<Startup>()
+        var provider = ProviderVerifier.ForTestServer<Startup>()
             .WithContract(contract)
             .Build();
 
@@ -79,15 +79,16 @@ Test your API client against a mock server:
 
 ```csharp
 using Treaty;
+using Treaty.OpenApi;
 
 public class UserClientTests : IAsyncDisposable
 {
-    private MockServer _mockServer;
+    private OpenApiMockServer _mockServer;
 
     [Before(Test)]
     public async Task Setup()
     {
-        _mockServer = Treaty.MockServer("api-spec.yaml").Build();
+        _mockServer = MockServer.FromOpenApi("api-spec.yaml").Build();
         await _mockServer.StartAsync();
     }
 

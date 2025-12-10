@@ -8,12 +8,12 @@ Treaty can use OpenAPI/Swagger specifications as the source of truth for contrac
 
 ```csharp
 // YAML format
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .Build();
 
 // JSON format
-var contract = Treaty.FromOpenApiSpec("api-spec.json")
+var contract = Contract.FromOpenApi("api-spec.json")
     .ForEndpoint("/users/{id}")
     .Build();
 ```
@@ -22,7 +22,7 @@ var contract = Treaty.FromOpenApiSpec("api-spec.json")
 
 ```csharp
 using var stream = File.OpenRead("api-spec.yaml");
-var contract = Treaty.FromOpenApiSpec(stream, OpenApiFormat.Yaml)
+var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml)
     .ForEndpoint("/users/{id}")
     .Build();
 ```
@@ -32,7 +32,7 @@ var contract = Treaty.FromOpenApiSpec(stream, OpenApiFormat.Yaml)
 ### Single Endpoint
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .Build();
 ```
@@ -40,7 +40,7 @@ var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
 ### Multiple Endpoints
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .ForEndpoint("/users")
     .ForEndpoint("/orders/{orderId}")
@@ -50,7 +50,7 @@ var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
 ### All Endpoints
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForAllEndpoints()
     .Build();
 ```
@@ -90,7 +90,7 @@ When `additionalProperties: false`, Treaty validates strictly for that schema re
 Create mock servers directly from OpenAPI specs:
 
 ```csharp
-var mockServer = Treaty.MockFromOpenApi("api-spec.yaml").Build();
+var mockServer = MockServer.FromOpenApi("api-spec.yaml").Build();
 await mockServer.StartAsync();
 ```
 
@@ -126,12 +126,12 @@ With this spec, the mock server returns the exact example.
 ## Provider Verification with OpenAPI
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .ForEndpoint("/users")
     .Build();
 
-var provider = Treaty.ForProvider<Startup>()
+var provider = ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .Build();
 
@@ -142,11 +142,11 @@ await provider.VerifyAsync("/users/1", HttpMethod.Get);
 ## Consumer Verification with OpenAPI
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users")
     .Build();
 
-var consumer = Treaty.ForConsumer()
+var consumer = ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
     .Build();
@@ -160,7 +160,7 @@ var client = consumer.CreateHttpClient();
 ### Adding Example Data
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
         .WithExampleData(e => e
             .WithPathParameter("id", "1")
@@ -171,7 +171,7 @@ var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
 ### Adding Provider States
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
         .GivenProviderState("user exists", new { id = 1 })
     .Build();
@@ -342,19 +342,19 @@ components:
 
 ```csharp
 // Test code
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
     .Build();
 
 // Provider verification
-var provider = Treaty.ForProvider<Startup>()
+var provider = ProviderVerifier.ForTestServer<Startup>()
     .WithContract(contract)
     .Build();
 
 await provider.VerifyAsync("/users/1", HttpMethod.Get);
 
 // Mock server
-var mockServer = Treaty.MockFromOpenApi("api-spec.yaml").Build();
+var mockServer = MockServer.FromOpenApi("api-spec.yaml").Build();
 await mockServer.StartAsync();
 
 var client = new HttpClient { BaseAddress = new Uri(mockServer.BaseUrl!) };

@@ -18,17 +18,9 @@ When you're the **consumer** (the team calling an API), consumer verification va
 ```csharp
 using Treaty;
 
-var contract = Treaty.DefineContract("Users API")
-    .ForEndpoint("/users")
-        .WithMethod(HttpMethod.Post)
-        .ExpectingRequest(r => r
-            .WithJsonBody<CreateUserRequest>())
-        .ExpectingResponse(r => r
-            .WithStatus(201)
-            .WithJsonBody<User>())
-    .Build();
+var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-var consumer = Treaty.ForConsumer()
+var consumer = ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
     .Build();
@@ -82,13 +74,15 @@ services.AddHttpClient("UsersApi", client =>
 ### Body Validation
 
 ```csharp
-// Contract expects CreateUserRequest with Name and Email
-var contract = Treaty.DefineContract("Users API")
-    .ForEndpoint("/users")
-        .WithMethod(HttpMethod.Post)
-        .ExpectingRequest(r => r
-            .WithJsonBody<CreateUserRequest>())
+// Contract loaded from OpenAPI spec expects CreateUserRequest with Name and Email
+var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+
+var consumer = ConsumerVerifier.Create()
+    .WithContract(contract)
+    .WithBaseUrl("https://api.example.com")
     .Build();
+
+var client = consumer.CreateHttpClient();
 
 // This will fail validation - missing Email
 await client.PostAsJsonAsync("/users", new { Name = "John" });
@@ -97,15 +91,10 @@ await client.PostAsJsonAsync("/users", new { Name = "John" });
 
 ### Header Validation
 
-```csharp
-var contract = Treaty.DefineContract("API")
-    .WithDefaults(d => d
-        .RequestHeader("X-Api-Key", required: true))
-    .ForEndpoint("/data")
-        .WithMethod(HttpMethod.Get)
-    .Build();
+Headers defined as required in your OpenAPI spec will be validated:
 
-// This will fail - missing required header
+```csharp
+// This will fail if the contract requires X-Api-Key header
 await client.GetAsync("/data");
 // Throws: ContractViolationException - MissingHeader: X-Api-Key
 ```
@@ -115,23 +104,19 @@ await client.GetAsync("/data");
 The most common pattern combines consumer verification with a mock server:
 
 ```csharp
+using Treaty;
+using Treaty.Mocking;
+
 public class UserClientTests : IAsyncDisposable
 {
-    private readonly Contract _contract;
+    private readonly ApiContract _contract;
     private readonly ContractMockServer _mockServer;
     private readonly HttpClient _client;
 
     public UserClientTests()
     {
-        _contract = Treaty.DefineContract("Users API")
-            .ForEndpoint("/users/{id}")
-                .WithMethod(HttpMethod.Get)
-                .ExpectingResponse(r => r
-                    .WithStatus(200)
-                    .WithJsonBody<User>())
-            .Build();
-
-        _mockServer = Treaty.MockFromContract(_contract).Build();
+        _contract = Contract.FromOpenApi("api-spec.yaml").Build();
+        _mockServer = MockServer.FromContract(_contract).Build();
     }
 
     [Before(Test)]
@@ -191,7 +176,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
     builder.SetMinimumLevel(LogLevel.Debug);
 });
 
-var consumer = Treaty.ForConsumer()
+var consumer = ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
     .WithLogging(loggerFactory)
@@ -259,12 +244,12 @@ public abstract class ApiClientTestBase : IAsyncDisposable
     protected ContractMockServer MockServer { get; private set; }
     protected HttpClient Client { get; private set; }
 
-    protected abstract Contract Contract { get; }
+    protected abstract ApiContract Contract { get; }
 
     [Before(Test)]
     public async Task BaseSetup()
     {
-        MockServer = Treaty.MockFromContract(Contract).Build();
+        MockServer = MockServer.FromContract(Contract).Build();
         await MockServer.StartAsync();
         Client = new HttpClient { BaseAddress = new Uri(MockServer.BaseUrl!) };
     }

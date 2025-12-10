@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Treaty.Contracts;
@@ -13,6 +16,10 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     private ApiContract? _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private IStateHandler? _stateHandler;
+    private readonly List<Action<IServiceCollection>> _serviceConfigurations = [];
+    private readonly List<Action<IConfigurationBuilder>> _configurationActions = [];
+    private readonly List<Action<IWebHostBuilder>> _webHostConfigurations = [];
+    private string? _environment;
 
     /// <summary>
     /// Creates a new provider builder.
@@ -78,6 +85,92 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     }
 
     /// <summary>
+    /// Configures services for the test server. Use this to replace real services with test doubles.
+    /// </summary>
+    /// <param name="configure">Action to configure services.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ConfigureServices(services =>
+    /// {
+    ///     // Replace real database with in-memory version
+    ///     services.RemoveAll&lt;IUserRepository&gt;();
+    ///     services.AddSingleton&lt;IUserRepository, InMemoryUserRepository&gt;();
+    ///
+    ///     // Replace external API client with mock
+    ///     services.AddSingleton&lt;IPaymentClient&gt;(new MockPaymentClient());
+    /// })
+    /// </code>
+    /// </example>
+    public ProviderBuilder<TStartup> ConfigureServices(Action<IServiceCollection> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _serviceConfigurations.Add(configure);
+        return this;
+    }
+
+    /// <summary>
+    /// Configures application configuration for the test server. Use this to override settings like connection strings or feature flags.
+    /// </summary>
+    /// <param name="configure">Action to configure the configuration builder.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ConfigureAppConfiguration(config =>
+    /// {
+    ///     config.AddInMemoryCollection(new Dictionary&lt;string, string?&gt;
+    ///     {
+    ///         ["ConnectionStrings:Default"] = "Server=localhost;Database=TestDb",
+    ///         ["Features:NewCheckout"] = "true"
+    ///     });
+    /// })
+    /// </code>
+    /// </example>
+    public ProviderBuilder<TStartup> ConfigureAppConfiguration(Action<IConfigurationBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _configurationActions.Add(configure);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the hosting environment for the test server.
+    /// </summary>
+    /// <param name="environment">The environment name (e.g., "Development", "Testing", "Production").</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .UseEnvironment("Testing")
+    /// </code>
+    /// </example>
+    public ProviderBuilder<TStartup> UseEnvironment(string environment)
+    {
+        _environment = environment ?? throw new ArgumentNullException(nameof(environment));
+        return this;
+    }
+
+    /// <summary>
+    /// Provides full control over web host configuration. Use this as an escape hatch for advanced scenarios.
+    /// </summary>
+    /// <param name="configure">Action to configure the web host builder.</param>
+    /// <returns>This builder for chaining.</returns>
+    /// <example>
+    /// <code>
+    /// .ConfigureWebHost(webBuilder =>
+    /// {
+    ///     webBuilder.ConfigureLogging(logging =>
+    ///         logging.SetMinimumLevel(LogLevel.Warning));
+    /// })
+    /// </code>
+    /// </example>
+    public ProviderBuilder<TStartup> ConfigureWebHost(Action<IWebHostBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _webHostConfigurations.Add(configure);
+        return this;
+    }
+
+    /// <summary>
     /// Builds the provider verifier.
     /// </summary>
     /// <returns>The configured provider verifier.</returns>
@@ -87,6 +180,13 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
         if (_contract == null)
             throw new InvalidOperationException("A contract must be specified using WithContract().");
 
-        return new ProviderVerifier<TStartup>(_contract, _loggerFactory, _stateHandler);
+        return new ProviderVerifier<TStartup>(
+            _contract,
+            _loggerFactory,
+            _stateHandler,
+            _serviceConfigurations,
+            _configurationActions,
+            _webHostConfigurations,
+            _environment);
     }
 }
