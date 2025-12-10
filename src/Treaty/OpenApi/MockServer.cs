@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Treaty.Mocking;
 using Treaty.Serialization;
 
 namespace Treaty.OpenApi;
@@ -14,7 +15,7 @@ namespace Treaty.OpenApi;
 /// <summary>
 /// An in-memory mock server generated from an OpenAPI specification.
 /// </summary>
-public sealed class OpenApiMockServer : IAsyncDisposable
+public sealed class OpenApiMockServer : IMockServer
 {
     private readonly OpenApiDocument _document;
     private readonly IJsonSerializer _serializer;

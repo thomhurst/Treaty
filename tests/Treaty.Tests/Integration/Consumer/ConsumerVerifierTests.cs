@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Treaty.Consumer;
+using Treaty.Mocking;
 using Treaty.OpenApi;
 using Treaty.Validation;
 
@@ -10,7 +11,7 @@ namespace Treaty.Tests.Integration.Consumer;
 
 public class ConsumerVerifierTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private ConsumerValidationClient? _consumer;
 
     private const string TestOpenApiSpec = """

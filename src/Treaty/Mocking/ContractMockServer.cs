@@ -13,7 +13,7 @@ namespace Treaty.Mocking;
 /// <summary>
 /// An in-memory mock server generated from a Treaty contract.
 /// </summary>
-public sealed class ContractMockServer : IAsyncDisposable
+public sealed class ContractMockServer : IMockServer
 {
     private readonly ApiContract _contract;
     private readonly ILogger _logger;

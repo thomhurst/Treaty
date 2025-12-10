@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Treaty.Mocking;
 using Treaty.OpenApi;
 
 namespace Treaty.Tests.Integration.OpenApi;
@@ -291,7 +292,7 @@ public class OpenApiSpecFileTests
 /// </summary>
 public class OpenApiMockServerFromSpecTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
 
     private static string GetSpecPath(string fileName) =>
@@ -414,7 +415,7 @@ public class OpenApiMockServerFromSpecTests : IAsyncDisposable
 /// </summary>
 public class OpenApiMockServerWithConditionsTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
 
     private static string GetSpecPath(string fileName) =>
@@ -478,7 +479,7 @@ public class OpenApiMockServerWithConditionsTests : IAsyncDisposable
 /// </summary>
 public class OpenApiJsonMockServerTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
 
     private static string GetSpecPath(string fileName) =>
@@ -560,7 +561,7 @@ public class OpenApiJsonMockServerTests : IAsyncDisposable
 /// </summary>
 public class OpenApiProviderValidationTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
 
     private static string GetSpecPath(string fileName) =>

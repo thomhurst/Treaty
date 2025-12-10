@@ -1,13 +1,14 @@
 using System.Net;
 using System.Text.Json;
 using FluentAssertions;
+using Treaty.Mocking;
 using Treaty.OpenApi;
 
 namespace Treaty.Tests.Integration.OpenApi;
 
 public class MockServerTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
     private const string TestOpenApiSpec = """
         openapi: '3.0.3'
@@ -181,7 +182,7 @@ public class MockServerTests : IAsyncDisposable
 
 public class MockServerWithConditionsTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
     private const string TestOpenApiSpec = """
         openapi: '3.0.3'

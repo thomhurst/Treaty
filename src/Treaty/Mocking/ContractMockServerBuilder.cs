@@ -111,7 +111,7 @@ public sealed class ContractMockServerBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public ContractMockServer Build()
+    public IMockServer Build()
     {
         return new ContractMockServer(
             _contract,
@@ -169,7 +169,7 @@ public sealed class ContractMockEndpointBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public ContractMockServer Build() => _parent.Build();
+    public IMockServer Build() => _parent.Build();
 }
 
 /// <summary>

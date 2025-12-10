@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
+using Treaty.Mocking;
 using Treaty.Serialization;
 
 namespace Treaty.OpenApi;
@@ -130,7 +131,7 @@ public sealed class MockServerBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public OpenApiMockServer Build()
+    public IMockServer Build()
     {
         return new OpenApiMockServer(
             _document,
@@ -189,7 +190,7 @@ public sealed class MockEndpointBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public OpenApiMockServer Build() => _parent.Build();
+    public IMockServer Build() => _parent.Build();
 }
 
 /// <summary>

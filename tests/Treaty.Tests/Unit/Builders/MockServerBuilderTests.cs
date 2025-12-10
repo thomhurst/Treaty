@@ -1,12 +1,13 @@
 using System.Net;
 using FluentAssertions;
+using Treaty.Mocking;
 using Treaty.OpenApi;
 
 namespace Treaty.Tests.Unit.Builders;
 
 public class MockServerBuilderTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpClient? _client;
 
     private const string TestOpenApiSpec = """

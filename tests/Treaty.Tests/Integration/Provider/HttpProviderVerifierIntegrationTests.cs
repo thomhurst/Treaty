@@ -1,5 +1,6 @@
 using System.Text;
 using FluentAssertions;
+using Treaty.Mocking;
 using Treaty.OpenApi;
 using Treaty.Provider;
 using Treaty.Provider.Resilience;
@@ -11,7 +12,7 @@ namespace Treaty.Tests.Integration.Provider;
 /// </summary>
 public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
 {
-    private OpenApiMockServer? _mockServer;
+    private IMockServer? _mockServer;
     private HttpProviderVerifier? _verifier;
 
     private const string TestOpenApiSpec = """
