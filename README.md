@@ -30,7 +30,7 @@ var contract = Contract.FromOpenApi("api-spec.yaml")
     .Build();
 ```
 
-### Verify Your API (Provider Testing)
+### Verify Your API (Provider Testing) - Spins up an In-Memory TestServer and intercepts your response to validate it
 
 ```csharp
 // In your test class
