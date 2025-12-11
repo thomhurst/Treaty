@@ -115,15 +115,29 @@ await using var server = await MockServer.FromOpenApi("api-spec.yaml").BuildAsyn
 await server.StartAsync();
 var baseUrl = server.BaseUrl; // e.g., "http://127.0.0.1:5001"
 
-// Mock server from contract with customizations
-await using var server = MockServer.FromContract(contract)
+// Mock server with customizations
+await using var server = await MockServer.FromOpenApi("api-spec.yaml")
     .UseHttps()
-    .WithLatency(50, 200) // 50-200ms delay
-    .RequireHeader("Authorization")
+    .WithLatency(50, 200)                    // Global latency
+    .WithAuth(auth => auth.RequireHeader("Authorization").WhenMissing().Return(401))
+    .WithCustomGenerator("correlationId", () => Guid.NewGuid().ToString())
     .ForEndpoint("/users/{id}")
-        .When(req => req.PathParam("id") == "0")
-        .Return(404)
-    .Build();
+        .WithLatency(100, 500)               // Per-endpoint latency
+        .When(req => req.PathParam("id") == "0").Return(404)
+        .When(req => req.BodyAs<User>()?.Role == "admin").Return(403)
+        .Otherwise().Return(200)
+    .ForEndpoint("/flaky")
+        .When(ctx => true).ReturnSequence(   // Response sequences
+            new MockSequenceResponse(503),
+            new MockSequenceResponse(200))
+    .ForEndpoint("/chaos")
+        .When(ctx => ctx.Header("X-Fail") == "true")
+        .ReturnFault(FaultType.ConnectionReset)  // Fault injection
+    .BuildAsync();
+
+// Request verification
+var requests = server.RecordedRequests;
+server.ClearRecordedRequests();
 ```
 
 ## Contract Comparison

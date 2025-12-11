@@ -79,11 +79,11 @@ Test your API client against a mock server:
 
 ```csharp
 using Treaty;
-using Treaty.OpenApi;
+using Treaty.Mocking;
 
 public class UserClientTests : IAsyncDisposable
 {
-    private OpenApiMockServer _mockServer;
+    private IMockServer _mockServer;
 
     [Before(Test)]
     public async Task Setup()

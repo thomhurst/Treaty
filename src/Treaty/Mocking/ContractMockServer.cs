@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
@@ -23,6 +24,8 @@ public sealed class ContractMockServer : IMockServer
     private readonly AuthConfig? _authConfig;
     private readonly Dictionary<string, Func<object>> _customGenerators;
     private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs;
+    private readonly ConcurrentDictionary<ContractMockResponseRule, int> _sequenceCallCounts = new();
+    private readonly ConcurrentBag<RecordedRequest> _recordedRequests = [];
     private readonly object _lock = new();
 
     private WebApplication? _app;
@@ -31,6 +34,16 @@ public sealed class ContractMockServer : IMockServer
     /// Gets the base URL of the mock server once started.
     /// </summary>
     public string? BaseUrl { get; private set; }
+
+    /// <summary>
+    /// Gets all recorded requests received by the mock server.
+    /// </summary>
+    public IReadOnlyList<RecordedRequest> RecordedRequests => _recordedRequests.ToArray();
+
+    /// <summary>
+    /// Clears all recorded requests.
+    /// </summary>
+    public void ClearRecordedRequests() => _recordedRequests.Clear();
 
     internal ContractMockServer(
         ContractDefinition contract,
@@ -128,19 +141,24 @@ public sealed class ContractMockServer : IMockServer
             }
         }
 
-        // Simulate latency (using Random.Shared for thread safety)
-        if (_minLatencyMs.HasValue && _maxLatencyMs.HasValue)
-        {
-            var delay = Random.Shared.Next(_minLatencyMs.Value, _maxLatencyMs.Value);
-            await Task.Delay(delay);
-        }
-
         // Find matching endpoint in contract
         var endpointContract = _contract.FindEndpoint(path, method);
         if (endpointContract == null)
         {
             await WriteNotFoundResponseAsync(context, path, methodString);
             return;
+        }
+
+        // Get endpoint config if configured
+        _endpointConfigs.TryGetValue(endpointContract.PathTemplate, out var endpointConfig);
+
+        // Simulate latency (endpoint-specific or global, using Random.Shared for thread safety)
+        var minLatency = endpointConfig?.MinLatencyMs ?? _minLatencyMs;
+        var maxLatency = endpointConfig?.MaxLatencyMs ?? _maxLatencyMs;
+        if (minLatency.HasValue && maxLatency.HasValue)
+        {
+            var delay = Random.Shared.Next(minLatency.Value, maxLatency.Value);
+            await Task.Delay(delay);
         }
 
         // Extract path parameters
@@ -159,14 +177,44 @@ public sealed class ContractMockServer : IMockServer
             h => h.Value.ToString(),
             StringComparer.OrdinalIgnoreCase);
 
-        // Check for custom response rules
-        if (_endpointConfigs.TryGetValue(endpointContract.PathTemplate, out var endpointConfig))
+        // Read request body
+        string? requestBody = null;
+        if (context.Request.ContentLength > 0 || context.Request.Headers.ContainsKey("Transfer-Encoding"))
         {
-            var requestContext = new MockRequestContext(pathParams, queryParams, headers);
+            context.Request.EnableBuffering();
+            using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+            requestBody = await reader.ReadToEndAsync();
+            context.Request.Body.Position = 0;
+        }
+
+        // Record the request for verification
+        _recordedRequests.Add(new RecordedRequest
+        {
+            Timestamp = DateTime.UtcNow,
+            Method = methodString,
+            Path = path,
+            Body = requestBody,
+            Headers = headers,
+            QueryParams = queryParams,
+            PathParams = pathParams
+        });
+
+        // Check for custom response rules
+        if (endpointConfig != null)
+        {
+            var requestContext = new MockRequestContext(pathParams, queryParams, headers, requestBody);
             foreach (var rule in endpointConfig.ResponseRules)
             {
                 if (rule.Condition(requestContext))
                 {
+                    // Handle fault injection
+                    if (rule.Fault.HasValue)
+                    {
+                        _logger.LogDebug("[Treaty] Contract Mock: Injecting fault {FaultType}", rule.Fault.Value);
+                        await InjectFaultAsync(context, rule.Fault.Value);
+                        return;
+                    }
+
                     _logger.LogDebug("[Treaty] Contract Mock: Using custom response rule, returning {StatusCode}", rule.StatusCode);
                     await WriteCustomResponseAsync(context, rule, endpointContract);
                     return;
@@ -180,19 +228,39 @@ public sealed class ContractMockServer : IMockServer
 
     private async Task WriteCustomResponseAsync(HttpContext context, ContractMockResponseRule rule, EndpointContract endpointContract)
     {
-        context.Response.StatusCode = rule.StatusCode;
+        int statusCode;
+        object? body;
 
-        if (rule.Body != null)
+        // Handle sequence responses
+        if (rule.Sequence != null && rule.Sequence.Count > 0)
+        {
+            var callCount = _sequenceCallCounts.AddOrUpdate(rule, 1, (_, count) => count + 1);
+            var index = Math.Min(callCount - 1, rule.Sequence.Count - 1);
+            var sequenceResponse = rule.Sequence[index];
+            statusCode = sequenceResponse.StatusCode;
+            body = sequenceResponse.Body;
+            _logger.LogDebug("[Treaty] Contract Mock: Sequence response {Index}/{Total}, returning {StatusCode}",
+                index + 1, rule.Sequence.Count, statusCode);
+        }
+        else
+        {
+            statusCode = rule.StatusCode;
+            body = rule.Body;
+        }
+
+        context.Response.StatusCode = statusCode;
+
+        if (body != null)
         {
             context.Response.ContentType = "application/json";
-            var json = _contract.JsonSerializer.Serialize(rule.Body, rule.Body.GetType());
+            var json = _contract.JsonSerializer.Serialize(body, body.GetType());
             await context.Response.WriteAsync(json);
         }
         else
         {
             // Find matching response expectation for this status code
             var responseExpectation = endpointContract.ResponseExpectations
-                .FirstOrDefault(r => r.StatusCode == rule.StatusCode);
+                .FirstOrDefault(r => r.StatusCode == statusCode);
 
             if (responseExpectation?.BodyValidator != null)
             {
@@ -315,6 +383,36 @@ public sealed class ContractMockServer : IMockServer
 
         var json = JsonSerializer.Serialize(errorResponse);
         await context.Response.WriteAsync(json);
+    }
+
+    private async Task InjectFaultAsync(HttpContext context, FaultType fault)
+    {
+        switch (fault)
+        {
+            case FaultType.ConnectionReset:
+                // Abort the connection to simulate a reset
+                context.Abort();
+                break;
+
+            case FaultType.Timeout:
+                // Delay for 30 seconds to simulate a timeout
+                await Task.Delay(TimeSpan.FromSeconds(30));
+                context.Response.StatusCode = 504;
+                break;
+
+            case FaultType.MalformedResponse:
+                // Return invalid JSON
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{ invalid json: }}}");
+                break;
+
+            case FaultType.EmptyResponse:
+                // Return empty body
+                context.Response.StatusCode = 200;
+                context.Response.ContentType = "application/json";
+                break;
+        }
     }
 
     /// <summary>

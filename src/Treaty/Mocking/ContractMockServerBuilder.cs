@@ -140,6 +140,19 @@ public sealed class ContractMockEndpointBuilder
     }
 
     /// <summary>
+    /// Configures latency simulation for this endpoint.
+    /// </summary>
+    /// <param name="minMs">Minimum latency in milliseconds.</param>
+    /// <param name="maxMs">Maximum latency in milliseconds.</param>
+    /// <returns>This builder for chaining.</returns>
+    public ContractMockEndpointBuilder WithLatency(int minMs, int maxMs)
+    {
+        _config.MinLatencyMs = minMs;
+        _config.MaxLatencyMs = maxMs;
+        return this;
+    }
+
+    /// <summary>
     /// Defines a condition for returning a specific response.
     /// </summary>
     /// <param name="condition">The condition to evaluate.</param>
@@ -213,11 +226,53 @@ public sealed class ContractMockResponseBuilder
         _config.ResponseRules.Add(new ContractMockResponseRule(_condition, statusCode, body));
         return _parent;
     }
+
+    /// <summary>
+    /// Specifies a sequence of responses to return on successive calls.
+    /// The last response in the sequence will be repeated for any subsequent calls.
+    /// </summary>
+    /// <param name="responses">The sequence of responses (status code and optional body).</param>
+    /// <returns>The parent endpoint builder.</returns>
+    /// <example>
+    /// <code>
+    /// .ReturnSequence(
+    ///     new MockSequenceResponse(503),           // First call returns 503
+    ///     new MockSequenceResponse(503),           // Second call returns 503
+    ///     new MockSequenceResponse(200, result))   // Third+ calls return 200
+    /// </code>
+    /// </example>
+    public ContractMockEndpointBuilder ReturnSequence(params MockSequenceResponse[] responses)
+    {
+        if (responses.Length == 0)
+            throw new ArgumentException("At least one response is required.", nameof(responses));
+
+        _config.ResponseRules.Add(new ContractMockResponseRule(_condition, responses));
+        return _parent;
+    }
+
+    /// <summary>
+    /// Injects a fault when the condition matches.
+    /// </summary>
+    /// <param name="fault">The type of fault to inject.</param>
+    /// <returns>The parent endpoint builder.</returns>
+    /// <example>
+    /// <code>
+    /// .When(ctx => ctx.Header("X-Fail") == "true")
+    ///     .ReturnFault(FaultType.ConnectionReset)
+    /// </code>
+    /// </example>
+    public ContractMockEndpointBuilder ReturnFault(FaultType fault)
+    {
+        _config.ResponseRules.Add(new ContractMockResponseRule(_condition, fault));
+        return _parent;
+    }
 }
 
 internal sealed class ContractMockEndpointConfig
 {
     public List<ContractMockResponseRule> ResponseRules { get; } = [];
+    public int? MinLatencyMs { get; set; }
+    public int? MaxLatencyMs { get; set; }
 }
 
 internal sealed class ContractMockResponseRule
@@ -225,10 +280,59 @@ internal sealed class ContractMockResponseRule
     public Func<MockRequestContext, bool> Condition { get; }
     public int StatusCode { get; }
     public object? Body { get; }
+    public IReadOnlyList<MockSequenceResponse>? Sequence { get; }
+    public FaultType? Fault { get; }
 
     public ContractMockResponseRule(Func<MockRequestContext, bool> condition, int statusCode, object? body)
     {
         Condition = condition;
+        StatusCode = statusCode;
+        Body = body;
+        Sequence = null;
+        Fault = null;
+    }
+
+    public ContractMockResponseRule(Func<MockRequestContext, bool> condition, IReadOnlyList<MockSequenceResponse> sequence)
+    {
+        Condition = condition;
+        StatusCode = sequence[0].StatusCode;
+        Body = sequence[0].Body;
+        Sequence = sequence;
+        Fault = null;
+    }
+
+    public ContractMockResponseRule(Func<MockRequestContext, bool> condition, FaultType fault)
+    {
+        Condition = condition;
+        StatusCode = 0; // Not used for faults
+        Body = null;
+        Sequence = null;
+        Fault = fault;
+    }
+}
+
+/// <summary>
+/// Represents a single response in a sequence.
+/// </summary>
+public sealed class MockSequenceResponse
+{
+    /// <summary>
+    /// The HTTP status code.
+    /// </summary>
+    public int StatusCode { get; }
+
+    /// <summary>
+    /// The response body, or null for no body.
+    /// </summary>
+    public object? Body { get; }
+
+    /// <summary>
+    /// Creates a new sequence response.
+    /// </summary>
+    /// <param name="statusCode">The HTTP status code.</param>
+    /// <param name="body">The response body, or null for no body.</param>
+    public MockSequenceResponse(int statusCode, object? body = null)
+    {
         StatusCode = statusCode;
         Body = body;
     }

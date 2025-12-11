@@ -84,8 +84,33 @@ The `MockRequestContext` provides access to:
     // Headers
     var auth = ctx.Header("Authorization");
 
+    // Request body (raw string)
+    var body = ctx.Body;
+
+    // Request body as JSON
+    var json = ctx.BodyAsJson();
+
+    // Request body deserialized to a type
+    var user = ctx.BodyAs<CreateUserRequest>();
+
     return id == "special";
 })
+```
+
+### Body-Based Conditions
+
+Condition responses based on the request body:
+
+```csharp
+var mockServer = Treaty.MockFromContract(contract)
+    .ForEndpoint("/users")
+        .When(ctx => ctx.BodyAs<CreateUserRequest>()?.Role == "admin")
+        .Return(403, new { error = "Admin creation not allowed" })
+        .When(ctx => string.IsNullOrEmpty(ctx.BodyAs<CreateUserRequest>()?.Email))
+        .Return(400, new { error = "Email is required" })
+        .Otherwise()
+        .Return(201)
+    .Build();
 ```
 
 ### Multiple Endpoints
@@ -108,6 +133,24 @@ Add realistic network delays:
 ```csharp
 var mockServer = Treaty.MockFromContract(contract)
     .WithLatency(min: 50, max: 200)  // Random delay between 50-200ms
+    .Build();
+```
+
+### Per-Endpoint Latency
+
+Configure different latencies for specific endpoints:
+
+```csharp
+var mockServer = Treaty.MockFromContract(contract)
+    .WithLatency(min: 10, max: 50)  // Default latency
+    .ForEndpoint("/reports/generate")
+        .WithLatency(2000, 5000)    // Slow endpoint (2-5 seconds)
+        .Otherwise()
+        .Return(200)
+    .ForEndpoint("/health")
+        .WithLatency(0, 0)          // No latency for health checks
+        .Otherwise()
+        .Return(200)
     .Build();
 ```
 
@@ -139,6 +182,85 @@ var mockServer = Treaty.MockFromContract(contract)
 ```
 
 Custom generators are applied to any field with a matching name in the response.
+
+## Response Sequences
+
+Return different responses on successive calls to test retry logic:
+
+```csharp
+var mockServer = Treaty.MockFromContract(contract)
+    .ForEndpoint("/flaky-service")
+        .When(ctx => true)
+        .ReturnSequence(
+            new MockSequenceResponse(503),                        // First call: Service Unavailable
+            new MockSequenceResponse(503),                        // Second call: Service Unavailable
+            new MockSequenceResponse(200, new { success = true }) // Third+ calls: Success
+        )
+    .Build();
+```
+
+The last response in the sequence is repeated for all subsequent calls.
+
+## Request Verification
+
+Verify that your client code made the expected requests:
+
+```csharp
+await mockServer.StartAsync();
+
+// Run your client code
+await myClient.CreateUserAsync(new User { Name = "Test" });
+await myClient.CreateUserAsync(new User { Name = "Test2" });
+
+// Verify requests
+var requests = mockServer.RecordedRequests;
+Assert.That(requests.Count, Is.EqualTo(2));
+Assert.That(requests[0].Method, Is.EqualTo("POST"));
+Assert.That(requests[0].Path, Is.EqualTo("/users"));
+Assert.That(requests[0].Body, Does.Contain("Test"));
+
+// Clear recorded requests between tests
+mockServer.ClearRecordedRequests();
+```
+
+### RecordedRequest Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Timestamp` | `DateTime` | When the request was received (UTC) |
+| `Method` | `string` | HTTP method (GET, POST, etc.) |
+| `Path` | `string` | Request path |
+| `Body` | `string?` | Request body (null if none) |
+| `Headers` | `IReadOnlyDictionary<string, string>` | Request headers |
+| `QueryParams` | `IReadOnlyDictionary<string, string>` | Query string parameters |
+| `PathParams` | `IReadOnlyDictionary<string, string>` | Extracted path parameters |
+
+## Fault Injection
+
+Simulate network failures and errors for resilience testing:
+
+```csharp
+var mockServer = Treaty.MockFromContract(contract)
+    .ForEndpoint("/unreliable")
+        .When(ctx => ctx.Header("X-Fail") == "reset")
+        .ReturnFault(FaultType.ConnectionReset)
+        .When(ctx => ctx.Header("X-Fail") == "timeout")
+        .ReturnFault(FaultType.Timeout)
+        .When(ctx => ctx.Header("X-Fail") == "malformed")
+        .ReturnFault(FaultType.MalformedResponse)
+        .Otherwise()
+        .Return(200)
+    .Build();
+```
+
+### Fault Types
+
+| Fault Type | Behavior |
+|------------|----------|
+| `ConnectionReset` | Abruptly closes the connection |
+| `Timeout` | Delays response for 30 seconds |
+| `MalformedResponse` | Returns invalid JSON |
+| `EmptyResponse` | Returns empty body with 200 status |
 
 ## HTTPS Support
 

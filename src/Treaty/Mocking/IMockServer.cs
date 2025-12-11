@@ -23,4 +23,14 @@ public interface IMockServer : IAsyncDisposable
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task StopAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all recorded requests received by the mock server.
+    /// </summary>
+    IReadOnlyList<RecordedRequest> RecordedRequests { get; }
+
+    /// <summary>
+    /// Clears all recorded requests.
+    /// </summary>
+    void ClearRecordedRequests();
 }
