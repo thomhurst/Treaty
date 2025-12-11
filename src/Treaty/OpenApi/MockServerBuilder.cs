@@ -248,7 +248,9 @@ public sealed class MockResponseBuilder
     public MockEndpointBuilder ReturnSequence(params MockSequenceResponse[] responses)
     {
         if (responses.Length == 0)
+        {
             throw new ArgumentException("At least one response is required.", nameof(responses));
+        }
 
         _config.ResponseRules.Add(new ContractMockResponseRule(_condition, responses));
         return _parent;
@@ -333,11 +335,15 @@ public sealed class MockRequestContext
     public System.Text.Json.JsonElement? BodyAsJson()
     {
         if (_bodyJsonParsed)
+        {
             return _bodyJson;
+        }
 
         _bodyJsonParsed = true;
         if (string.IsNullOrEmpty(_body))
+        {
             return null;
+        }
 
         try
         {
@@ -358,7 +364,9 @@ public sealed class MockRequestContext
     public T? BodyAs<T>() where T : class
     {
         if (string.IsNullOrEmpty(_body))
+        {
             return default;
+        }
 
         try
         {

@@ -79,7 +79,9 @@ public sealed class ContractMockServer : IMockServer
         lock (_lock)
         {
             if (_app != null)
+            {
                 throw new InvalidOperationException("The mock server is already started.");
+            }
 
             var builder = WebApplication.CreateBuilder();
             var host = port.HasValue ? "localhost" : "127.0.0.1";

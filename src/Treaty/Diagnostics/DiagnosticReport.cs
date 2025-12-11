@@ -123,9 +123,13 @@ public sealed class DiagnosticReport
             sb.AppendLine($"   {violation.Message}");
 
             if (violation.Expected != null)
+            {
                 sb.AppendLine($"   Expected: {violation.Expected}");
+            }
             if (violation.Actual != null)
+            {
                 sb.AppendLine($"   Actual:   {violation.Actual}");
+            }
 
             index++;
         }
@@ -210,7 +214,9 @@ public sealed class DiagnosticReport
     private static string GetFieldName(string path)
     {
         if (string.IsNullOrEmpty(path) || path == "$")
+        {
             return "root";
+        }
 
         var parts = path.Split('.');
         return parts.Length > 0 ? parts[^1] : path;

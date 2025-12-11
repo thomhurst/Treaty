@@ -70,7 +70,9 @@ public class ProviderVerifierConfigurationTests : IDisposable
                 // Remove default service and add mock
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(ITestService));
                 if (descriptor != null)
+                {
                     services.Remove(descriptor);
+                }
 
                 services.AddSingleton<ITestService>(new MockTestService("Mocked response"));
             })

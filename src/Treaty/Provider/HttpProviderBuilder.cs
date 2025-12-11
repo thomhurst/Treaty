@@ -228,9 +228,13 @@ public sealed class HttpProviderBuilder
     public HttpProviderVerifier Build()
     {
         if (_baseUri == null)
+        {
             throw new InvalidOperationException("A base URL must be specified using WithBaseUrl().");
+        }
         if (_contract == null)
+        {
             throw new InvalidOperationException("A contract must be specified using WithContract().");
+        }
 
         return new HttpProviderVerifier(
             _baseUri,

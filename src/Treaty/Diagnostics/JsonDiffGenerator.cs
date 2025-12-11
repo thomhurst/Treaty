@@ -19,7 +19,9 @@ public static class JsonDiffGenerator
         var diffs = new List<JsonDiff>();
 
         if (string.IsNullOrWhiteSpace(expected) && string.IsNullOrWhiteSpace(actual))
+        {
             return diffs;
+        }
 
         if (string.IsNullOrWhiteSpace(expected))
         {
@@ -190,7 +192,9 @@ public static class JsonDiffGenerator
     public static string FormatDiffs(IReadOnlyList<JsonDiff> diffs)
     {
         if (diffs.Count == 0)
+        {
             return string.Empty;
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("--- Expected");
@@ -210,11 +214,17 @@ public static class JsonDiffGenerator
 
             sb.AppendLine($"{prefix} {diff.Path}:");
             if (diff.Expected != null)
+            {
                 sb.AppendLine($"    Expected: {diff.Expected}");
+            }
             if (diff.Actual != null)
+            {
                 sb.AppendLine($"    Actual:   {diff.Actual}");
+            }
             if (diff.Description != null)
+            {
                 sb.AppendLine($"    Note: {diff.Description}");
+            }
             sb.AppendLine();
         }
 
@@ -246,7 +256,9 @@ public static class JsonDiffGenerator
             var right = i < actualLines.Length ? actualLines[i].TrimEnd() : "";
 
             if (left.Length > colWidth - 3)
+            {
                 left = left[..(colWidth - 3)] + "...";
+            }
 
             sb.AppendLine($"{left.PadRight(colWidth)} | {right}");
         }
@@ -257,7 +269,9 @@ public static class JsonDiffGenerator
     private static string FormatJsonPretty(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
+        {
             return "(empty)";
+        }
 
         try
         {

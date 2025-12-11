@@ -32,9 +32,13 @@ public static class DiagnosticFormatter
         if (violation.Expected != null || violation.Actual != null)
         {
             if (violation.Expected != null)
+            {
                 sb.AppendLine($"   Expected: {violation.Expected}");
+            }
             if (violation.Actual != null)
+            {
                 sb.AppendLine($"   Actual:   {violation.Actual}");
+            }
         }
 
         // Suggestion
@@ -59,7 +63,9 @@ public static class DiagnosticFormatter
     public static string FormatPath(string path)
     {
         if (string.IsNullOrEmpty(path))
+        {
             return "(root)";
+        }
 
         // Add backticks for readability
         return $"`{path}`";
@@ -167,7 +173,10 @@ public static class DiagnosticFormatter
 
         for (int i = 0; i < violations.Count; i++)
         {
-            if (i > 0) sb.AppendLine();
+            if (i > 0)
+            {
+                sb.AppendLine();
+            }
             sb.AppendLine($"{i + 1}. {FormatViolation(violations[i])}");
         }
 
@@ -183,7 +192,9 @@ public static class DiagnosticFormatter
     public static string FormatSummaryLine(string endpoint, IReadOnlyList<ContractViolation> violations)
     {
         if (violations.Count == 0)
+        {
             return $"✓ {endpoint} - PASSED";
+        }
 
         var firstViolation = violations[0];
         var extra = violations.Count > 1 ? $" (+{violations.Count - 1} more)" : "";

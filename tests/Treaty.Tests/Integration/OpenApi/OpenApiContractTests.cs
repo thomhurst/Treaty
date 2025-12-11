@@ -312,14 +312,18 @@ public class OpenApiMockServerFromSpecTests : IAsyncDisposable
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     [Test]
@@ -441,14 +445,18 @@ public class OpenApiMockServerWithConditionsTests : IAsyncDisposable
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     [Test]
@@ -499,14 +507,18 @@ public class OpenApiJsonMockServerTests : IAsyncDisposable
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     [Test]
@@ -582,14 +594,18 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     [Test]

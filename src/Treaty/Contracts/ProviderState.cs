@@ -44,14 +44,20 @@ public sealed class ProviderState
     public static ProviderState Create(string name, object? parameters = null)
     {
         if (parameters == null)
+        {
             return new ProviderState(name);
+        }
 
         // Handle dictionary directly
         if (parameters is IReadOnlyDictionary<string, object> readOnlyDict)
+        {
             return new ProviderState(name, readOnlyDict);
+        }
 
         if (parameters is IDictionary<string, object> dict)
+        {
             return new ProviderState(name, new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase));
+        }
 
         // Handle anonymous objects via reflection
         var resultDict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -98,7 +104,9 @@ public sealed class ProviderState
     {
         value = default;
         if (!Parameters.TryGetValue(name, out var rawValue))
+        {
             return false;
+        }
 
         try
         {

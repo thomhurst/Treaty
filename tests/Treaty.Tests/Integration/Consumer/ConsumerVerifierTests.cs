@@ -118,13 +118,17 @@ public class ConsumerVerifierTests : IAsyncDisposable
     public async Task Cleanup()
     {
         if (_mockServer != null)
-            await _mockServer.DisposeAsync();
+        {
+          await _mockServer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         if (_mockServer != null)
-            await _mockServer.DisposeAsync();
+        {
+          await _mockServer.DisposeAsync();
+        }
     }
 
     [Test]

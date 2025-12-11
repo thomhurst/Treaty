@@ -47,7 +47,9 @@ public sealed record BulkVerificationResult(
     public void ThrowIfAnyFailed()
     {
         if (FailedCount == 0)
+        {
             return;
+        }
 
         var allViolations = Failures
             .SelectMany(f => f.ValidationResult.Violations)
@@ -74,7 +76,9 @@ public sealed record BulkVerificationResult(
         sb.AppendLine($"Passed:   {PassedCount}");
         sb.AppendLine($"Failed:   {FailedCount}");
         if (SkippedCount > 0)
+        {
             sb.AppendLine($"Skipped:  {SkippedCount}");
+        }
         sb.AppendLine($"Duration: {Duration.TotalMilliseconds:F0}ms");
         sb.AppendLine();
 

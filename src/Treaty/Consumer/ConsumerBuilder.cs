@@ -203,7 +203,9 @@ public sealed class ConsumerBuilder
     public ConsumerValidationClient Build()
     {
         if (_contract == null)
+        {
             throw new InvalidOperationException("A contract must be specified using WithContract().");
+        }
 
         return new ConsumerValidationClient(
             _contract,

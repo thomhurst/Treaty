@@ -63,7 +63,9 @@ public class RetryPolicyTests
         {
             callCount++;
             if (callCount < 3)
+            {
                 throw new HttpRequestException("Connection failed");
+            }
             return "success";
         });
 
@@ -120,7 +122,9 @@ public class RetryPolicyTests
         {
             callCount++;
             if (callCount < 2)
+            {
                 throw new TaskCanceledException("Timeout", new TimeoutException("Request timed out"));
+            }
             return "success";
         });
 
@@ -147,7 +151,9 @@ public class RetryPolicyTests
         {
             callCount++;
             if (callCount < 2)
+            {
                 throw new OperationCanceledException("Timeout", new TimeoutException("Request timed out"));
+            }
             return "success";
         });
 

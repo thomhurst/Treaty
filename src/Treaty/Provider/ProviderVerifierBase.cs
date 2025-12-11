@@ -170,11 +170,15 @@ public abstract class ProviderVerifierBase : IProviderVerifier
     private static string GetPathFromRequest(HttpRequestMessage request)
     {
         if (request.RequestUri == null)
+        {
             return "/";
+        }
 
         // For absolute URIs, use PathAndQuery
         if (request.RequestUri.IsAbsoluteUri)
+        {
             return request.RequestUri.PathAndQuery;
+        }
 
         // For relative URIs, use OriginalString (which contains the path)
         return request.RequestUri.OriginalString;
@@ -215,7 +219,9 @@ public abstract class ProviderVerifierBase : IProviderVerifier
         CancellationToken cancellationToken)
     {
         if (_stateHandler == null || states.Count == 0)
+        {
             return;
+        }
 
         // Tear down in reverse order
         for (int i = states.Count - 1; i >= 0; i--)
@@ -376,7 +382,9 @@ public abstract class ProviderVerifierBase : IProviderVerifier
         }
 
         if (responseExpectation == null)
+        {
             return;
+        }
 
         _logger.LogDebug("[Treaty] ✓ Status code {StatusCode} matches expected", statusCode);
 
@@ -523,9 +531,13 @@ public abstract class ProviderVerifierBase : IProviderVerifier
                 results.Add(result);
 
                 if (result.Passed)
+                {
                     passed++;
+                }
                 else
+                {
                     failed++;
+                }
 
                 if (!result.Passed && options.StopOnFirstFailure)
                 {
@@ -577,9 +589,13 @@ public abstract class ProviderVerifierBase : IProviderVerifier
             {
                 completed++;
                 if (result.Passed)
+                {
                     passed++;
+                }
                 else
+                {
                     failed++;
+                }
 
                 progress?.Report(new VerificationProgress(
                     totalEndpoints,

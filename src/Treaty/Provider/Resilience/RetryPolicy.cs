@@ -54,7 +54,9 @@ public sealed class RetryPolicy : IRetryPolicy
     private bool ShouldRetry(Exception ex, int attempt)
     {
         if (attempt >= _options.MaxRetries)
+        {
             return false;
+        }
 
         // Retry on transient HTTP errors and timeouts
         return ex is HttpRequestException

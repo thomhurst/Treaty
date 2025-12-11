@@ -178,7 +178,9 @@ public sealed class ProviderBuilder<TEntryPoint> where TEntryPoint : class
     public ProviderVerifier<TEntryPoint> Build()
     {
         if (_contract == null)
+        {
             throw new InvalidOperationException("A contract must be specified using WithContract().");
+        }
 
         return new ProviderVerifier<TEntryPoint>(
             _contract,

@@ -106,7 +106,9 @@ public sealed class ContractViolationException : Exception
     private static string FormatMessage(IReadOnlyList<ContractViolation> violations)
     {
         if (violations.Count == 0)
+        {
             return "Contract validation failed.";
+        }
 
         var sb = new StringBuilder();
         var groupedByEndpoint = violations.GroupBy(v => v.Endpoint);
@@ -126,9 +128,13 @@ public sealed class ContractViolationException : Exception
                 sb.AppendLine($"     {v.Message}");
 
                 if (v.Expected != null)
+                {
                     sb.AppendLine($"     Expected: {v.Expected}");
+                }
                 if (v.Actual != null)
+                {
                     sb.AppendLine($"     Actual:   {v.Actual}");
+                }
             }
         }
 

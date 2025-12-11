@@ -76,7 +76,10 @@ public sealed class OpenApiContractBuilder
 
     private void LogDiagnostics(OpenApiDiagnostic? diagnostic)
     {
-        if (diagnostic == null) return;
+        if (diagnostic == null)
+        {
+            return;
+        }
 
         if (diagnostic.Errors.Count > 0)
         {
@@ -143,24 +146,26 @@ public sealed class OpenApiContractBuilder
     {
         var endpoints = new List<EndpointContract>();
 
-        if (document.Paths != null)
+        foreach (var (path, pathItem) in document.Paths)
         {
-            foreach (var (path, pathItem) in document.Paths)
+            // Check inclusion/exclusion
+            if (_includedEndpoints.Count > 0 && !_includedEndpoints.Contains(path))
             {
-                // Check inclusion/exclusion
-                if (_includedEndpoints.Count > 0 && !_includedEndpoints.Contains(path))
-                    continue;
-                if (_excludedEndpoints.Contains(path))
-                    continue;
+                continue;
+            }
+            if (_excludedEndpoints.Contains(path))
+            {
+                continue;
+            }
 
-                if (pathItem.Operations != null)
-                {
-                    foreach (var (httpMethod, operation) in pathItem.Operations)
-                    {
-                        var endpoint = BuildEndpointContract(path, httpMethod, operation, pathItem.Parameters);
-                        endpoints.Add(endpoint);
-                    }
-                }
+            if (pathItem.Operations == null)
+            {
+                continue;
+            }
+            foreach (var (httpMethod, operation) in pathItem.Operations)
+            {
+                var endpoint = BuildEndpointContract(path, httpMethod, operation, pathItem.Parameters);
+                endpoints.Add(endpoint);
             }
         }
 
@@ -173,7 +178,9 @@ public sealed class OpenApiContractBuilder
     {
         var info = document.Info;
         if (info == null)
+        {
             return null;
+        }
 
         ContractContact? contact = null;
         if (info.Contact != null)
@@ -367,7 +374,9 @@ public sealed class OpenApiContractBuilder
     private static object? ConvertJsonNode(JsonNode? node)
     {
         if (node == null)
+        {
             return null;
+        }
 
         return node switch
         {
@@ -400,15 +409,36 @@ public sealed class OpenApiContractBuilder
     private static object ExtractNumber(JsonValue value)
     {
         // Try integer types first (more specific), then fall back to double
-        if (value.TryGetValue<int>(out var i)) return i;
-        if (value.TryGetValue<long>(out var l)) return l;
-        if (value.TryGetValue<double>(out var d)) return d;
-        if (value.TryGetValue<decimal>(out var dec)) return dec;
+        if (value.TryGetValue<int>(out var i))
+        {
+            return i;
+        }
+        if (value.TryGetValue<long>(out var l))
+        {
+            return l;
+        }
+        if (value.TryGetValue<double>(out var d))
+        {
+            return d;
+        }
+        if (value.TryGetValue<decimal>(out var dec))
+        {
+            return dec;
+        }
         // Fallback - parse from string representation
         var str = value.ToString();
-        if (int.TryParse(str, out var intVal)) return intVal;
-        if (long.TryParse(str, out var longVal)) return longVal;
-        if (double.TryParse(str, out var doubleVal)) return doubleVal;
+        if (int.TryParse(str, out var intVal))
+        {
+            return intVal;
+        }
+        if (long.TryParse(str, out var longVal))
+        {
+            return longVal;
+        }
+        if (double.TryParse(str, out var doubleVal))
+        {
+            return doubleVal;
+        }
         return str;
     }
 
@@ -476,16 +506,32 @@ public sealed class OpenApiContractBuilder
     private static QueryParameterType OpenApiSchemaToQueryParamType(IOpenApiSchema? schema)
     {
         if (schema == null)
+        {
             return QueryParameterType.String;
+        }
 
         var schemaType = schema.Type;
         if (schemaType == null)
+        {
             return QueryParameterType.String;
+        }
 
-        if (schemaType.Value.HasFlag(JsonSchemaType.Integer)) return QueryParameterType.Integer;
-        if (schemaType.Value.HasFlag(JsonSchemaType.Number)) return QueryParameterType.Number;
-        if (schemaType.Value.HasFlag(JsonSchemaType.Boolean)) return QueryParameterType.Boolean;
-        if (schemaType.Value.HasFlag(JsonSchemaType.Array)) return QueryParameterType.Array;
+        if (schemaType.Value.HasFlag(JsonSchemaType.Integer))
+        {
+            return QueryParameterType.Integer;
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Number))
+        {
+            return QueryParameterType.Number;
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Boolean))
+        {
+            return QueryParameterType.Boolean;
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Array))
+        {
+            return QueryParameterType.Array;
+        }
 
         return QueryParameterType.String;
     }

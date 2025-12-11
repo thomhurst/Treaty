@@ -146,7 +146,9 @@ public static class ContractComparer
     {
         // Compare body validators if both have them
         if (oldResponse.BodyValidator == null && newResponse.BodyValidator == null)
+        {
             return;
+        }
 
         if (oldResponse.BodyValidator == null && newResponse.BodyValidator != null)
         {
@@ -298,7 +300,9 @@ public static class ContractComparer
         }
 
         if (oldRequest == null || newRequest == null)
+        {
             return;
+        }
 
         // Compare request body types
         var oldType = oldRequest.BodyValidator?.ExpectedType;

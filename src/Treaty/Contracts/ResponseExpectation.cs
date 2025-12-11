@@ -123,7 +123,9 @@ public sealed class PartialValidationConfig
     internal PartialValidationConfig WithDirection(ValidationDirection direction)
     {
         if (Direction == direction)
+        {
             return this;
+        }
         return new PartialValidationConfig(PropertiesToValidate, StrictMode, direction);
     }
 

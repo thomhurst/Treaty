@@ -140,7 +140,9 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
     {
         _verifier?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     #region Basic Verification Tests

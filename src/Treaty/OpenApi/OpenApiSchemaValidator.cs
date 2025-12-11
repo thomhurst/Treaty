@@ -258,14 +258,18 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
                 if (direction == ValidationDirection.Request && properties != null)
                 {
                     if (properties.TryGetValue(requiredProp, out var propSchema) && propSchema.ReadOnly)
+                    {
                         continue;
+                    }
                 }
 
                 // Skip required check for writeOnly fields in responses (they shouldn't appear)
                 if (direction == ValidationDirection.Response && properties != null)
                 {
                     if (properties.TryGetValue(requiredProp, out var propSchema) && propSchema.WriteOnly)
+                    {
                         continue;
+                    }
                 }
 
                 if (!obj.ContainsKey(requiredProp))
@@ -684,7 +688,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     private static bool IsValidEmail(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
+        {
             return false;
+        }
         return Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
     }
 
@@ -742,11 +748,15 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
             {
                 // Skip readOnly properties when generating request samples
                 if (direction == ValidationDirection.Request && propSchema.ReadOnly)
+                {
                     continue;
+                }
 
                 // Skip writeOnly properties when generating response samples
                 if (direction == ValidationDirection.Response && propSchema.WriteOnly)
+                {
                     continue;
+                }
 
                 result[propName] = GenerateSampleValue(propSchema, direction);
             }
@@ -758,7 +768,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     {
         var items = schema.Items;
         if (items == null)
+        {
             return Array.Empty<object>();
+        }
 
         var minItems = schema.MinItems ?? 0;
         var maxItems = schema.MaxItems;
@@ -767,7 +779,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         // Generate at least minItems, default to 1, cap at 10 for sanity
         var count = Math.Max(minItems, 1);
         if (maxItems.HasValue)
+        {
             count = Math.Min(count, maxItems.Value);
+        }
         count = Math.Min(count, 10); // Prevent huge arrays
 
         var result = new List<object?>();
@@ -798,7 +812,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     private object? GenerateSampleValueWithVariation(IOpenApiSchema schema, int variationIndex, ValidationDirection direction = ValidationDirection.Both)
     {
         if (variationIndex == 0)
+        {
             return GenerateSampleValue(schema, direction);
+        }
 
         // Generate variation based on type
         var schemaType = GetSchemaTypeString(schema);
@@ -833,7 +849,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
         // If format handled it, apply length constraints
         if (baseValue != null)
+        {
             return ApplyLengthConstraints(baseValue, schema);
+        }
 
         // Handle pattern with best-effort
         var pattern = schema.Pattern;
@@ -854,11 +872,15 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
         // Pad if too short
         if (value.Length < minLength)
+        {
             value = value.PadRight(minLength, 'x');
+        }
 
         // Truncate if too long
         if (maxLength.HasValue && value.Length > maxLength.Value)
+        {
             value = value[..maxLength.Value];
+        }
 
         return value;
     }
@@ -875,7 +897,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
         // Try to detect simple character class patterns like [A-Z]+, [a-z]{3}, \d{4}
         if (TryGenerateFromCharacterClass(cleanPattern, out var result))
+        {
             return result;
+        }
 
         // Fallback for complex patterns
         return "pattern-match";
@@ -894,9 +918,13 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
             var count = 3; // Default count
 
             if (match.Groups[3].Success && int.TryParse(match.Groups[3].Value, out var explicitCount))
+            {
                 count = explicitCount;
+            }
             else if (quantifier == "+" || quantifier == "*")
+            {
                 count = 3;
+            }
 
             // Generate characters based on the character class
             var sampleChar = GetSampleCharFromClass(charClass);
@@ -910,7 +938,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         {
             var count = 3;
             if (digitMatch.Groups[2].Success && int.TryParse(digitMatch.Groups[2].Value, out var explicitCount))
+            {
                 count = explicitCount;
+            }
             result = new string('0', count);
             return true;
         }
@@ -921,7 +951,9 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         {
             var count = 3;
             if (wordMatch.Groups[2].Success && int.TryParse(wordMatch.Groups[2].Value, out var explicitCount))
+            {
                 count = explicitCount;
+            }
             result = new string('a', count);
             return true;
         }
@@ -933,11 +965,17 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     {
         // Simple heuristic for common character classes
         if (charClass.Contains("A-Z"))
+        {
             return 'A';
+        }
         if (charClass.Contains("a-z"))
+        {
             return 'a';
+        }
         if (charClass.Contains("0-9"))
+        {
             return '0';
+        }
 
         // Return first character in the class if simple
         return charClass.Length > 0 ? charClass[0] : 'x';
@@ -951,26 +989,42 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         long? exMax = null;
 
         if (!string.IsNullOrEmpty(schema.Minimum) && long.TryParse(schema.Minimum, out var minVal))
+        {
             min = minVal;
+        }
         if (!string.IsNullOrEmpty(schema.Maximum) && long.TryParse(schema.Maximum, out var maxVal))
+        {
             max = maxVal;
+        }
         if (!string.IsNullOrEmpty(schema.ExclusiveMinimum) && long.TryParse(schema.ExclusiveMinimum, out var exMinVal))
+        {
             exMin = exMinVal;
+        }
         if (!string.IsNullOrEmpty(schema.ExclusiveMaximum) && long.TryParse(schema.ExclusiveMaximum, out var exMaxVal))
+        {
             exMax = exMaxVal;
+        }
 
         // Calculate effective bounds
         long effectiveMin = long.MinValue;
         long effectiveMax = long.MaxValue;
 
         if (min.HasValue)
+        {
             effectiveMin = Math.Max(effectiveMin, min.Value);
+        }
         if (exMin.HasValue)
+        {
             effectiveMin = Math.Max(effectiveMin, exMin.Value + 1);
+        }
         if (max.HasValue)
+        {
             effectiveMax = Math.Min(effectiveMax, max.Value);
+        }
         if (exMax.HasValue)
+        {
             effectiveMax = Math.Min(effectiveMax, exMax.Value - 1);
+        }
 
         // Handle multipleOf constraint
         var multipleOf = schema.MultipleOf;
@@ -997,14 +1051,20 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
             // Ensure candidate is within bounds
             if (candidate <= effectiveMax)
+            {
                 return candidate;
+            }
         }
 
         // Return value within bounds
         if (effectiveMin != long.MinValue)
+        {
             return effectiveMin;
+        }
         if (effectiveMax != long.MaxValue)
+        {
             return effectiveMax;
+        }
         return 1;
     }
 
@@ -1016,13 +1076,21 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         decimal? exMax = null;
 
         if (!string.IsNullOrEmpty(schema.Minimum) && decimal.TryParse(schema.Minimum, out var minVal))
+        {
             min = minVal;
+        }
         if (!string.IsNullOrEmpty(schema.Maximum) && decimal.TryParse(schema.Maximum, out var maxVal))
+        {
             max = maxVal;
+        }
         if (!string.IsNullOrEmpty(schema.ExclusiveMinimum) && decimal.TryParse(schema.ExclusiveMinimum, out var exMinVal))
+        {
             exMin = exMinVal;
+        }
         if (!string.IsNullOrEmpty(schema.ExclusiveMaximum) && decimal.TryParse(schema.ExclusiveMaximum, out var exMaxVal))
+        {
             exMax = exMaxVal;
+        }
 
         // Calculate effective bounds (use small epsilon for exclusive bounds)
         const decimal epsilon = 0.001m;
@@ -1030,13 +1098,21 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         decimal effectiveMax = decimal.MaxValue;
 
         if (min.HasValue)
+        {
             effectiveMin = Math.Max(effectiveMin, min.Value);
+        }
         if (exMin.HasValue)
+        {
             effectiveMin = Math.Max(effectiveMin, exMin.Value + epsilon);
+        }
         if (max.HasValue)
+        {
             effectiveMax = Math.Min(effectiveMax, max.Value);
+        }
         if (exMax.HasValue)
+        {
             effectiveMax = Math.Min(effectiveMax, exMax.Value - epsilon);
+        }
 
         // Handle multipleOf constraint
         var multipleOf = schema.MultipleOf;
@@ -1063,21 +1139,29 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
             // Ensure candidate is within bounds
             if (candidate <= effectiveMax)
+            {
                 return candidate;
+            }
         }
 
         // Return value within bounds
         if (effectiveMin != decimal.MinValue)
+        {
             return effectiveMin;
+        }
         if (effectiveMax != decimal.MaxValue)
+        {
             return effectiveMax;
+        }
         return 1.0m;
     }
 
     private static object? ConvertJsonNode(JsonNode? node)
     {
         if (node == null)
+        {
             return null;
+        }
 
         return node switch
         {
@@ -1108,15 +1192,36 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     private static object ExtractNumber(JsonValue value)
     {
         // Try integer types first (more specific), then fall back to double
-        if (value.TryGetValue<int>(out var i)) return i;
-        if (value.TryGetValue<long>(out var l)) return l;
-        if (value.TryGetValue<double>(out var d)) return d;
-        if (value.TryGetValue<decimal>(out var dec)) return dec;
+        if (value.TryGetValue<int>(out var i))
+        {
+            return i;
+        }
+        if (value.TryGetValue<long>(out var l))
+        {
+            return l;
+        }
+        if (value.TryGetValue<double>(out var d))
+        {
+            return d;
+        }
+        if (value.TryGetValue<decimal>(out var dec))
+        {
+            return dec;
+        }
         // Fallback - parse from string representation
         var str = value.ToString();
-        if (int.TryParse(str, out var intVal)) return intVal;
-        if (long.TryParse(str, out var longVal)) return longVal;
-        if (double.TryParse(str, out var doubleVal)) return doubleVal;
+        if (int.TryParse(str, out var intVal))
+        {
+            return intVal;
+        }
+        if (long.TryParse(str, out var longVal))
+        {
+            return longVal;
+        }
+        if (double.TryParse(str, out var doubleVal))
+        {
+            return doubleVal;
+        }
         return str;
     }
 
@@ -1141,15 +1246,35 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     {
         var schemaType = schema.Type;
         if (schemaType == null)
+        {
             return null;
+        }
 
         // JsonSchemaType is a flags enum, extract the primary type
-        if (schemaType.Value.HasFlag(JsonSchemaType.Object)) return "object";
-        if (schemaType.Value.HasFlag(JsonSchemaType.Array)) return "array";
-        if (schemaType.Value.HasFlag(JsonSchemaType.String)) return "string";
-        if (schemaType.Value.HasFlag(JsonSchemaType.Integer)) return "integer";
-        if (schemaType.Value.HasFlag(JsonSchemaType.Number)) return "number";
-        if (schemaType.Value.HasFlag(JsonSchemaType.Boolean)) return "boolean";
+        if (schemaType.Value.HasFlag(JsonSchemaType.Object))
+        {
+            return "object";
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Array))
+        {
+            return "array";
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.String))
+        {
+            return "string";
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Integer))
+        {
+            return "integer";
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Number))
+        {
+            return "number";
+        }
+        if (schemaType.Value.HasFlag(JsonSchemaType.Boolean))
+        {
+            return "boolean";
+        }
 
         return null;
     }
@@ -1228,7 +1353,10 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
     {
         // Reference format: "#/components/schemas/SchemaName"
         var schemaName = reference.Split('/').LastOrDefault();
-        if (schemaName == null) return null;
+        if (schemaName == null)
+        {
+            return null;
+        }
 
         // Find in subSchemas by matching name
         return subSchemas.FirstOrDefault(s =>

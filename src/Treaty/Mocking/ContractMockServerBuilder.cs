@@ -244,7 +244,9 @@ public sealed class ContractMockResponseBuilder
     public ContractMockEndpointBuilder ReturnSequence(params MockSequenceResponse[] responses)
     {
         if (responses.Length == 0)
+        {
             throw new ArgumentException("At least one response is required.", nameof(responses));
+        }
 
         _config.ResponseRules.Add(new ContractMockResponseRule(_condition, responses));
         return _parent;

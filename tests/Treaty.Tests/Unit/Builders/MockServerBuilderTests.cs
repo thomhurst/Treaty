@@ -48,14 +48,18 @@ public class MockServerBuilderTests : IAsyncDisposable
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _client?.Dispose();
         if (_mockServer != null)
+        {
             await _mockServer.DisposeAsync();
+        }
     }
 
     [Test]

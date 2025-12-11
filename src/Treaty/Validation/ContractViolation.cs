@@ -22,13 +22,21 @@ public sealed record ContractViolation(
     {
         var result = $"  - {Message}";
         if (!string.IsNullOrEmpty(Path) && Path != "$")
+        {
             result += $" at path '{Path}'";
+        }
         if (Expected != null)
+        {
             result += $" (expected: {Expected}";
+        }
         if (Actual != null)
+        {
             result += Expected != null ? $", got: {Actual})" : $" (got: {Actual})";
+        }
         else if (Expected != null)
+        {
             result += ")";
+        }
         return result;
     }
 }

@@ -81,7 +81,9 @@ public sealed class EndpointContract
     public bool Matches(string path, HttpMethod method)
     {
         if (Method != method)
+        {
             return false;
+        }
 
         // Remove query string if present
         var pathWithoutQuery = path.Split('?')[0];
@@ -135,12 +137,16 @@ public sealed class EndpointContract
     public string GetExamplePath()
     {
         if (_pathParameterNames.Count == 0)
+        {
             return PathTemplate;
+        }
 
         if (ExampleData == null)
+        {
             throw new InvalidOperationException(
                 $"Cannot generate example path for '{PathTemplate}': No example data provided. " +
                 $"Use WithExampleData() or WithExamplePathParams() to specify values for path parameters: {string.Join(", ", _pathParameterNames)}");
+        }
 
         var path = PathTemplate;
         foreach (var paramName in _pathParameterNames)

@@ -201,7 +201,9 @@ internal sealed class ContractValidatingHandler(ContractDefinition contract, ILo
         }
 
         if (responseExpectation == null)
+        {
             return;
+        }
 
         // Validate response body
         if (responseExpectation.BodyValidator != null)

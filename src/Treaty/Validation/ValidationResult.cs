@@ -37,6 +37,8 @@ public sealed record ValidationResult(
     public void ThrowIfInvalid()
     {
         if (!IsValid)
+        {
             throw new ContractViolationException(Violations);
+        }
     }
 }
