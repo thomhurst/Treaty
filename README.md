@@ -37,7 +37,7 @@ var contract = Contract.FromOpenApi("api-spec.yaml")
 // In your test class
 var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .Build();
 

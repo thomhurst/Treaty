@@ -131,7 +131,7 @@ var contract = Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users")
     .Build();
 
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .Build();
 
@@ -347,7 +347,7 @@ var contract = Contract.FromOpenApi("api-spec.yaml")
     .Build();
 
 // Provider verification
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .Build();
 

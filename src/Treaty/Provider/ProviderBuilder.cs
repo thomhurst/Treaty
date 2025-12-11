@@ -8,10 +8,10 @@ using Treaty.Contracts;
 namespace Treaty.Provider;
 
 /// <summary>
-/// Builder for creating provider verifiers.
+/// Builder for creating provider verifiers using WebApplicationFactory.
 /// </summary>
-/// <typeparam name="TStartup">The startup class of the API being verified.</typeparam>
-public sealed class ProviderBuilder<TStartup> where TStartup : class
+/// <typeparam name="TEntryPoint">The entry point class of the API being verified (typically Program or Startup).</typeparam>
+public sealed class ProviderBuilder<TEntryPoint> where TEntryPoint : class
 {
     private ContractDefinition? _contract;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
@@ -31,7 +31,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// </summary>
     /// <param name="contract">The contract to use for verification.</param>
     /// <returns>This builder for chaining.</returns>
-    public ProviderBuilder<TStartup> WithContract(ContractDefinition contract)
+    public ProviderBuilder<TEntryPoint> WithContract(ContractDefinition contract)
     {
         _contract = contract ?? throw new ArgumentNullException(nameof(contract));
         return this;
@@ -42,7 +42,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// </summary>
     /// <param name="loggerFactory">The logger factory to use.</param>
     /// <returns>This builder for chaining.</returns>
-    public ProviderBuilder<TStartup> WithLogging(ILoggerFactory loggerFactory)
+    public ProviderBuilder<TEntryPoint> WithLogging(ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         return this;
@@ -53,7 +53,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// </summary>
     /// <param name="stateHandler">The state handler implementation.</param>
     /// <returns>This builder for chaining.</returns>
-    public ProviderBuilder<TStartup> WithStateHandler(IStateHandler stateHandler)
+    public ProviderBuilder<TEntryPoint> WithStateHandler(IStateHandler stateHandler)
     {
         _stateHandler = stateHandler ?? throw new ArgumentNullException(nameof(stateHandler));
         return this;
@@ -75,7 +75,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     ///     .ForState("the cart is empty", () => _cart.Clear()))
     /// </code>
     /// </example>
-    public ProviderBuilder<TStartup> WithStateHandler(Action<StateHandlerBuilder> configure)
+    public ProviderBuilder<TEntryPoint> WithStateHandler(Action<StateHandlerBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
         var builder = new StateHandlerBuilder();
@@ -85,7 +85,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     }
 
     /// <summary>
-    /// Configures services for the test server. Use this to replace real services with test doubles.
+    /// Configures services for the application. Use this to replace real services with test doubles.
     /// </summary>
     /// <param name="configure">Action to configure services.</param>
     /// <returns>This builder for chaining.</returns>
@@ -102,7 +102,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// })
     /// </code>
     /// </example>
-    public ProviderBuilder<TStartup> ConfigureServices(Action<IServiceCollection> configure)
+    public ProviderBuilder<TEntryPoint> ConfigureServices(Action<IServiceCollection> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
         _serviceConfigurations.Add(configure);
@@ -110,7 +110,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     }
 
     /// <summary>
-    /// Configures application configuration for the test server. Use this to override settings like connection strings or feature flags.
+    /// Configures application configuration. Use this to override settings like connection strings or feature flags.
     /// </summary>
     /// <param name="configure">Action to configure the configuration builder.</param>
     /// <returns>This builder for chaining.</returns>
@@ -126,7 +126,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// })
     /// </code>
     /// </example>
-    public ProviderBuilder<TStartup> ConfigureAppConfiguration(Action<IConfigurationBuilder> configure)
+    public ProviderBuilder<TEntryPoint> ConfigureAppConfiguration(Action<IConfigurationBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
         _configurationActions.Add(configure);
@@ -134,7 +134,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     }
 
     /// <summary>
-    /// Sets the hosting environment for the test server.
+    /// Sets the hosting environment for the application.
     /// </summary>
     /// <param name="environment">The environment name (e.g., "Development", "Testing", "Production").</param>
     /// <returns>This builder for chaining.</returns>
@@ -143,7 +143,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// .UseEnvironment("Testing")
     /// </code>
     /// </example>
-    public ProviderBuilder<TStartup> UseEnvironment(string environment)
+    public ProviderBuilder<TEntryPoint> UseEnvironment(string environment)
     {
         _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         return this;
@@ -163,7 +163,7 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// })
     /// </code>
     /// </example>
-    public ProviderBuilder<TStartup> ConfigureWebHost(Action<IWebHostBuilder> configure)
+    public ProviderBuilder<TEntryPoint> ConfigureWebHost(Action<IWebHostBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
         _webHostConfigurations.Add(configure);
@@ -175,12 +175,12 @@ public sealed class ProviderBuilder<TStartup> where TStartup : class
     /// </summary>
     /// <returns>The configured provider verifier.</returns>
     /// <exception cref="InvalidOperationException">Thrown if no contract was specified.</exception>
-    public ProviderVerifier<TStartup> Build()
+    public ProviderVerifier<TEntryPoint> Build()
     {
         if (_contract == null)
             throw new InvalidOperationException("A contract must be specified using WithContract().");
 
-        return new ProviderVerifier<TStartup>(
+        return new ProviderVerifier<TEntryPoint>(
             _contract,
             _loggerFactory,
             _stateHandler,

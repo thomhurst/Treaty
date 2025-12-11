@@ -63,7 +63,7 @@ public class UserApiTests
         // Arrange - Load contract and create provider verifier
         var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-        var provider = ProviderVerifier.ForTestServer<Startup>()
+        var provider = ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
             .Build();
 

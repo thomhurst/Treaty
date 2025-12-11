@@ -39,14 +39,14 @@ public sealed class EndpointTest
     /// <summary>
     /// Verifies this endpoint against a provider using the specified verifier.
     /// </summary>
-    /// <typeparam name="TStartup">The provider's startup class.</typeparam>
+    /// <typeparam name="TEntryPoint">The provider's entry point class (Program or Startup).</typeparam>
     /// <param name="verifier">The provider verifier instance.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The validation result.</returns>
     /// <exception cref="ContractViolationException">Thrown when validation fails.</exception>
-    public async Task VerifyAsync<TStartup>(
-        ProviderVerifier<TStartup> verifier,
-        CancellationToken cancellationToken = default) where TStartup : class
+    public async Task VerifyAsync<TEntryPoint>(
+        ProviderVerifier<TEntryPoint> verifier,
+        CancellationToken cancellationToken = default) where TEntryPoint : class
     {
         var path = Endpoint.GetExampleUrl();
         await verifier.VerifyAsync(
@@ -62,13 +62,13 @@ public sealed class EndpointTest
     /// <summary>
     /// Verifies this endpoint and returns the result without throwing.
     /// </summary>
-    /// <typeparam name="TStartup">The provider's startup class.</typeparam>
+    /// <typeparam name="TEntryPoint">The provider's entry point class (Program or Startup).</typeparam>
     /// <param name="verifier">The provider verifier instance.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The validation result.</returns>
-    public async Task<ValidationResult> TryVerifyAsync<TStartup>(
-        ProviderVerifier<TStartup> verifier,
-        CancellationToken cancellationToken = default) where TStartup : class
+    public async Task<ValidationResult> TryVerifyAsync<TEntryPoint>(
+        ProviderVerifier<TEntryPoint> verifier,
+        CancellationToken cancellationToken = default) where TEntryPoint : class
     {
         var path = Endpoint.GetExampleUrl();
         return await verifier.TryVerifyAsync(

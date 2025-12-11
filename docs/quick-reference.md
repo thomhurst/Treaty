@@ -18,7 +18,7 @@ using Treaty;
 | `MockServer` | `FromOpenApi(path)` | Create mock server from file | `MockServerBuilder` |
 | `MockServer` | `FromOpenApi(stream, format)` | Create mock server from stream | `MockServerBuilder` |
 | `MockServer` | `FromContract(contract)` | Create mock server from contract | `ContractMockServerBuilder` |
-| `ProviderVerifier` | `ForTestServer<TStartup>()` | Create TestServer-based verifier | `ProviderBuilder<T>` |
+| `ProviderVerifier` | `ForWebApplication<TEntryPoint>()` | Create WebApplicationFactory-based verifier | `ProviderBuilder<T>` |
 | `ProviderVerifier` | `ForHttpClient()` | Create HTTP-based verifier | `HttpProviderBuilder` |
 | `ConsumerVerifier` | `Create()` | Create consumer verifier | `ConsumerBuilder` |
 
@@ -40,10 +40,10 @@ var contract = Contract.FromOpenApi("api-spec.yaml")
 
 ## Provider Verification
 
-### TestServer (In-Process)
+### WebApplicationFactory (In-Process)
 
 ```csharp
-using var provider = ProviderVerifier.ForTestServer<Startup>()
+using var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", () => SeedUser()))
@@ -231,7 +231,7 @@ var bulkResult = await provider.VerifyAllAsync(
 var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
-ProviderVerifier.ForTestServer<Startup>()
+ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
     .Build();

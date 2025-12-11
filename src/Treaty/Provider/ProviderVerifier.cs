@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,12 +9,12 @@ using Treaty.Contracts;
 namespace Treaty.Provider;
 
 /// <summary>
-/// Verifies that an API provider implementation meets contract expectations using TestServer.
+/// Verifies that an API provider implementation meets contract expectations using WebApplicationFactory.
 /// </summary>
-/// <typeparam name="TStartup">The startup class of the API being verified.</typeparam>
-public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TStartup : class
+/// <typeparam name="TEntryPoint">The entry point class of the API being verified (typically Program or Startup).</typeparam>
+public sealed class ProviderVerifier<TEntryPoint> : ProviderVerifierBase where TEntryPoint : class
 {
-    private readonly IHost _host;
+    private readonly WebApplicationFactory<TEntryPoint> _factory;
     private readonly HttpClient _client;
 
     internal ProviderVerifier(
@@ -27,53 +27,13 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
         string? environment = null)
         : base(contract, loggerFactory, stateHandler)
     {
-        var builder = new HostBuilder()
-            .ConfigureWebHost(webBuilder =>
-            {
-                webBuilder
-                    .UseTestServer()
-                    .UseStartup<TStartup>();
+        _factory = new TreatyWebApplicationFactory<TEntryPoint>(
+            environment,
+            configurationActions,
+            serviceConfigurations,
+            webHostConfigurations);
 
-                // Apply environment if specified
-                if (!string.IsNullOrEmpty(environment))
-                {
-                    webBuilder.UseEnvironment(environment);
-                }
-
-                // Apply configuration overrides
-                if (configurationActions != null)
-                {
-                    foreach (var configAction in configurationActions)
-                    {
-                        webBuilder.ConfigureAppConfiguration(configAction);
-                    }
-                }
-
-                // Apply service configurations (run after Startup.ConfigureServices)
-                if (serviceConfigurations != null)
-                {
-                    webBuilder.ConfigureServices(services =>
-                    {
-                        foreach (var serviceConfig in serviceConfigurations)
-                        {
-                            serviceConfig(services);
-                        }
-                    });
-                }
-
-                // Apply custom web host configurations
-                if (webHostConfigurations != null)
-                {
-                    foreach (var webHostConfig in webHostConfigurations)
-                    {
-                        webHostConfig(webBuilder);
-                    }
-                }
-            });
-
-        _host = builder.Build();
-        _host.Start();
-        _client = _host.GetTestClient();
+        _client = _factory.CreateClient();
     }
 
     /// <inheritdoc />
@@ -92,8 +52,84 @@ public sealed class ProviderVerifier<TStartup> : ProviderVerifierBase where TSta
             if (!_disposed)
             {
                 _client.Dispose();
-                _host.Dispose();
+                _factory.Dispose();
                 _disposed = true;
+            }
+        }
+    }
+}
+
+/// <summary>
+/// Custom WebApplicationFactory that supports both traditional Startup classes and minimal API Program classes.
+/// </summary>
+internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint> where TEntryPoint : class
+{
+    private readonly string? _environment;
+    private readonly IEnumerable<Action<IConfigurationBuilder>>? _configurationActions;
+    private readonly IEnumerable<Action<IServiceCollection>>? _serviceConfigurations;
+    private readonly IEnumerable<Action<IWebHostBuilder>>? _webHostConfigurations;
+
+    public TreatyWebApplicationFactory(
+        string? environment,
+        IEnumerable<Action<IConfigurationBuilder>>? configurationActions,
+        IEnumerable<Action<IServiceCollection>>? serviceConfigurations,
+        IEnumerable<Action<IWebHostBuilder>>? webHostConfigurations)
+    {
+        _environment = environment;
+        _configurationActions = configurationActions;
+        _serviceConfigurations = serviceConfigurations;
+        _webHostConfigurations = webHostConfigurations;
+    }
+
+    protected override IHostBuilder? CreateHostBuilder()
+    {
+        // For traditional Startup classes, create a host builder that uses UseStartup<T>
+        // This is called before CreateHost and allows us to set up the Startup pattern
+        return Host.CreateDefaultBuilder()
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<TEntryPoint>();
+            });
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        // Set content root to current directory (required for Startup classes in test assemblies)
+        builder.UseContentRoot(Directory.GetCurrentDirectory());
+
+        // Apply environment if specified
+        if (!string.IsNullOrEmpty(_environment))
+        {
+            builder.UseEnvironment(_environment);
+        }
+
+        // Apply configuration overrides
+        if (_configurationActions != null)
+        {
+            foreach (var configAction in _configurationActions)
+            {
+                builder.ConfigureAppConfiguration(configAction);
+            }
+        }
+
+        // Apply service configurations (run after app's ConfigureServices)
+        if (_serviceConfigurations != null)
+        {
+            builder.ConfigureServices(services =>
+            {
+                foreach (var serviceConfig in _serviceConfigurations)
+                {
+                    serviceConfig(services);
+                }
+            });
+        }
+
+        // Apply custom web host configurations
+        if (_webHostConfigurations != null)
+        {
+            foreach (var webHostConfig in _webHostConfigurations)
+            {
+                webHostConfig(builder);
             }
         }
     }

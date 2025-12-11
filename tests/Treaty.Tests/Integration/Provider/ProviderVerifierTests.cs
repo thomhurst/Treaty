@@ -91,7 +91,7 @@ public class ProviderVerifierTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
         var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _provider = ProviderVerifier.ForTestServer<TestStartup>()
+        _provider = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contract)
             .Build();
     }

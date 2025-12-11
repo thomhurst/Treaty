@@ -36,7 +36,7 @@ The library provides domain-specific static classes as entry points:
 - `MockServer.FromContract(contract)` - Create mock server from loaded contract
 
 **ProviderVerifier** (`src/Treaty/ProviderVerifier.cs`)
-- `ProviderVerifier.ForTestServer<TStartup>()` - Create TestServer-based verifier for API testing
+- `ProviderVerifier.ForWebApplication<TEntryPoint>()` - Create WebApplicationFactory-based verifier for API testing
 - `ProviderVerifier.ForHttpClient()` - Create HTTP-based verifier for live API testing
 
 **ConsumerVerifier** (`src/Treaty/ConsumerVerifier.cs`)
@@ -55,7 +55,7 @@ The library provides domain-specific static classes as entry points:
 - `MockServer` / `MockServerBuilder` - Mock server from OpenAPI specs
 
 **Provider Verification** (`src/Treaty/Provider/`)
-- `ProviderVerifier<TStartup>` - Uses TestServer to verify API endpoints
+- `ProviderVerifier<TEntryPoint>` - Uses WebApplicationFactory to verify API endpoints
 - `IStateHandler` - Interface for setting up provider states before verification
 - Supports bulk verification with parallel execution
 

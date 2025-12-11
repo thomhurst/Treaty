@@ -14,9 +14,9 @@ When you're the **provider** (the team building the API), provider verification 
 
 ## Setup
 
-### Using TestServer (Recommended)
+### Using WebApplicationFactory (Recommended)
 
-Treaty uses `Microsoft.AspNetCore.TestHost` internally, so verification runs in-memory without network overhead:
+Treaty uses `Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory` internally, so verification runs in-memory without network overhead:
 
 ```csharp
 using Treaty;
@@ -29,7 +29,7 @@ public class UserApiProviderTests : IDisposable
     {
         var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-        _provider = ProviderVerifier.ForTestServer<Startup>()
+        _provider = ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
             .Build();
     }
@@ -47,7 +47,7 @@ public class UserApiProviderTests : IDisposable
 }
 ```
 
-The `TStartup` type parameter should be your ASP.NET Core startup class or `Program` class.
+The `TEntryPoint` type parameter should be your ASP.NET Core `Program` class or `Startup` class.
 
 ## Verifying Endpoints
 
@@ -94,7 +94,7 @@ Verify all endpoints at once using `VerifyAllAsync`:
 ```csharp
 var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .Build();
 
@@ -159,7 +159,7 @@ Provider states set up test data before verification. This is useful when endpoi
 ```csharp
 var contract = Contract.FromOpenApi("api-spec.yaml").Build();
 
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", async parameters =>
@@ -207,7 +207,7 @@ public class TestStateHandler : IStateHandler
 }
 
 // Usage
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(new TestStateHandler(testDb))
     .Build();
@@ -224,7 +224,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
     builder.SetMinimumLevel(LogLevel.Debug);
 });
 
-var provider = ProviderVerifier.ForTestServer<Startup>()
+var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
     .Build();

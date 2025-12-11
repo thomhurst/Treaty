@@ -63,7 +63,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
         var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _provider = ProviderVerifier.ForTestServer<ConfigurableTestStartup>()
+        _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
             .ConfigureServices(services =>
             {
@@ -90,7 +90,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
         var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _provider = ProviderVerifier.ForTestServer<ConfigurableTestStartup>()
+        _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
             .ConfigureAppConfiguration(config =>
             {
@@ -115,7 +115,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
         var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _provider = ProviderVerifier.ForTestServer<ConfigurableTestStartup>()
+        _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
             .UseEnvironment("Testing")
             .Build();
@@ -134,7 +134,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
         var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
 
-        _provider = ProviderVerifier.ForTestServer<ConfigurableTestStartup>()
+        _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
             .ConfigureWebHost(webBuilder =>
             {
@@ -158,7 +158,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
 
         var servicesCalled = new List<string>();
 
-        _provider = ProviderVerifier.ForTestServer<ConfigurableTestStartup>()
+        _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
             .ConfigureServices(services =>
             {

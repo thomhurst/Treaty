@@ -8,17 +8,17 @@ namespace Treaty.Testing;
 /// Base class for Treaty contract verification tests.
 /// Provides automatic setup and teardown of the provider verifier.
 /// </summary>
-/// <typeparam name="TStartup">The startup class of the API being verified.</typeparam>
-public abstract class TreatyTestBase<TStartup> : IDisposable where TStartup : class
+/// <typeparam name="TEntryPoint">The entry point class of the API being verified (Program or Startup).</typeparam>
+public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoint : class
 {
-    private ProviderVerifier<TStartup>? _provider;
+    private ProviderVerifier<TEntryPoint>? _provider;
     private bool _disposed;
 
     /// <summary>
     /// Gets the provider verifier instance.
     /// The verifier is lazily created when first accessed.
     /// </summary>
-    protected ProviderVerifier<TStartup> Provider => _provider ??= CreateVerifier();
+    protected ProviderVerifier<TEntryPoint> Provider => _provider ??= CreateVerifier();
 
     /// <summary>
     /// Gets the contract to be verified.
@@ -46,9 +46,9 @@ public abstract class TreatyTestBase<TStartup> : IDisposable where TStartup : cl
     /// Creates the provider verifier.
     /// Override to customize verifier creation.
     /// </summary>
-    protected virtual ProviderVerifier<TStartup> CreateVerifier()
+    protected virtual ProviderVerifier<TEntryPoint> CreateVerifier()
     {
-        var builder = new ProviderBuilder<TStartup>()
+        var builder = new ProviderBuilder<TEntryPoint>()
             .WithContract(Contract)
             .WithLogging(LoggerFactory);
 
@@ -67,7 +67,7 @@ public abstract class TreatyTestBase<TStartup> : IDisposable where TStartup : cl
     /// Override to add custom configuration.
     /// </summary>
     /// <param name="builder">The provider builder.</param>
-    protected virtual void ConfigureProvider(ProviderBuilder<TStartup> builder)
+    protected virtual void ConfigureProvider(ProviderBuilder<TEntryPoint> builder)
     {
         // Override to add custom configuration
     }
