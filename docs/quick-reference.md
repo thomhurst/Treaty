@@ -47,7 +47,7 @@ using var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", () => SeedUser()))
-    await .BuildAsync();
+    .BuildAsync();
 
 // Single endpoint
 await provider.VerifyAsync("/users/123", HttpMethod.Get);
@@ -64,7 +64,7 @@ using var provider = await ProviderVerifier.ForHttpClient()
     .WithContract(contract)
     .WithBearerToken("your-token")
     .WithRetryPolicy()
-    await .BuildAsync();
+    .BuildAsync();
 
 await provider.VerifyAllAsync();
 ```
@@ -194,10 +194,10 @@ if (diff.HasBreakingChanges)
 // Custom options
 .WithRetryPolicy(new RetryPolicyOptions
 {
-    MaxRetries = 5,
-    InitialDelayMs = 100,
-    UseExponentialBackoff = true,
-    MaxDelay = TimeSpan.FromSeconds(10)
+    MaxRetries = await 5,
+    InitialDelayMs = await 100,
+    UseExponentialBackoff = await true,
+    MaxDelay = await TimeSpan.FromSeconds(10)
 })
 ```
 
@@ -248,5 +248,5 @@ var loggerFactory = await LoggerFactory.Create(builder =>
 ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
-    await .BuildAsync();
+    .BuildAsync();
 ```

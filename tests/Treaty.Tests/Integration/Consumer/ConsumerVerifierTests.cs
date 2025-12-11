@@ -106,7 +106,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _consumer = ConsumerVerifier.Create()
+        _consumer = await ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer.BaseUrl!)
             .BuildAsync();
@@ -233,7 +233,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        var consumer = ConsumerVerifier.Create()
+        var consumer = await ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
             .BuildAsync();
@@ -275,7 +275,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        var consumer = ConsumerVerifier.Create()
+        var consumer = await ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
             .BuildAsync();
@@ -313,7 +313,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        var consumer = ConsumerVerifier.Create()
+        var consumer = await ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
             .BuildAsync();

@@ -83,7 +83,7 @@ public class StateHandlerTests
             return Task.CompletedTask;
         });
 
-        var compositeHandler = await builder.BuildAsync();
+        var compositeHandler = builder.Build();
         var state = ProviderState.Create("test state");
 
         // Act
@@ -104,7 +104,7 @@ public class StateHandlerTests
         builder.ForState("state 1", () => state1Called = true);
         builder.ForState("state 2", () => state2Called = true);
 
-        var compositeHandler = await builder.BuildAsync();
+        var compositeHandler = builder.Build();
 
         // Act
         await compositeHandler.SetupAsync(ProviderState.Create("state 1"));
@@ -129,7 +129,7 @@ public class StateHandlerTests
             return Task.CompletedTask;
         });
 
-        var compositeHandler = await builder.BuildAsync();
+        var compositeHandler = builder.Build();
 
         // Act
         await compositeHandler.TeardownAsync(ProviderState.Create("test state"));
@@ -145,7 +145,7 @@ public class StateHandlerTests
         var builder = new StateHandlerBuilder();
 
         // Act
-        var handler = await builder.BuildAsync();
+        var handler = builder.Build();
 
         // Assert
         handler.Should().NotBeNull();
@@ -159,7 +159,7 @@ public class StateHandlerTests
         builder.ForState("state 1", () => { });
         builder.ForState("state 2", () => { });
 
-        var compositeHandler = await builder.BuildAsync();
+        var compositeHandler = builder.Build();
 
         // Act & Assert
         compositeHandler.CanHandle("state 1").Should().BeTrue();

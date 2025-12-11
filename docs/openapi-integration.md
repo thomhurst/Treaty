@@ -133,7 +133,7 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
 
 var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    await .BuildAsync();
+    .BuildAsync();
 
 // Verify against OpenAPI schema
 await provider.VerifyAsync("/users/1", HttpMethod.Get);
@@ -149,7 +149,7 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
 var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    await .BuildAsync();
+    .BuildAsync();
 
 var client = await consumer.CreateHttpClient();
 // Requests are validated against OpenAPI request schemas
@@ -349,7 +349,7 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
 // Provider verification
 var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    await .BuildAsync();
+    .BuildAsync();
 
 await provider.VerifyAsync("/users/1", HttpMethod.Get);
 

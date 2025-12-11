@@ -27,13 +27,13 @@ This approach:
 
 ```csharp
 // Contract expects: { id, name }
-var contract = Treaty.DefineContract("API")
+var contract = await Treaty.DefineContract("API")
     .ForEndpoint("/users/{id}")
         .WithMethod(HttpMethod.Get)
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>())  // User has: Id, Name
-    await .BuildAsync();
+    .BuildAsync();
 
 // Response: { "id": 1, "name": "John", "extraField": "ignored" }
 // Result: PASS - extra field is ignored
@@ -54,13 +54,13 @@ Enable strict mode when extra fields should cause validation failures.
 ### Strict Mode Behavior
 
 ```csharp
-var contract = Treaty.DefineContract("API")
+var contract = await Treaty.DefineContract("API")
     .ForEndpoint("/users/{id}")
         .WithMethod(HttpMethod.Get)
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>(v => v.StrictMode()))
-    await .BuildAsync();
+    .BuildAsync();
 
 // Response: { "id": 1, "name": "John", "extraField": "value" }
 // Result: FAIL - UnexpectedField at $.extraField
@@ -176,13 +176,13 @@ With matchers:
 ### Lenient Mode Example
 
 ```csharp
-var contract = Treaty.DefineContract("Users API")
+var contract = await Treaty.DefineContract("Users API")
     .ForEndpoint("/users/{id}")
         .WithMethod(HttpMethod.Get)
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>())  // Lenient by default
-    await .BuildAsync();
+    .BuildAsync();
 
 // API returns: { "id": 1, "name": "John", "internalField": "..." }
 // Test result: PASS
@@ -192,13 +192,13 @@ var contract = Treaty.DefineContract("Users API")
 ### Strict Mode Example
 
 ```csharp
-var contract = Treaty.DefineContract("Users API")
+var contract = await Treaty.DefineContract("Users API")
     .ForEndpoint("/users/{id}")
         .WithMethod(HttpMethod.Get)
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>(v => v.StrictMode()))
-    await .BuildAsync();
+    .BuildAsync();
 
 // API returns: { "id": 1, "name": "John", "internalField": "..." }
 // Test result: FAIL
@@ -225,9 +225,9 @@ components:
 ```
 
 ```csharp
-var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
+var contract = await Treaty.FromOpenApiSpec("api-spec.yaml")
     .ForEndpoint("/users/{id}")
-    await .BuildAsync();
+    .BuildAsync();
 
 // API returns: { "id": 1, "name": "John", "extra": "..." }
 // Test result: FAIL (additionalProperties: false is honored)

@@ -38,7 +38,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .BuildAsync();
@@ -56,7 +56,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act - URL without trailing slash
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .BuildAsync();
@@ -74,7 +74,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act - URL with trailing slash
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com/")
             .WithContract(contract)
             .BuildAsync();
@@ -122,7 +122,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl(new Uri("https://api.example.com/"))
             .WithContract(contract)
             .BuildAsync();
@@ -154,7 +154,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .BuildAsync();
@@ -187,7 +187,7 @@ public class HttpProviderBuilderTests
         var loggerFactory = NullLoggerFactory.Instance;
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithLogging(loggerFactory)
@@ -220,10 +220,10 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
         var stateHandler = new StateHandlerBuilder()
             .ForState("test state", () => { })
-            .BuildAsync();
+            .Build();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithStateHandler(stateHandler)
@@ -253,7 +253,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithStateHandler(states => states.ForState("test state", () => { }))
@@ -287,7 +287,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithBearerToken("test-token")
@@ -306,7 +306,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithBearerToken(async ct =>
@@ -329,7 +329,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithApiKey("my-api-key")
@@ -348,7 +348,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithApiKey("my-api-key", "Authorization-Key")
@@ -367,7 +367,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithApiKey("my-api-key", "api_key", ApiKeyLocation.QueryString)
@@ -386,7 +386,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithBasicAuth("username", "password")
@@ -409,7 +409,7 @@ public class HttpProviderBuilderTests
         };
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithCustomHeaders(headers)
@@ -429,7 +429,7 @@ public class HttpProviderBuilderTests
         var customProvider = new BearerTokenAuthProvider("custom-token");
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithAuthentication(customProvider)
@@ -462,7 +462,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithRetryPolicy()
@@ -482,7 +482,7 @@ public class HttpProviderBuilderTests
         var options = new RetryPolicyOptions { MaxRetries = 5 };
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithRetryPolicy(options)
@@ -502,7 +502,7 @@ public class HttpProviderBuilderTests
         var customPolicy = new RetryPolicy();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithRetryPolicy(customPolicy)
@@ -540,7 +540,7 @@ public class HttpProviderBuilderTests
         };
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithHttpOptions(options)
@@ -569,7 +569,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithHttpOptions(opts => opts
@@ -606,7 +606,7 @@ public class HttpProviderBuilderTests
         var httpClient = new HttpClient { BaseAddress = new Uri("https://api.example.com/") };
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithHttpClient(httpClient)
@@ -669,7 +669,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .BuildAsync();
@@ -687,7 +687,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithLogging(NullLoggerFactory.Instance)
@@ -732,7 +732,7 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
 
         // Act
-        var verifier = builder
+        var verifier = await builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithBearerToken("first-token")

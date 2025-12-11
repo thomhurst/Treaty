@@ -23,7 +23,7 @@ var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    await .BuildAsync();
+    .BuildAsync();
 ```
 
 ## Creating a Validating HttpClient
@@ -36,8 +36,8 @@ var client = await consumer.CreateHttpClient();
 // This request is validated against the contract before being sent
 var response = await client.PostAsJsonAsync("/users", new CreateUserRequest
 {
-    Name = "John",
-    Email = "john@example.com"
+    Name = await "John",
+    Email = await "john@example.com"
 });
 ```
 
@@ -54,7 +54,7 @@ var handler = await consumer.CreateHandler();
 // Use with your own HttpClient setup
 var client = await new HttpClient(handler)
 {
-    BaseAddress = new Uri("https://api.example.com")
+    BaseAddress = await new Uri("https://api.example.com")
 };
 ```
 
@@ -80,7 +80,7 @@ var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    await .BuildAsync();
+    .BuildAsync();
 
 var client = await consumer.CreateHttpClient();
 
@@ -117,13 +117,13 @@ public class UserClientTests : IAsyncDisposable
     public async Task Setup()
     {
         _contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
-        _mockServer = MockServer.FromContract(_contract)await .BuildAsync();
+        _mockServer = await MockServer.FromContract(_contract).BuildAsync();
         await _mockServer.StartAsync();
 
         // Create client pointing to mock server
-        _client = new HttpClient
+        _client = await new HttpClient
         {
-            BaseAddress = new Uri(_mockServer.BaseUrl!)
+            BaseAddress = await new Uri(_mockServer.BaseUrl!)
         };
     }
 
@@ -145,8 +145,8 @@ public class UserClientTests : IAsyncDisposable
         // Act
         var response = await _client.PostAsJsonAsync("/users", new CreateUserRequest
         {
-            Name = "Test",
-            Email = "test@example.com"
+            Name = await "Test",
+            Email = await "test@example.com"
         });
 
         // Assert
@@ -176,7 +176,7 @@ var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
     .WithLogging(loggerFactory)
-    await .BuildAsync();
+    .BuildAsync();
 ```
 
 ## Error Handling
@@ -246,9 +246,9 @@ public abstract class ApiClientTestBase : IAsyncDisposable
     public async Task BaseSetup()
     {
         var contract = await LoadContractAsync();
-        MockServer = MockServer.FromContract(contract)await .BuildAsync();
+        MockServer = await MockServer.FromContract(contract).BuildAsync();
         await MockServer.StartAsync();
-        Client = new HttpClient { BaseAddress = new Uri(MockServer.BaseUrl!) };
+        Client = await new HttpClient { BaseAddress = new Uri(MockServer.BaseUrl!) };
     }
 
     public async ValueTask DisposeAsync()

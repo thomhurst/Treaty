@@ -65,7 +65,7 @@ public class UserApiTests
 
         var provider = await ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
-            await .BuildAsync();
+            .BuildAsync();
 
         // Act & Assert - Verify the endpoint
         await provider.VerifyAsync("/users/1", HttpMethod.Get);

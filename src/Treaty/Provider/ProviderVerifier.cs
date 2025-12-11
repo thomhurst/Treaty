@@ -87,11 +87,13 @@ internal sealed class TreatyWebApplicationFactory<TEntryPoint>(
     {
         var type = typeof(TEntryPoint);
 
-        // Check for Configure method (required for Startup classes)
-        var hasConfigureMethod = type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance) != null;
+        // Check for Configure method (required for Startup classes) - can be instance or static
+        var hasConfigureMethod = type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance) != null ||
+                                   type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static) != null;
 
-        // Check for ConfigureServices method (common in Startup classes)
-        var hasConfigureServicesMethod = type.GetMethod("ConfigureServices", BindingFlags.Public | BindingFlags.Instance) != null;
+        // Check for ConfigureServices method (common in Startup classes) - can be instance or static
+        var hasConfigureServicesMethod = type.GetMethod("ConfigureServices", BindingFlags.Public | BindingFlags.Instance) != null ||
+                                           type.GetMethod("ConfigureServices", BindingFlags.Public | BindingFlags.Static) != null;
 
         return hasConfigureMethod || hasConfigureServicesMethod;
     }

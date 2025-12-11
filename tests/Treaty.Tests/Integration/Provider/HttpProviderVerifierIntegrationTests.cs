@@ -128,7 +128,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .BuildAsync();
@@ -234,7 +234,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         // Create verifier with bearer token
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithBearerToken("test-token-123")
@@ -259,7 +259,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithApiKey("my-api-key", "X-API-Key")
@@ -284,7 +284,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithBasicAuth("user", "pass")
@@ -314,7 +314,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithRetryPolicy(new RetryPolicyOptions
@@ -344,7 +344,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithRetryPolicy() // Default options
@@ -373,7 +373,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpOptions(opts => opts.WithTimeout(TimeSpan.FromSeconds(60)))
@@ -398,7 +398,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
         var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpOptions(opts => opts.FollowRedirects(true, maxRedirects: 10))
@@ -433,7 +433,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             Timeout = TimeSpan.FromSeconds(30)
         };
 
-        _verifier = ProviderVerifier.ForHttpClient()
+        _verifier = await ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpClient(customClient)

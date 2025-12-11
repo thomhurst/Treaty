@@ -30,9 +30,9 @@ public class UserApiProviderTests : IDisposable
     {
         var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-        _provider = ProviderVerifier.ForWebApplication<Startup>()
+        _provider = await ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
-            await .BuildAsync();
+            .BuildAsync();
     }
 
     [Test]
@@ -61,8 +61,8 @@ await provider.VerifyAsync("/users/1", HttpMethod.Get);
 // With request body
 await provider.VerifyAsync("/users", HttpMethod.Post, body: new CreateUserRequest
 {
-    Name = "John",
-    Email = "john@example.com"
+    Name = await "John",
+    Email = await "john@example.com"
 });
 
 // With headers
@@ -97,7 +97,7 @@ var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    await .BuildAsync();
+    .BuildAsync();
 
 var results = await provider.VerifyAllAsync();
 
@@ -114,17 +114,17 @@ results.ThrowIfAnyFailed();
 var results = await provider.VerifyAllAsync(new VerificationOptions
 {
     // Stop on first failure (default: false)
-    StopOnFirstFailure = true,
+    StopOnFirstFailure = await true,
 
     // Skip endpoints without example data (default: true)
-    SkipEndpointsWithoutExampleData = true,
+    SkipEndpointsWithoutExampleData = await true,
 
     // Run endpoints in parallel (default: false)
-    ParallelExecution = true,
-    MaxDegreeOfParallelism = 4,
+    ParallelExecution = await true,
+    MaxDegreeOfParallelism = await 4,
 
     // Per-endpoint timeout
-    PerEndpointTimeout = TimeSpan.FromSeconds(30)
+    PerEndpointTimeout = await TimeSpan.FromSeconds(30)
 });
 ```
 
@@ -172,7 +172,7 @@ var provider = await ProviderVerifier.ForWebApplication<Startup>()
         {
             await _testDatabase.ClearUsers();
         }))
-    await .BuildAsync();
+    .BuildAsync();
 ```
 
 ### State Handler Interface
@@ -211,7 +211,7 @@ public class TestStateHandler : IStateHandler
 var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(new TestStateHandler(testDb))
-    await .BuildAsync();
+    .BuildAsync();
 ```
 
 ## Logging
@@ -228,7 +228,7 @@ var loggerFactory = await LoggerFactory.Create(builder =>
 var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
-    await .BuildAsync();
+    .BuildAsync();
 ```
 
 Sample output:
