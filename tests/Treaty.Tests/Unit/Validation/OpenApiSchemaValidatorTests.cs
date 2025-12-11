@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using FluentAssertions;
 using Microsoft.OpenApi;
@@ -600,6 +601,307 @@ public class OpenApiSchemaValidatorTests
         // Assert
         violations.Should().ContainSingle()
             .Which.Type.Should().Be(ViolationType.InvalidFormat);
+    }
+
+    #endregion
+
+    #region Sample Generation - Array Constraints
+
+    [Test]
+    public void GenerateSample_Array_RespectsMinItems()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            MinItems = 3,
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var array = JsonSerializer.Deserialize<JsonElement>(sampleJson);
+
+        // Assert
+        array.ValueKind.Should().Be(JsonValueKind.Array);
+        array.GetArrayLength().Should().BeGreaterThanOrEqualTo(3);
+    }
+
+    [Test]
+    public void GenerateSample_Array_RespectsMaxItems()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            MinItems = 5,
+            MaxItems = 3, // maxItems < minItems edge case - should cap at maxItems
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var array = JsonSerializer.Deserialize<JsonElement>(sampleJson);
+
+        // Assert
+        array.ValueKind.Should().Be(JsonValueKind.Array);
+        array.GetArrayLength().Should().BeLessThanOrEqualTo(3);
+    }
+
+    [Test]
+    public void GenerateSample_Array_CapsAtReasonableSize()
+    {
+        // Arrange - minItems very large, should be capped
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            MinItems = 100,
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var array = JsonSerializer.Deserialize<JsonElement>(sampleJson);
+
+        // Assert
+        array.ValueKind.Should().Be(JsonValueKind.Array);
+        array.GetArrayLength().Should().BeLessThanOrEqualTo(10); // Sanity cap
+    }
+
+    #endregion
+
+    #region Sample Generation - Integer Constraints
+
+    [Test]
+    public void GenerateSample_Integer_RespectsMinimum()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Minimum = "10"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<long>(sampleJson);
+
+        // Assert
+        value.Should().BeGreaterThanOrEqualTo(10);
+    }
+
+    [Test]
+    public void GenerateSample_Integer_RespectsMaximum()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Maximum = "5"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<long>(sampleJson);
+
+        // Assert
+        value.Should().BeLessThanOrEqualTo(5);
+    }
+
+    [Test]
+    public void GenerateSample_Integer_RespectsExclusiveMinimum()
+    {
+        // Arrange - exclusiveMinimum means value must be > 10
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            ExclusiveMinimum = "10"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<long>(sampleJson);
+
+        // Assert
+        value.Should().BeGreaterThan(10);
+    }
+
+    [Test]
+    public void GenerateSample_Integer_RespectsExclusiveMaximum()
+    {
+        // Arrange - exclusiveMaximum means value must be < 10
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            ExclusiveMaximum = "10"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<long>(sampleJson);
+
+        // Assert
+        value.Should().BeLessThan(10);
+    }
+
+    [Test]
+    public void GenerateSample_Integer_HandlesBothBounds()
+    {
+        // Arrange - value must be >= 5 and < 10
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Minimum = "5",
+            ExclusiveMaximum = "10"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<long>(sampleJson);
+
+        // Assert
+        value.Should().BeGreaterThanOrEqualTo(5);
+        value.Should().BeLessThan(10);
+    }
+
+    #endregion
+
+    #region Sample Generation - Number Constraints
+
+    [Test]
+    public void GenerateSample_Number_RespectsExclusiveBounds()
+    {
+        // Arrange - value must be > 0 and < 100
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Number,
+            ExclusiveMinimum = "0",
+            ExclusiveMaximum = "100"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<decimal>(sampleJson);
+
+        // Assert
+        value.Should().BeGreaterThan(0);
+        value.Should().BeLessThan(100);
+    }
+
+    #endregion
+
+    #region Sample Generation - String Constraints
+
+    [Test]
+    public void GenerateSample_String_RespectsMinLength()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            MinLength = 10
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().NotBeNull();
+        value!.Length.Should().BeGreaterThanOrEqualTo(10);
+    }
+
+    [Test]
+    public void GenerateSample_String_RespectsMaxLength()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            MaxLength = 3
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().NotBeNull();
+        value!.Length.Should().BeLessThanOrEqualTo(3);
+    }
+
+    [Test]
+    public void GenerateSample_String_RespectsMinAndMaxLength()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            MinLength = 5,
+            MaxLength = 8
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().NotBeNull();
+        value!.Length.Should().BeGreaterThanOrEqualTo(5);
+        value.Length.Should().BeLessThanOrEqualTo(8);
+    }
+
+    [Test]
+    public void GenerateSample_String_FormatWithLengthConstraints()
+    {
+        // Arrange - email format with maxLength should truncate if needed
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Format = "email",
+            MaxLength = 10
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().NotBeNull();
+        value!.Length.Should().BeLessThanOrEqualTo(10);
+    }
+
+    [Test]
+    public void GenerateSample_String_SimplePatternGeneration()
+    {
+        // Arrange - simple uppercase pattern
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Pattern = @"^[A-Z]+$"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().NotBeNull();
+        value.Should().MatchRegex(@"^[A-Z]+$");
     }
 
     #endregion

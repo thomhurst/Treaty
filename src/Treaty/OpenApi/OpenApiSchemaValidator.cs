@@ -632,18 +632,30 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
     private object GenerateSampleArray(IOpenApiSchema schema)
     {
         var items = schema.Items;
-        if (items != null)
-        {
-            return new[] { GenerateSampleValue(items) };
-        }
-        return Array.Empty<object>();
+        if (items == null)
+            return Array.Empty<object>();
+
+        var minItems = schema.MinItems ?? 0;
+        var maxItems = schema.MaxItems;
+
+        // Generate at least minItems, default to 1, cap at 10 for sanity
+        var count = Math.Max(minItems, 1);
+        if (maxItems.HasValue)
+            count = Math.Min(count, maxItems.Value);
+        count = Math.Min(count, 10); // Prevent huge arrays
+
+        var result = new object?[count];
+        for (var i = 0; i < count; i++)
+            result[i] = GenerateSampleValue(items);
+        return result;
     }
 
     private string GenerateSampleString(IOpenApiSchema schema)
     {
         var format = schema.Format;
-        // Use format-specific values
-        return format?.ToLowerInvariant() switch
+
+        // Try format-specific values first
+        var baseValue = format?.ToLowerInvariant() switch
         {
             "email" => "user@example.com",
             "uri" or "url" => "https://example.com",
@@ -655,29 +667,193 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             "ipv6" => "::1",
             "hostname" => "example.com",
             "byte" => Convert.ToBase64String("sample"u8.ToArray()),
-            _ => "string"
+            _ => (string?)null
         };
+
+        // If format handled it, apply length constraints
+        if (baseValue != null)
+            return ApplyLengthConstraints(baseValue, schema);
+
+        // Handle pattern with best-effort
+        var pattern = schema.Pattern;
+        if (!string.IsNullOrEmpty(pattern))
+        {
+            var patternValue = GenerateFromPattern(pattern);
+            return ApplyLengthConstraints(patternValue, schema);
+        }
+
+        // Default string with length constraints
+        return ApplyLengthConstraints("string", schema);
+    }
+
+    private static string ApplyLengthConstraints(string value, IOpenApiSchema schema)
+    {
+        var minLength = schema.MinLength ?? 0;
+        var maxLength = schema.MaxLength;
+
+        // Pad if too short
+        if (value.Length < minLength)
+            value = value.PadRight(minLength, 'x');
+
+        // Truncate if too long
+        if (maxLength.HasValue && value.Length > maxLength.Value)
+            value = value[..maxLength.Value];
+
+        return value;
+    }
+
+    private static string GenerateFromPattern(string pattern)
+    {
+        // Best-effort pattern generation for common cases
+        // Handle simple character class patterns
+
+        // Remove anchors for easier parsing
+        var cleanPattern = pattern
+            .TrimStart('^')
+            .TrimEnd('$');
+
+        // Try to detect simple character class patterns like [A-Z]+, [a-z]{3}, \d{4}
+        if (TryGenerateFromCharacterClass(cleanPattern, out var result))
+            return result;
+
+        // Fallback for complex patterns
+        return "pattern-match";
+    }
+
+    private static bool TryGenerateFromCharacterClass(string pattern, out string result)
+    {
+        result = string.Empty;
+
+        // Handle patterns like [A-Z]+, [A-Z]*, [A-Z]{3}, [a-z]+, \d+, \d{4}, etc.
+        var match = Regex.Match(pattern, @"^\[([A-Za-z0-9\-]+)\](\+|\*|\{(\d+)\})?$");
+        if (match.Success)
+        {
+            var charClass = match.Groups[1].Value;
+            var quantifier = match.Groups[2].Value;
+            var count = 3; // Default count
+
+            if (match.Groups[3].Success && int.TryParse(match.Groups[3].Value, out var explicitCount))
+                count = explicitCount;
+            else if (quantifier == "+" || quantifier == "*")
+                count = 3;
+
+            // Generate characters based on the character class
+            var sampleChar = GetSampleCharFromClass(charClass);
+            result = new string(sampleChar, count);
+            return true;
+        }
+
+        // Handle \d+ or \d{n} patterns
+        var digitMatch = Regex.Match(pattern, @"^\\d(\+|\*|\{(\d+)\})?$");
+        if (digitMatch.Success)
+        {
+            var count = 3;
+            if (digitMatch.Groups[2].Success && int.TryParse(digitMatch.Groups[2].Value, out var explicitCount))
+                count = explicitCount;
+            result = new string('0', count);
+            return true;
+        }
+
+        // Handle \w+ patterns (word characters)
+        var wordMatch = Regex.Match(pattern, @"^\\w(\+|\*|\{(\d+)\})?$");
+        if (wordMatch.Success)
+        {
+            var count = 3;
+            if (wordMatch.Groups[2].Success && int.TryParse(wordMatch.Groups[2].Value, out var explicitCount))
+                count = explicitCount;
+            result = new string('a', count);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static char GetSampleCharFromClass(string charClass)
+    {
+        // Simple heuristic for common character classes
+        if (charClass.Contains("A-Z"))
+            return 'A';
+        if (charClass.Contains("a-z"))
+            return 'a';
+        if (charClass.Contains("0-9"))
+            return '0';
+
+        // Return first character in the class if simple
+        return charClass.Length > 0 ? charClass[0] : 'x';
     }
 
     private long GenerateSampleInteger(IOpenApiSchema schema)
     {
-        var minimumStr = schema.Minimum;
-        if (!string.IsNullOrEmpty(minimumStr) && decimal.TryParse(minimumStr, out var minimum))
-            return (long)minimum;
-        var maximumStr = schema.Maximum;
-        if (!string.IsNullOrEmpty(maximumStr) && decimal.TryParse(maximumStr, out var maximum))
-            return (long)maximum;
+        long? min = null;
+        long? max = null;
+        long? exMin = null;
+        long? exMax = null;
+
+        if (!string.IsNullOrEmpty(schema.Minimum) && long.TryParse(schema.Minimum, out var minVal))
+            min = minVal;
+        if (!string.IsNullOrEmpty(schema.Maximum) && long.TryParse(schema.Maximum, out var maxVal))
+            max = maxVal;
+        if (!string.IsNullOrEmpty(schema.ExclusiveMinimum) && long.TryParse(schema.ExclusiveMinimum, out var exMinVal))
+            exMin = exMinVal;
+        if (!string.IsNullOrEmpty(schema.ExclusiveMaximum) && long.TryParse(schema.ExclusiveMaximum, out var exMaxVal))
+            exMax = exMaxVal;
+
+        // Calculate effective bounds
+        long effectiveMin = long.MinValue;
+        long effectiveMax = long.MaxValue;
+
+        if (min.HasValue)
+            effectiveMin = Math.Max(effectiveMin, min.Value);
+        if (exMin.HasValue)
+            effectiveMin = Math.Max(effectiveMin, exMin.Value + 1);
+        if (max.HasValue)
+            effectiveMax = Math.Min(effectiveMax, max.Value);
+        if (exMax.HasValue)
+            effectiveMax = Math.Min(effectiveMax, exMax.Value - 1);
+
+        // Return value within bounds
+        if (effectiveMin != long.MinValue)
+            return effectiveMin;
+        if (effectiveMax != long.MaxValue)
+            return effectiveMax;
         return 1;
     }
 
     private decimal GenerateSampleNumber(IOpenApiSchema schema)
     {
-        var minimumStr = schema.Minimum;
-        if (!string.IsNullOrEmpty(minimumStr) && decimal.TryParse(minimumStr, out var minimum))
-            return minimum;
-        var maximumStr = schema.Maximum;
-        if (!string.IsNullOrEmpty(maximumStr) && decimal.TryParse(maximumStr, out var maximum))
-            return maximum;
+        decimal? min = null;
+        decimal? max = null;
+        decimal? exMin = null;
+        decimal? exMax = null;
+
+        if (!string.IsNullOrEmpty(schema.Minimum) && decimal.TryParse(schema.Minimum, out var minVal))
+            min = minVal;
+        if (!string.IsNullOrEmpty(schema.Maximum) && decimal.TryParse(schema.Maximum, out var maxVal))
+            max = maxVal;
+        if (!string.IsNullOrEmpty(schema.ExclusiveMinimum) && decimal.TryParse(schema.ExclusiveMinimum, out var exMinVal))
+            exMin = exMinVal;
+        if (!string.IsNullOrEmpty(schema.ExclusiveMaximum) && decimal.TryParse(schema.ExclusiveMaximum, out var exMaxVal))
+            exMax = exMaxVal;
+
+        // Calculate effective bounds (use small epsilon for exclusive bounds)
+        const decimal epsilon = 0.001m;
+        decimal effectiveMin = decimal.MinValue;
+        decimal effectiveMax = decimal.MaxValue;
+
+        if (min.HasValue)
+            effectiveMin = Math.Max(effectiveMin, min.Value);
+        if (exMin.HasValue)
+            effectiveMin = Math.Max(effectiveMin, exMin.Value + epsilon);
+        if (max.HasValue)
+            effectiveMax = Math.Min(effectiveMax, max.Value);
+        if (exMax.HasValue)
+            effectiveMax = Math.Min(effectiveMax, exMax.Value - epsilon);
+
+        // Return value within bounds
+        if (effectiveMin != decimal.MinValue)
+            return effectiveMin;
+        if (effectiveMax != decimal.MaxValue)
+            return effectiveMax;
         return 1.0m;
     }
 
