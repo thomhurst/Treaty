@@ -65,26 +65,19 @@ public sealed class ProviderVerifier<TEntryPoint> : ProviderVerifierBase where T
 /// Custom WebApplicationFactory for Treaty provider verification.
 /// Supports both traditional Startup classes and minimal API Program classes.
 /// </summary>
-internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint> where TEntryPoint : class
+internal sealed class TreatyWebApplicationFactory<TEntryPoint>(
+    string? environment,
+    IEnumerable<Action<IConfigurationBuilder>>? configurationActions,
+    IEnumerable<Action<IServiceCollection>>? serviceConfigurations,
+    IEnumerable<Action<IWebHostBuilder>>? webHostConfigurations)
+    : WebApplicationFactory<TEntryPoint>
+    where TEntryPoint : class
 {
-    private readonly string? _environment;
-    private readonly IEnumerable<Action<IConfigurationBuilder>>? _configurationActions;
-    private readonly IEnumerable<Action<IServiceCollection>>? _serviceConfigurations;
-    private readonly IEnumerable<Action<IWebHostBuilder>>? _webHostConfigurations;
-    private readonly bool _isStartupClass;
-
-    public TreatyWebApplicationFactory(
-        string? environment,
-        IEnumerable<Action<IConfigurationBuilder>>? configurationActions,
-        IEnumerable<Action<IServiceCollection>>? serviceConfigurations,
-        IEnumerable<Action<IWebHostBuilder>>? webHostConfigurations)
-    {
-        _environment = environment;
-        _configurationActions = configurationActions;
-        _serviceConfigurations = serviceConfigurations;
-        _webHostConfigurations = webHostConfigurations;
-        _isStartupClass = IsStartupClass();
-    }
+    private readonly string? _environment = environment;
+    private readonly IEnumerable<Action<IConfigurationBuilder>>? _configurationActions = configurationActions;
+    private readonly IEnumerable<Action<IServiceCollection>>? _serviceConfigurations = serviceConfigurations;
+    private readonly IEnumerable<Action<IWebHostBuilder>>? _webHostConfigurations = webHostConfigurations;
+    private readonly bool _isStartupClass = IsStartupClass();
 
     /// <summary>
     /// Detects if TEntryPoint is a traditional Startup class (has ConfigureServices/Configure methods)

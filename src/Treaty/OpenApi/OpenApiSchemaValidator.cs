@@ -11,20 +11,14 @@ namespace Treaty.OpenApi;
 /// <summary>
 /// Validates JSON content against an OpenAPI schema.
 /// </summary>
-internal sealed class OpenApiSchemaValidator : ISchemaValidator, ISchemaGenerator
+internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSerializer serializer) : ISchemaValidator, ISchemaGenerator
 {
-    private readonly IOpenApiSchema _schema;
-    private readonly IJsonSerializer _serializer;
+    private readonly IOpenApiSchema _schema = schema;
+    private readonly IJsonSerializer _serializer = serializer;
 
     public Type? ExpectedType => null;
 
     public string? SchemaTypeName => GetSchemaTypeName(_schema);
-
-    public OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSerializer serializer)
-    {
-        _schema = schema;
-        _serializer = serializer;
-    }
 
     public IReadOnlyList<ContractViolation> Validate(string json, string path, PartialValidationConfig? partialValidation = null)
     {

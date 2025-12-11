@@ -361,7 +361,7 @@ public sealed class ContractMockServer : IMockServer
     {
         if (_customGenerators.TryGetValue(headerName, out var generator))
         {
-            return generator()?.ToString() ?? "";
+            return generator().ToString() ?? "";
         }
         return Guid.NewGuid().ToString();
     }

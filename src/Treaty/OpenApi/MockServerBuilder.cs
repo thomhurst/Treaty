@@ -434,14 +434,8 @@ public sealed class AuthMissingBuilder
     }
 }
 
-internal sealed class AuthConfig
+internal sealed class AuthConfig(string? requiredHeader, int missingStatusCode)
 {
-    public string? RequiredHeader { get; }
-    public int MissingStatusCode { get; }
-
-    public AuthConfig(string? requiredHeader, int missingStatusCode)
-    {
-        RequiredHeader = requiredHeader;
-        MissingStatusCode = missingStatusCode;
-    }
+    public string? RequiredHeader { get; } = requiredHeader;
+    public int MissingStatusCode { get; } = missingStatusCode;
 }

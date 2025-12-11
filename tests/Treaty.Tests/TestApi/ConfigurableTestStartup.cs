@@ -8,16 +8,10 @@ using Treaty.Tests.Integration.Provider;
 
 namespace Treaty.Tests.TestApi;
 
-public class ConfigurableTestStartup
+public class ConfigurableTestStartup(IConfiguration configuration, IWebHostEnvironment environment)
 {
-    private readonly IConfiguration _configuration;
-    private readonly IWebHostEnvironment _environment;
-
-    public ConfigurableTestStartup(IConfiguration configuration, IWebHostEnvironment environment)
-    {
-        _configuration = configuration;
-        _environment = environment;
-    }
+    private readonly IConfiguration _configuration = configuration;
+    private readonly IWebHostEnvironment _environment = environment;
 
     public void ConfigureServices(IServiceCollection services)
     {

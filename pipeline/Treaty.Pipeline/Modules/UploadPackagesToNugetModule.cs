@@ -12,14 +12,9 @@ using Treaty.Pipeline.Settings;
 namespace Treaty.Pipeline.Modules;
 
 [DependsOn<PackagePathsParserModule>]
-public class UploadPackagesToNugetModule : Module<CommandResult[]>
+public class UploadPackagesToNugetModule(IOptions<NuGetSettings> nuGetSettings) : Module<CommandResult[]>
 {
-    private readonly IOptions<NuGetSettings> _nuGetSettings;
-
-    public UploadPackagesToNugetModule(IOptions<NuGetSettings> nuGetSettings)
-    {
-        _nuGetSettings = nuGetSettings;
-    }
+    private readonly IOptions<NuGetSettings> _nuGetSettings = nuGetSettings;
 
     protected override async Task OnBeforeExecute(IPipelineContext context)
     {

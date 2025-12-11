@@ -501,28 +501,18 @@ public class RetryPolicyTests
 
     #endregion
 
-    private class TestLoggerProvider : ILoggerProvider
+    private class TestLoggerProvider(List<string> messages) : ILoggerProvider
     {
-        private readonly List<string> _messages;
-
-        public TestLoggerProvider(List<string> messages)
-        {
-            _messages = messages;
-        }
+        private readonly List<string> _messages = messages;
 
         public ILogger CreateLogger(string categoryName) => new TestLogger(_messages);
 
         public void Dispose() { }
     }
 
-    private class TestLogger : ILogger
+    private class TestLogger(List<string> messages) : ILogger
     {
-        private readonly List<string> _messages;
-
-        public TestLogger(List<string> messages)
-        {
-            _messages = messages;
-        }
+        private readonly List<string> _messages = messages;
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 

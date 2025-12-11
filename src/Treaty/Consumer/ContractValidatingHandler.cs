@@ -7,16 +7,10 @@ namespace Treaty.Consumer;
 /// <summary>
 /// A DelegatingHandler that validates outgoing HTTP requests against a contract.
 /// </summary>
-internal sealed class ContractValidatingHandler : DelegatingHandler
+internal sealed class ContractValidatingHandler(ContractDefinition contract, ILoggerFactory loggerFactory) : DelegatingHandler
 {
-    private readonly ContractDefinition _contract;
-    private readonly ILogger _logger;
-
-    public ContractValidatingHandler(ContractDefinition contract, ILoggerFactory loggerFactory)
-    {
-        _contract = contract;
-        _logger = loggerFactory.CreateLogger<ContractValidatingHandler>();
-    }
+    private readonly ContractDefinition _contract = contract;
+    private readonly ILogger _logger = loggerFactory.CreateLogger<ContractValidatingHandler>();
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,

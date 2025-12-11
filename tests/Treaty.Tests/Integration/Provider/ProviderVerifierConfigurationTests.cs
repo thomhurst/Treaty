@@ -194,9 +194,8 @@ public class DefaultTestService : ITestService
     public string GetMessage() => "Default response";
 }
 
-public class MockTestService : ITestService
+public class MockTestService(string message) : ITestService
 {
-    private readonly string _message;
-    public MockTestService(string message) => _message = message;
+    private readonly string _message = message;
     public string GetMessage() => _message;
 }

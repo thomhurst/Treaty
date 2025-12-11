@@ -113,14 +113,9 @@ public sealed class ConsumerValidationClient
 /// <summary>
 /// DelegatingHandler that applies authentication to requests.
 /// </summary>
-internal sealed class AuthenticationDelegatingHandler : DelegatingHandler
+internal sealed class AuthenticationDelegatingHandler(IAuthenticationProvider authProvider) : DelegatingHandler
 {
-    private readonly IAuthenticationProvider _authProvider;
-
-    public AuthenticationDelegatingHandler(IAuthenticationProvider authProvider)
-    {
-        _authProvider = authProvider;
-    }
+    private readonly IAuthenticationProvider _authProvider = authProvider;
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -132,14 +127,9 @@ internal sealed class AuthenticationDelegatingHandler : DelegatingHandler
 /// <summary>
 /// DelegatingHandler that applies retry policy to requests.
 /// </summary>
-internal sealed class RetryDelegatingHandler : DelegatingHandler
+internal sealed class RetryDelegatingHandler(IRetryPolicy retryPolicy) : DelegatingHandler
 {
-    private readonly IRetryPolicy _retryPolicy;
-
-    public RetryDelegatingHandler(IRetryPolicy retryPolicy)
-    {
-        _retryPolicy = retryPolicy;
-    }
+    private readonly IRetryPolicy _retryPolicy = retryPolicy;
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
