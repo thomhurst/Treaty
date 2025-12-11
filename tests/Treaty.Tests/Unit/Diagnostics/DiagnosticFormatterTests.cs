@@ -244,11 +244,8 @@ public class DiagnosticFormatterTests
     [Test]
     public void FormatSummaryLine_WithNoViolations_ReturnsPassedMessage()
     {
-        // Arrange
-        var violations = new List<ContractViolation>();
-
         // Act
-        var result = DiagnosticFormatter.FormatSummaryLine("GET /users", violations);
+        var result = DiagnosticFormatter.FormatSummaryLine("GET /users", []);
 
         // Assert
         result.Should().Contain("PASSED");
