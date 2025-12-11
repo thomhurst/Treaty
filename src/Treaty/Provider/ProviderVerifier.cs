@@ -1,5 +1,7 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -60,7 +62,8 @@ public sealed class ProviderVerifier<TEntryPoint> : ProviderVerifierBase where T
 }
 
 /// <summary>
-/// Custom WebApplicationFactory that supports both traditional Startup classes and minimal API Program classes.
+/// Custom WebApplicationFactory for Treaty provider verification.
+/// Supports both traditional Startup classes and minimal API Program classes.
 /// </summary>
 internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint> where TEntryPoint : class
 {
@@ -68,6 +71,7 @@ internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationF
     private readonly IEnumerable<Action<IConfigurationBuilder>>? _configurationActions;
     private readonly IEnumerable<Action<IServiceCollection>>? _serviceConfigurations;
     private readonly IEnumerable<Action<IWebHostBuilder>>? _webHostConfigurations;
+    private readonly bool _isStartupClass;
 
     public TreatyWebApplicationFactory(
         string? environment,
@@ -79,31 +83,56 @@ internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationF
         _configurationActions = configurationActions;
         _serviceConfigurations = serviceConfigurations;
         _webHostConfigurations = webHostConfigurations;
+        _isStartupClass = IsStartupClass();
+    }
+
+    /// <summary>
+    /// Detects if TEntryPoint is a traditional Startup class (has ConfigureServices/Configure methods)
+    /// rather than a minimal API Program class.
+    /// </summary>
+    private static bool IsStartupClass()
+    {
+        var type = typeof(TEntryPoint);
+
+        // Check for Configure method (required for Startup classes)
+        var hasConfigureMethod = type.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance) != null;
+
+        // Check for ConfigureServices method (common in Startup classes)
+        var hasConfigureServicesMethod = type.GetMethod("ConfigureServices", BindingFlags.Public | BindingFlags.Instance) != null;
+
+        return hasConfigureMethod || hasConfigureServicesMethod;
     }
 
     protected override IHostBuilder? CreateHostBuilder()
     {
         // For traditional Startup classes, create a host builder that uses UseStartup<T>
-        // This is called before CreateHost and allows us to set up the Startup pattern
-        return Host.CreateDefaultBuilder()
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<TEntryPoint>();
-            });
+        if (_isStartupClass)
+        {
+            return Host.CreateDefaultBuilder()
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<TEntryPoint>();
+                });
+        }
+
+        // For minimal API apps, let the base class handle it
+        return null;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // Set content root to current directory (required for Startup classes in test assemblies)
-        builder.UseContentRoot(Directory.GetCurrentDirectory());
+        // For Startup classes in test assemblies, set content root to current directory
+        // to avoid path resolution issues
+        if (_isStartupClass)
+        {
+            builder.UseContentRoot(Directory.GetCurrentDirectory());
+        }
 
-        // Apply environment if specified
         if (!string.IsNullOrEmpty(_environment))
         {
             builder.UseEnvironment(_environment);
         }
 
-        // Apply configuration overrides
         if (_configurationActions != null)
         {
             foreach (var configAction in _configurationActions)
@@ -112,10 +141,10 @@ internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationF
             }
         }
 
-        // Apply service configurations (run after app's ConfigureServices)
+        // Use ConfigureTestServices to ensure test overrides run after the app's ConfigureServices
         if (_serviceConfigurations != null)
         {
-            builder.ConfigureServices(services =>
+            builder.ConfigureTestServices(services =>
             {
                 foreach (var serviceConfig in _serviceConfigurations)
                 {
@@ -124,7 +153,6 @@ internal sealed class TreatyWebApplicationFactory<TEntryPoint> : WebApplicationF
             });
         }
 
-        // Apply custom web host configurations
         if (_webHostConfigurations != null)
         {
             foreach (var webHostConfig in _webHostConfigurations)
