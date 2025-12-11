@@ -58,8 +58,7 @@ public sealed class RetryPolicy : IRetryPolicy
 
         // Retry on transient HTTP errors and timeouts
         return ex is HttpRequestException
-            || (ex is TaskCanceledException tce && tce.InnerException is TimeoutException)
-            || (ex is OperationCanceledException oce && oce.InnerException is TimeoutException);
+            || ex is TaskCanceledException { InnerException: TimeoutException } || ex is OperationCanceledException { InnerException: TimeoutException };
     }
 
     private TimeSpan CalculateDelay(int attempt)

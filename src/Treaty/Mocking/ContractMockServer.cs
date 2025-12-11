@@ -232,7 +232,7 @@ public sealed class ContractMockServer : IMockServer
         object? body;
 
         // Handle sequence responses
-        if (rule.Sequence != null && rule.Sequence.Count > 0)
+        if (rule.Sequence is { Count: > 0 })
         {
             var callCount = _sequenceCallCounts.AddOrUpdate(rule, 1, (_, count) => count + 1);
             var index = Math.Min(callCount - 1, rule.Sequence.Count - 1);
@@ -275,7 +275,7 @@ public sealed class ContractMockServer : IMockServer
     {
         // Find the first successful (2xx) response expectation
         var responseExpectation = endpointContract.ResponseExpectations
-            .Where(r => r.StatusCode >= 200 && r.StatusCode < 300)
+            .Where(r => r.StatusCode is >= 200 and < 300)
             .FirstOrDefault()
             ?? endpointContract.ResponseExpectations.FirstOrDefault();
 

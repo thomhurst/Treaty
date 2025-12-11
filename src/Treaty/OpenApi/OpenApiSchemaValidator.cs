@@ -651,7 +651,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
         // Check multipleOf constraint
         var multipleOf = schema.MultipleOf;
-        if (multipleOf.HasValue && multipleOf.Value > 0)
+        if (multipleOf is > 0)
         {
             if (value % multipleOf.Value != 0)
             {
@@ -974,7 +974,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
         // Handle multipleOf constraint
         var multipleOf = schema.MultipleOf;
-        if (multipleOf.HasValue && multipleOf.Value > 0)
+        if (multipleOf is > 0)
         {
             var multiple = (long)multipleOf.Value;
             // Find the first valid multiple within bounds
@@ -1040,7 +1040,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
 
         // Handle multipleOf constraint
         var multipleOf = schema.MultipleOf;
-        if (multipleOf.HasValue && multipleOf.Value > 0)
+        if (multipleOf is > 0)
         {
             var multiple = multipleOf.Value;
             // Find the first valid multiple within bounds

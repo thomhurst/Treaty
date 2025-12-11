@@ -99,7 +99,7 @@ public static class ContractComparer
         {
             if (!newResponses.ContainsKey(statusCode))
             {
-                var severity = statusCode >= 200 && statusCode < 300 ? ChangeSeverity.Breaking : ChangeSeverity.Warning;
+                var severity = statusCode is >= 200 and < 300 ? ChangeSeverity.Breaking : ChangeSeverity.Warning;
                 changes.Add(new ContractChange(
                     severity,
                     ContractChangeType.ResponseStatusCodeRemoved,
