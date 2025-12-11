@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Treaty.Provider.Resilience;
 
 namespace Treaty.Tests.Unit.Provider.Resilience;

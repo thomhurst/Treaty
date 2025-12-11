@@ -7,7 +7,6 @@ using ModularPipelines.DotNet.Options;
 using ModularPipelines.Git.Extensions;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
-using ModularPipelines.Options;
 using Treaty.Pipeline.Settings;
 
 namespace Treaty.Pipeline.Modules;

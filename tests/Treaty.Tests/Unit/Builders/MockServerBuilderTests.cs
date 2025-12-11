@@ -1,7 +1,6 @@
 using System.Net;
 using FluentAssertions;
 using Treaty.Mocking;
-using Treaty.OpenApi;
 
 namespace Treaty.Tests.Unit.Builders;
 

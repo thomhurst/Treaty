@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using FluentAssertions;
 using Treaty.Mocking;
-using Treaty.OpenApi;
 
 namespace Treaty.Tests.Integration.OpenApi;
 
