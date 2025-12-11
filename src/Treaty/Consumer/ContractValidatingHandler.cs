@@ -9,7 +9,6 @@ namespace Treaty.Consumer;
 /// </summary>
 internal sealed class ContractValidatingHandler(ContractDefinition contract, ILoggerFactory loggerFactory) : DelegatingHandler
 {
-    private readonly ContractDefinition _contract = contract;
     private readonly ILogger _logger = loggerFactory.CreateLogger<ContractValidatingHandler>();
 
     protected override async Task<HttpResponseMessage> SendAsync(
@@ -23,7 +22,7 @@ internal sealed class ContractValidatingHandler(ContractDefinition contract, ILo
         _logger.LogDebug("[Treaty] Consumer: Validating request to {Endpoint}", endpoint);
 
         // Find matching endpoint contract
-        var endpointContract = _contract.FindEndpoint(path, method);
+        var endpointContract = contract.FindEndpoint(path, method);
         if (endpointContract == null)
         {
             _logger.LogWarning("[Treaty] Consumer: No contract found for {Endpoint}", endpoint);
@@ -86,9 +85,9 @@ internal sealed class ContractValidatingHandler(ContractDefinition contract, ILo
         List<ContractViolation> violations)
     {
         // Check contract defaults
-        if (_contract.Defaults?.RequestHeaders != null)
+        if (contract.Defaults?.RequestHeaders != null)
         {
-            foreach (var (name, expectation) in _contract.Defaults.RequestHeaders)
+            foreach (var (name, expectation) in contract.Defaults.RequestHeaders)
             {
                 ValidateHeader(request.Headers, name, expectation, endpoint, violations);
             }
