@@ -21,7 +21,7 @@ var contract = await Contract.FromOpenApi("api-spec.json")
 ### From Stream
 
 ```csharp
-using var stream = File.OpenRead("api-spec.yaml");
+using var stream = await File.OpenRead("api-spec.yaml");
 var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml)
     .ForEndpoint("/users/{id}")
     .BuildAsync();
@@ -131,9 +131,9 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users")
     .BuildAsync();
 
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    .Build();
+    await .BuildAsync();
 
 // Verify against OpenAPI schema
 await provider.VerifyAsync("/users/1", HttpMethod.Get);
@@ -146,12 +146,12 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users")
     .BuildAsync();
 
-var consumer = ConsumerVerifier.Create()
+var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    .Build();
+    await .BuildAsync();
 
-var client = consumer.CreateHttpClient();
+var client = await consumer.CreateHttpClient();
 // Requests are validated against OpenAPI request schemas
 ```
 
@@ -347,9 +347,9 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
     .BuildAsync();
 
 // Provider verification
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    .Build();
+    await .BuildAsync();
 
 await provider.VerifyAsync("/users/1", HttpMethod.Get);
 
@@ -357,7 +357,7 @@ await provider.VerifyAsync("/users/1", HttpMethod.Get);
 var mockServer = await MockServer.FromOpenApi("api-spec.yaml").BuildAsync();
 await mockServer.StartAsync();
 
-var client = new HttpClient { BaseAddress = new Uri(mockServer.BaseUrl!) };
+var client = await new HttpClient { BaseAddress = new Uri(mockServer.BaseUrl!) };
 var response = await client.GetAsync("/users/1");
 // Returns: {"id": 1, "name": "John Doe", "email": "john@example.com"}
 ```

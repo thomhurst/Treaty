@@ -32,7 +32,7 @@ public class UserApiProviderTests : IDisposable
 
         _provider = ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
-            .Build();
+            await .BuildAsync();
     }
 
     [Test]
@@ -95,9 +95,9 @@ Verify all endpoints at once using `VerifyAllAsync`:
 ```csharp
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    .Build();
+    await .BuildAsync();
 
 var results = await provider.VerifyAllAsync();
 
@@ -131,7 +131,7 @@ var results = await provider.VerifyAllAsync(new VerificationOptions
 ### Progress Reporting
 
 ```csharp
-var progress = new Progress<VerificationProgress>(p =>
+var progress = await new Progress<VerificationProgress>(p =>
 {
     Console.WriteLine($"[{p.CompletedCount}/{p.TotalCount}] {p.CurrentMessage}");
 });
@@ -160,19 +160,19 @@ Provider states set up test data before verification. This is useful when endpoi
 ```csharp
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", async parameters =>
         {
-            var id = (int)parameters["id"];
+            var id = await (int)parameters["id"];
             await _testDatabase.CreateUser(id, "Test User");
         })
         .ForState("no users exist", async () =>
         {
             await _testDatabase.ClearUsers();
         }))
-    .Build();
+    await .BuildAsync();
 ```
 
 ### State Handler Interface
@@ -191,7 +191,7 @@ public class TestStateHandler : IStateHandler
         switch (state.Name)
         {
             case "a user exists":
-                var id = (int)state.Parameters["id"];
+                var id = await (int)state.Parameters["id"];
                 await _db.CreateUser(id, "Test User");
                 break;
             case "no users exist":
@@ -208,10 +208,10 @@ public class TestStateHandler : IStateHandler
 }
 
 // Usage
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(new TestStateHandler(testDb))
-    .Build();
+    await .BuildAsync();
 ```
 
 ## Logging
@@ -219,16 +219,16 @@ var provider = ProviderVerifier.ForWebApplication<Startup>()
 Enable logging to see verification details:
 
 ```csharp
-var loggerFactory = LoggerFactory.Create(builder =>
+var loggerFactory = await LoggerFactory.Create(builder =>
 {
     builder.AddConsole();
     builder.SetMinimumLevel(LogLevel.Debug);
 });
 
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
-    .Build();
+    await .BuildAsync();
 ```
 
 Sample output:

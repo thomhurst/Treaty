@@ -29,7 +29,7 @@ using Treaty;
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 // From stream
-using var stream = File.OpenRead("api-spec.yaml");
+using var stream = await File.OpenRead("api-spec.yaml");
 var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
 // With endpoint filter
@@ -43,11 +43,11 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
 ### WebApplicationFactory (In-Process)
 
 ```csharp
-using var provider = ProviderVerifier.ForWebApplication<Startup>()
+using var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithStateHandler(states => states
         .ForState("a user exists", () => SeedUser()))
-    .Build();
+    await .BuildAsync();
 
 // Single endpoint
 await provider.VerifyAsync("/users/123", HttpMethod.Get);
@@ -59,12 +59,12 @@ var result = await provider.VerifyAllAsync();
 ### HTTP (Live API)
 
 ```csharp
-using var provider = ProviderVerifier.ForHttpClient()
+using var provider = await ProviderVerifier.ForHttpClient()
     .WithBaseUrl("https://api.staging.example.com")
     .WithContract(contract)
     .WithBearerToken("your-token")
     .WithRetryPolicy()
-    .Build();
+    await .BuildAsync();
 
 await provider.VerifyAllAsync();
 ```
@@ -99,7 +99,7 @@ await provider.VerifyAllAsync();
 
 ```csharp
 // Create validating HTTP client
-var httpClient = ConsumerVerifier.Create()
+var httpClient = await ConsumerVerifier.Create()
     .WithContract(contract)
     .CreateHttpClient();
 
@@ -113,7 +113,7 @@ var response = await httpClient.GetAsync("/users/123");
 // Basic mock server from OpenAPI
 await using var server = await MockServer.FromOpenApi("api-spec.yaml").BuildAsync();
 await server.StartAsync();
-var baseUrl = server.BaseUrl; // e.g., "http://127.0.0.1:5001"
+var baseUrl = await server.BaseUrl; // e.g., "http://127.0.0.1:5001"
 
 // Mock server with customizations
 await using var server = await MockServer.FromOpenApi("api-spec.yaml")
@@ -136,7 +136,7 @@ await using var server = await MockServer.FromOpenApi("api-spec.yaml")
     .BuildAsync();
 
 // Request verification
-var requests = server.RecordedRequests;
+var requests = await server.RecordedRequests;
 server.ClearRecordedRequests();
 ```
 
@@ -146,7 +146,7 @@ server.ClearRecordedRequests();
 var oldContract = await Contract.FromOpenApi("v1/api-spec.yaml").BuildAsync();
 var newContract = await Contract.FromOpenApi("v2/api-spec.yaml").BuildAsync();
 
-var diff = Contract.Compare(oldContract, newContract);
+var diff = await Contract.Compare(oldContract, newContract);
 
 if (diff.HasBreakingChanges)
 {
@@ -218,7 +218,7 @@ if (!result.IsValid)
 }
 
 // Bulk verification with progress
-var progress = new Progress<VerificationProgress>(p =>
+var progress = await new Progress<VerificationProgress>(p =>
     Console.WriteLine($"{p.Completed}/{p.Total}: {p.CurrentEndpoint}"));
 
 var bulkResult = await provider.VerifyAllAsync(
@@ -242,11 +242,11 @@ var bulkResult = await provider.VerifyAllAsync(
 
 ```csharp
 // With Microsoft.Extensions.Logging
-var loggerFactory = LoggerFactory.Create(builder =>
+var loggerFactory = await LoggerFactory.Create(builder =>
     builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
 ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
     .WithLogging(loggerFactory)
-    .Build();
+    await .BuildAsync();
 ```

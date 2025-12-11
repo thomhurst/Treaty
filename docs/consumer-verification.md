@@ -20,10 +20,10 @@ using Treaty;
 
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-var consumer = ConsumerVerifier.Create()
+var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    .Build();
+    await .BuildAsync();
 ```
 
 ## Creating a Validating HttpClient
@@ -31,7 +31,7 @@ var consumer = ConsumerVerifier.Create()
 The consumer verifier creates an `HttpClient` that validates all requests before sending:
 
 ```csharp
-var client = consumer.CreateHttpClient();
+var client = await consumer.CreateHttpClient();
 
 // This request is validated against the contract before being sent
 var response = await client.PostAsJsonAsync("/users", new CreateUserRequest
@@ -49,10 +49,10 @@ For more control or to integrate with existing configurations:
 
 ```csharp
 // Create just the handler
-var handler = consumer.CreateHandler();
+var handler = await consumer.CreateHandler();
 
 // Use with your own HttpClient setup
-var client = new HttpClient(handler)
+var client = await new HttpClient(handler)
 {
     BaseAddress = new Uri("https://api.example.com")
 };
@@ -77,12 +77,12 @@ services.AddHttpClient("UsersApi", client =>
 // Contract loaded from OpenAPI spec expects CreateUserRequest with Name and Email
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-var consumer = ConsumerVerifier.Create()
+var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    .Build();
+    await .BuildAsync();
 
-var client = consumer.CreateHttpClient();
+var client = await consumer.CreateHttpClient();
 
 // This will fail validation - missing Email
 await client.PostAsJsonAsync("/users", new { Name = "John" });
@@ -117,7 +117,7 @@ public class UserClientTests : IAsyncDisposable
     public async Task Setup()
     {
         _contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
-        _mockServer = MockServer.FromContract(_contract).Build();
+        _mockServer = MockServer.FromContract(_contract)await .BuildAsync();
         await _mockServer.StartAsync();
 
         // Create client pointing to mock server
@@ -166,17 +166,17 @@ public class UserClientTests : IAsyncDisposable
 Enable logging to see validation details:
 
 ```csharp
-var loggerFactory = LoggerFactory.Create(builder =>
+var loggerFactory = await LoggerFactory.Create(builder =>
 {
     builder.AddConsole();
     builder.SetMinimumLevel(LogLevel.Debug);
 });
 
-var consumer = ConsumerVerifier.Create()
+var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
     .WithLogging(loggerFactory)
-    .Build();
+    await .BuildAsync();
 ```
 
 ## Error Handling
@@ -246,7 +246,7 @@ public abstract class ApiClientTestBase : IAsyncDisposable
     public async Task BaseSetup()
     {
         var contract = await LoadContractAsync();
-        MockServer = MockServer.FromContract(contract).Build();
+        MockServer = MockServer.FromContract(contract)await .BuildAsync();
         await MockServer.StartAsync();
         Client = new HttpClient { BaseAddress = new Uri(MockServer.BaseUrl!) };
     }

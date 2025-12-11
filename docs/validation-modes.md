@@ -33,7 +33,7 @@ var contract = Treaty.DefineContract("API")
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>())  // User has: Id, Name
-    .Build();
+    await .BuildAsync();
 
 // Response: { "id": 1, "name": "John", "extraField": "ignored" }
 // Result: PASS - extra field is ignored
@@ -60,7 +60,7 @@ var contract = Treaty.DefineContract("API")
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>(v => v.StrictMode()))
-    .Build();
+    await .BuildAsync();
 
 // Response: { "id": 1, "name": "John", "extraField": "value" }
 // Result: FAIL - UnexpectedField at $.extraField
@@ -182,7 +182,7 @@ var contract = Treaty.DefineContract("Users API")
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>())  // Lenient by default
-    .Build();
+    await .BuildAsync();
 
 // API returns: { "id": 1, "name": "John", "internalField": "..." }
 // Test result: PASS
@@ -198,7 +198,7 @@ var contract = Treaty.DefineContract("Users API")
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>(v => v.StrictMode()))
-    .Build();
+    await .BuildAsync();
 
 // API returns: { "id": 1, "name": "John", "internalField": "..." }
 // Test result: FAIL
@@ -227,7 +227,7 @@ components:
 ```csharp
 var contract = Treaty.FromOpenApiSpec("api-spec.yaml")
     .ForEndpoint("/users/{id}")
-    .Build();
+    await .BuildAsync();
 
 // API returns: { "id": 1, "name": "John", "extra": "..." }
 // Test result: FAIL (additionalProperties: false is honored)

@@ -13,15 +13,15 @@ var contract = Treaty.DefineContract("Users API")
         .ExpectingResponse(r => r
             .WithStatus(200)
             .WithJsonBody<User>())
-    .Build();
+    await .BuildAsync();
 
-var mockServer = Treaty.MockFromContract(contract).Build();
+var mockServer = Treaty.MockFromContract(contract)await .BuildAsync();
 await mockServer.StartAsync();
 
 Console.WriteLine($"Mock server running at: {mockServer.BaseUrl}");
 
 // Use the mock server
-var client = new HttpClient { BaseAddress = new Uri(mockServer.BaseUrl!) };
+var client = await new HttpClient { BaseAddress = new Uri(mockServer.BaseUrl!) };
 var response = await client.GetAsync("/users/1");
 // Response body is auto-generated based on the contract schema
 ```
@@ -65,7 +65,7 @@ var mockServer = Treaty.MockFromContract(contract)
         .Return(500, new { error = "Internal server error" })
         .Otherwise()
         .Return(200)
-    .Build();
+    await .BuildAsync();
 ```
 
 ### Request Context
@@ -76,22 +76,22 @@ The `MockRequestContext` provides access to:
 .When(ctx =>
 {
     // Path parameters
-    var id = ctx.PathParam("id");
+    var id = await ctx.PathParam("id");
 
     // Query parameters
-    var filter = ctx.QueryParam("filter");
+    var filter = await ctx.QueryParam("filter");
 
     // Headers
-    var auth = ctx.Header("Authorization");
+    var auth = await ctx.Header("Authorization");
 
     // Request body (raw string)
-    var body = ctx.Body;
+    var body = await ctx.Body;
 
     // Request body as JSON
-    var json = ctx.BodyAsJson();
+    var json = await ctx.BodyAsJson();
 
     // Request body deserialized to a type
-    var user = ctx.BodyAs<CreateUserRequest>();
+    var user = await ctx.BodyAs<CreateUserRequest>();
 
     return id == "special";
 })
@@ -110,7 +110,7 @@ var mockServer = Treaty.MockFromContract(contract)
         .Return(400, new { error = "Email is required" })
         .Otherwise()
         .Return(201)
-    .Build();
+    await .BuildAsync();
 ```
 
 ### Multiple Endpoints
@@ -123,7 +123,7 @@ var mockServer = Treaty.MockFromContract(contract)
     .ForEndpoint("/users")
         .When(ctx => ctx.QueryParam("limit") == "0")
         .Return(200, new { items = Array.Empty<User>() })
-    .Build();
+    await .BuildAsync();
 ```
 
 ## Simulating Latency
@@ -133,7 +133,7 @@ Add realistic network delays:
 ```csharp
 var mockServer = Treaty.MockFromContract(contract)
     .WithLatency(min: 50, max: 200)  // Random delay between 50-200ms
-    .Build();
+    await .BuildAsync();
 ```
 
 ### Per-Endpoint Latency
@@ -151,7 +151,7 @@ var mockServer = Treaty.MockFromContract(contract)
         .WithLatency(0, 0)          // No latency for health checks
         .Otherwise()
         .Return(200)
-    .Build();
+    await .BuildAsync();
 ```
 
 ## Authentication Requirements
@@ -164,7 +164,7 @@ var mockServer = Treaty.MockFromContract(contract)
         .RequireHeader("Authorization")
         .WhenMissing()
         .Return(401))
-    .Build();
+    await .BuildAsync();
 
 // Requests without Authorization header will get 401
 ```
@@ -178,7 +178,7 @@ var mockServer = Treaty.MockFromContract(contract)
     .WithCustomGenerator("correlationId", () => Guid.NewGuid().ToString())
     .WithCustomGenerator("timestamp", () => DateTime.UtcNow)
     .WithCustomGenerator("userId", () => Random.Shared.Next(1, 1000))
-    .Build();
+    await .BuildAsync();
 ```
 
 Custom generators are applied to any field with a matching name in the response.
@@ -196,7 +196,7 @@ var mockServer = Treaty.MockFromContract(contract)
             new MockSequenceResponse(503),                        // Second call: Service Unavailable
             new MockSequenceResponse(200, new { success = true }) // Third+ calls: Success
         )
-    .Build();
+    await .BuildAsync();
 ```
 
 The last response in the sequence is repeated for all subsequent calls.
@@ -213,7 +213,7 @@ await myClient.CreateUserAsync(new User { Name = "Test" });
 await myClient.CreateUserAsync(new User { Name = "Test2" });
 
 // Verify requests
-var requests = mockServer.RecordedRequests;
+var requests = await mockServer.RecordedRequests;
 Assert.That(requests.Count, Is.EqualTo(2));
 Assert.That(requests[0].Method, Is.EqualTo("POST"));
 Assert.That(requests[0].Path, Is.EqualTo("/users"));
@@ -250,7 +250,7 @@ var mockServer = Treaty.MockFromContract(contract)
         .ReturnFault(FaultType.MalformedResponse)
         .Otherwise()
         .Return(200)
-    .Build();
+    await .BuildAsync();
 ```
 
 ### Fault Types
@@ -269,7 +269,7 @@ Enable HTTPS for the mock server:
 ```csharp
 var mockServer = Treaty.MockFromContract(contract)
     .UseHttps()
-    .Build();
+    await .BuildAsync();
 ```
 
 Note: HTTPS requires a valid development certificate.
@@ -296,7 +296,7 @@ await mockServer.StartAsync(port: 5001);
 Enable logging to see mock server activity:
 
 ```csharp
-var loggerFactory = LoggerFactory.Create(builder =>
+var loggerFactory = await LoggerFactory.Create(builder =>
 {
     builder.AddConsole();
     builder.SetMinimumLevel(LogLevel.Debug);
@@ -304,7 +304,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
 
 var mockServer = Treaty.MockFromContract(contract)
     .WithLogging(loggerFactory)
-    .Build();
+    await .BuildAsync();
 ```
 
 Sample output:
@@ -320,7 +320,7 @@ Sample output:
 ### Manual Lifecycle
 
 ```csharp
-var mockServer = Treaty.MockFromContract(contract).Build();
+var mockServer = Treaty.MockFromContract(contract)await .BuildAsync();
 await mockServer.StartAsync();
 
 // ... use the mock server ...
@@ -332,7 +332,7 @@ await mockServer.DisposeAsync();
 ### Using IAsyncDisposable
 
 ```csharp
-await using var mockServer = Treaty.MockFromContract(contract).Build();
+await using var mockServer = Treaty.MockFromContract(contract)await .BuildAsync();
 await mockServer.StartAsync();
 
 // Mock server is automatically disposed at end of scope
@@ -348,7 +348,7 @@ public class ApiTests : IAsyncDisposable
     [Before(Test)]
     public async Task Setup()
     {
-        _mockServer = Treaty.MockFromContract(contract).Build();
+        _mockServer = Treaty.MockFromContract(contract)await .BuildAsync();
         await _mockServer.StartAsync();
     }
 
@@ -395,14 +395,14 @@ public class UserClientIntegrationTests : IAsyncDisposable
             .ForEndpoint("/users/{id}")
                 .WithMethod(HttpMethod.Delete)
                 .ExpectingResponse(r => r.WithStatus(204))
-            .Build();
+            await .BuildAsync();
 
         _mockServer = Treaty.MockFromContract(contract)
             .WithLatency(10, 50)
             .ForEndpoint("/users/{id}")
                 .When(ctx => ctx.PathParam("id") == "999")
                 .Return(404, new { error = "User not found" })
-            .Build();
+            await .BuildAsync();
 
         await _mockServer.StartAsync();
 
@@ -419,7 +419,7 @@ public class UserClientIntegrationTests : IAsyncDisposable
     [Test]
     public async Task GetUser_NotFound_ThrowsException()
     {
-        var act = () => _client.GetUserAsync(999);
+        var act = await () => _client.GetUserAsync(999);
         await act.Should().ThrowAsync<UserNotFoundException>();
     }
 

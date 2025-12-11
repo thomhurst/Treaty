@@ -39,7 +39,7 @@ using Treaty.OpenApi;
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 // Or load from a stream
-using var stream = File.OpenRead("api-spec.yaml");
+using var stream = await File.OpenRead("api-spec.yaml");
 var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
 // Filter to specific endpoints if needed
@@ -63,9 +63,9 @@ public class UserApiTests
         // Arrange - Load contract and create provider verifier
         var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-        var provider = ProviderVerifier.ForWebApplication<Startup>()
+        var provider = await ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
-            .Build();
+            await .BuildAsync();
 
         // Act & Assert - Verify the endpoint
         await provider.VerifyAsync("/users/1", HttpMethod.Get);
@@ -96,7 +96,7 @@ public class UserClientTests : IAsyncDisposable
     public async Task Client_CanFetchUser()
     {
         // Arrange
-        var client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
+        var client = await new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
 
         // Act
         var response = await client.GetAsync("/users/1");
