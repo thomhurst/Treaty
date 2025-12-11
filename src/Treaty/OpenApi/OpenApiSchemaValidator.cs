@@ -11,7 +11,7 @@ namespace Treaty.OpenApi;
 /// <summary>
 /// Validates JSON content against an OpenAPI schema.
 /// </summary>
-internal sealed class OpenApiSchemaValidator : ISchemaValidator
+internal sealed class OpenApiSchemaValidator : ISchemaValidator, ISchemaGenerator
 {
     private readonly IOpenApiSchema _schema;
     private readonly IJsonSerializer _serializer;
@@ -49,7 +49,12 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
     public string GenerateSample()
     {
-        var sample = GenerateSampleValue(_schema);
+        return GenerateSample(ValidationDirection.Both);
+    }
+
+    public string GenerateSample(ValidationDirection direction)
+    {
+        var sample = GenerateSampleValue(_schema, direction);
         return JsonSerializer.Serialize(sample);
     }
 
@@ -77,6 +82,29 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                     "null"));
             }
             return;
+        }
+
+        // Handle const constraint - takes precedence over type validation
+        var constValue = schema.Const;
+        if (constValue != null)
+        {
+            var nodeStr = node.ToJsonString();
+            // Compare as JSON strings - const is a string value in the schema
+            // For string comparisons, node will be quoted e.g. "\"value\""
+            var matches = nodeStr.Trim('"') == constValue ||
+                         nodeStr == $"\"{constValue}\"" ||
+                         nodeStr == constValue;
+            if (!matches)
+            {
+                violations.Add(new ContractViolation(
+                    endpoint,
+                    jsonPath,
+                    "Value does not match the required constant",
+                    ViolationType.InvalidEnumValue,
+                    constValue,
+                    nodeStr.Trim('"')));
+            }
+            return; // const validated, no need for further type checks
         }
 
         var schemaTypeStr = GetSchemaTypeString(schema);
@@ -216,6 +244,9 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             return;
         }
 
+        var direction = partialValidation?.Direction ?? ValidationDirection.Both;
+        var properties = schema.Properties;
+
         // Check required properties
         var required = schema.Required;
         if (required != null)
@@ -227,6 +258,20 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                         p.Equals(requiredProp, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
+                }
+
+                // Skip required check for readOnly fields in requests (they shouldn't be sent)
+                if (direction == ValidationDirection.Request && properties != null)
+                {
+                    if (properties.TryGetValue(requiredProp, out var propSchema) && propSchema.ReadOnly)
+                        continue;
+                }
+
+                // Skip required check for writeOnly fields in responses (they shouldn't appear)
+                if (direction == ValidationDirection.Response && properties != null)
+                {
+                    if (properties.TryGetValue(requiredProp, out var propSchema) && propSchema.WriteOnly)
+                        continue;
                 }
 
                 if (!obj.ContainsKey(requiredProp))
@@ -241,7 +286,6 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         }
 
         // Validate each property
-        var properties = schema.Properties;
         if (properties != null)
         {
             foreach (var (propName, propSchema) in properties)
@@ -251,6 +295,34 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                         p.Equals(propName, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
+                }
+
+                // Check readOnly constraint - field should not be sent in requests
+                if (direction == ValidationDirection.Request && propSchema.ReadOnly)
+                {
+                    if (obj.ContainsKey(propName))
+                    {
+                        violations.Add(new ContractViolation(
+                            endpoint,
+                            $"{path}.{propName}",
+                            $"ReadOnly field '{propName}' should not be sent in requests",
+                            ViolationType.UnexpectedField));
+                    }
+                    continue; // Don't validate the value further
+                }
+
+                // Check writeOnly constraint - field should not appear in responses
+                if (direction == ValidationDirection.Response && propSchema.WriteOnly)
+                {
+                    if (obj.ContainsKey(propName))
+                    {
+                        violations.Add(new ContractViolation(
+                            endpoint,
+                            $"{path}.{propName}",
+                            $"WriteOnly field '{propName}' should not appear in responses",
+                            ViolationType.UnexpectedField));
+                    }
+                    continue; // Don't validate the value further
                 }
 
                 if (obj.TryGetPropertyValue(propName, out var propNode))
@@ -323,6 +395,27 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                 ViolationType.OutOfRange,
                 $"at most {maxItems} items",
                 arr.Count.ToString()));
+        }
+
+        // Validate uniqueItems
+        var uniqueItems = schema.UniqueItems;
+        if (uniqueItems == true)
+        {
+            var seen = new HashSet<string>();
+            for (int i = 0; i < arr.Count; i++)
+            {
+                var itemJson = arr[i]?.ToJsonString() ?? "null";
+                if (!seen.Add(itemJson))
+                {
+                    violations.Add(new ContractViolation(
+                        endpoint,
+                        $"{path}[{i}]",
+                        "Array contains duplicate items but uniqueItems is required",
+                        ViolationType.OutOfRange,
+                        "unique items",
+                        $"duplicate at index {i}"));
+                }
+            }
         }
 
         // Validate items
@@ -561,6 +654,22 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                     value.ToString()));
             }
         }
+
+        // Check multipleOf constraint
+        var multipleOf = schema.MultipleOf;
+        if (multipleOf.HasValue && multipleOf.Value > 0)
+        {
+            if (value % multipleOf.Value != 0)
+            {
+                violations.Add(new ContractViolation(
+                    endpoint,
+                    path,
+                    "Value is not a multiple of the required divisor",
+                    ViolationType.OutOfRange,
+                    $"multiple of {multipleOf.Value}",
+                    value.ToString()));
+            }
+        }
     }
 
     private void ValidateBoolean(JsonNode node, string endpoint, string path, List<ContractViolation> violations)
@@ -585,8 +694,15 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         return Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
     }
 
-    private object? GenerateSampleValue(IOpenApiSchema schema)
+    private object? GenerateSampleValue(IOpenApiSchema schema, ValidationDirection direction = ValidationDirection.Both)
     {
+        // Priority 0: Use const value (mandatory - only valid value)
+        var constValue = schema.Const;
+        if (constValue != null)
+        {
+            return constValue;
+        }
+
         // Priority 1: Use example if provided
         var example = schema.Example;
         if (example != null)
@@ -601,21 +717,28 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             return ConvertJsonNode(enumValues[0]);
         }
 
+        // Priority 3: Use default value if provided
+        var defaultValue = schema.Default;
+        if (defaultValue != null)
+        {
+            return ConvertJsonNode(defaultValue);
+        }
+
         var schemaType = GetSchemaTypeString(schema);
 
         return schemaType switch
         {
-            "object" => GenerateSampleObject(schema),
-            "array" => GenerateSampleArray(schema),
+            "object" => GenerateSampleObject(schema, direction),
+            "array" => GenerateSampleArray(schema, direction),
             "string" => GenerateSampleString(schema),
             "integer" => GenerateSampleInteger(schema),
             "number" => GenerateSampleNumber(schema),
             "boolean" => true,
-            _ => schema.Properties?.Count > 0 ? GenerateSampleObject(schema) : null
+            _ => schema.Properties?.Count > 0 ? GenerateSampleObject(schema, direction) : null
         };
     }
 
-    private object GenerateSampleObject(IOpenApiSchema schema)
+    private object GenerateSampleObject(IOpenApiSchema schema, ValidationDirection direction = ValidationDirection.Both)
     {
         var result = new Dictionary<string, object?>();
         var properties = schema.Properties;
@@ -623,13 +746,21 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         {
             foreach (var (propName, propSchema) in properties)
             {
-                result[propName] = GenerateSampleValue(propSchema);
+                // Skip readOnly properties when generating request samples
+                if (direction == ValidationDirection.Request && propSchema.ReadOnly)
+                    continue;
+
+                // Skip writeOnly properties when generating response samples
+                if (direction == ValidationDirection.Response && propSchema.WriteOnly)
+                    continue;
+
+                result[propName] = GenerateSampleValue(propSchema, direction);
             }
         }
         return result;
     }
 
-    private object GenerateSampleArray(IOpenApiSchema schema)
+    private object GenerateSampleArray(IOpenApiSchema schema, ValidationDirection direction = ValidationDirection.Both)
     {
         var items = schema.Items;
         if (items == null)
@@ -637,6 +768,7 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
         var minItems = schema.MinItems ?? 0;
         var maxItems = schema.MaxItems;
+        var uniqueItems = schema.UniqueItems == true;
 
         // Generate at least minItems, default to 1, cap at 10 for sanity
         var count = Math.Max(minItems, 1);
@@ -644,10 +776,45 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             count = Math.Min(count, maxItems.Value);
         count = Math.Min(count, 10); // Prevent huge arrays
 
-        var result = new object?[count];
+        var result = new List<object?>();
+        var seen = uniqueItems ? new HashSet<string>() : null;
+
         for (var i = 0; i < count; i++)
-            result[i] = GenerateSampleValue(items);
-        return result;
+        {
+            var item = GenerateSampleValueWithVariation(items, uniqueItems ? i : 0, direction);
+
+            if (uniqueItems && seen != null)
+            {
+                var itemJson = JsonSerializer.Serialize(item);
+                var attempts = 0;
+                while (!seen.Add(itemJson) && attempts < 10)
+                {
+                    item = GenerateSampleValueWithVariation(items, i + attempts + 1, direction);
+                    itemJson = JsonSerializer.Serialize(item);
+                    attempts++;
+                }
+            }
+
+            result.Add(item);
+        }
+
+        return result.ToArray();
+    }
+
+    private object? GenerateSampleValueWithVariation(IOpenApiSchema schema, int variationIndex, ValidationDirection direction = ValidationDirection.Both)
+    {
+        if (variationIndex == 0)
+            return GenerateSampleValue(schema, direction);
+
+        // Generate variation based on type
+        var schemaType = GetSchemaTypeString(schema);
+        return schemaType switch
+        {
+            "integer" => GenerateSampleInteger(schema) + variationIndex,
+            "number" => GenerateSampleNumber(schema) + variationIndex,
+            "string" => GenerateSampleString(schema) + variationIndex,
+            _ => GenerateSampleValue(schema, direction)
+        };
     }
 
     private string GenerateSampleString(IOpenApiSchema schema)
@@ -811,6 +978,34 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         if (exMax.HasValue)
             effectiveMax = Math.Min(effectiveMax, exMax.Value - 1);
 
+        // Handle multipleOf constraint
+        var multipleOf = schema.MultipleOf;
+        if (multipleOf.HasValue && multipleOf.Value > 0)
+        {
+            var multiple = (long)multipleOf.Value;
+            // Find the first valid multiple within bounds
+            long candidate;
+            if (effectiveMin != long.MinValue)
+            {
+                // Round up to nearest multiple
+                var remainder = effectiveMin % multiple;
+                candidate = remainder == 0 ? effectiveMin : effectiveMin + (multiple - remainder);
+            }
+            else if (effectiveMax != long.MaxValue)
+            {
+                // Round down to nearest multiple
+                candidate = effectiveMax - (effectiveMax % multiple);
+            }
+            else
+            {
+                candidate = multiple; // Return the first positive multiple
+            }
+
+            // Ensure candidate is within bounds
+            if (candidate <= effectiveMax)
+                return candidate;
+        }
+
         // Return value within bounds
         if (effectiveMin != long.MinValue)
             return effectiveMin;
@@ -848,6 +1043,34 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             effectiveMax = Math.Min(effectiveMax, max.Value);
         if (exMax.HasValue)
             effectiveMax = Math.Min(effectiveMax, exMax.Value - epsilon);
+
+        // Handle multipleOf constraint
+        var multipleOf = schema.MultipleOf;
+        if (multipleOf.HasValue && multipleOf.Value > 0)
+        {
+            var multiple = multipleOf.Value;
+            // Find the first valid multiple within bounds
+            decimal candidate;
+            if (effectiveMin != decimal.MinValue)
+            {
+                // Round up to nearest multiple
+                var remainder = effectiveMin % multiple;
+                candidate = remainder == 0 ? effectiveMin : effectiveMin + (multiple - remainder);
+            }
+            else if (effectiveMax != decimal.MaxValue)
+            {
+                // Round down to nearest multiple
+                candidate = effectiveMax - (effectiveMax % multiple);
+            }
+            else
+            {
+                candidate = multiple; // Return the first positive multiple
+            }
+
+            // Ensure candidate is within bounds
+            if (candidate <= effectiveMax)
+                return candidate;
+        }
 
         // Return value within bounds
         if (effectiveMin != decimal.MinValue)

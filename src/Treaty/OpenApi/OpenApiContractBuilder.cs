@@ -441,14 +441,14 @@ public sealed class OpenApiContractBuilder
     private ResponseExpectation BuildResponseExpectation(int statusCode, IOpenApiResponse response)
     {
         string? contentType = null;
-        ISchemaValidator? validator = null;
+        OpenApiSchemaValidator? schemaHandler = null;
 
         if (response.Content != null && response.Content.TryGetValue("application/json", out var mediaType))
         {
             contentType = "application/json";
             if (mediaType.Schema != null)
             {
-                validator = new OpenApiSchemaValidator(mediaType.Schema, _jsonSerializer);
+                schemaHandler = new OpenApiSchemaValidator(mediaType.Schema, _jsonSerializer);
             }
         }
         else if (response.Content?.Count > 0)
@@ -457,7 +457,7 @@ public sealed class OpenApiContractBuilder
             contentType = firstContent.Key;
             if (firstContent.Value.Schema != null)
             {
-                validator = new OpenApiSchemaValidator(firstContent.Value.Schema, _jsonSerializer);
+                schemaHandler = new OpenApiSchemaValidator(firstContent.Value.Schema, _jsonSerializer);
             }
         }
 
@@ -470,7 +470,7 @@ public sealed class OpenApiContractBuilder
             }
         }
 
-        return new ResponseExpectation(statusCode, contentType, validator, headers, null);
+        return new ResponseExpectation(statusCode, contentType, schemaHandler, schemaHandler, headers, null);
     }
 
     private static QueryParameterType OpenApiSchemaToQueryParamType(IOpenApiSchema? schema)

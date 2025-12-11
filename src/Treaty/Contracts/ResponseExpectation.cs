@@ -3,6 +3,27 @@ using Treaty.Validation;
 namespace Treaty.Contracts;
 
 /// <summary>
+/// Specifies the direction of validation for readOnly/writeOnly constraint handling.
+/// </summary>
+public enum ValidationDirection
+{
+    /// <summary>
+    /// Validating a request body. ReadOnly fields should not be present.
+    /// </summary>
+    Request,
+
+    /// <summary>
+    /// Validating a response body. WriteOnly fields should not be present.
+    /// </summary>
+    Response,
+
+    /// <summary>
+    /// Direction-agnostic validation (default). Skips readOnly/writeOnly checks for backward compatibility.
+    /// </summary>
+    Both
+}
+
+/// <summary>
 /// Represents the expected format of a response.
 /// </summary>
 public sealed class ResponseExpectation
@@ -23,6 +44,11 @@ public sealed class ResponseExpectation
     public ISchemaValidator? BodyValidator { get; }
 
     /// <summary>
+    /// Gets the sample generator for the response body.
+    /// </summary>
+    public ISchemaGenerator? BodyGenerator { get; }
+
+    /// <summary>
     /// Gets the expected headers in the response.
     /// </summary>
     public IReadOnlyDictionary<string, HeaderExpectation> ExpectedHeaders { get; }
@@ -36,12 +62,14 @@ public sealed class ResponseExpectation
         int statusCode,
         string? contentType,
         ISchemaValidator? bodyValidator,
+        ISchemaGenerator? bodyGenerator,
         IReadOnlyDictionary<string, HeaderExpectation> expectedHeaders,
         PartialValidationConfig? partialValidation)
     {
         StatusCode = statusCode;
         ContentType = contentType;
         BodyValidator = bodyValidator;
+        BodyGenerator = bodyGenerator;
         ExpectedHeaders = expectedHeaders;
         PartialValidation = partialValidation;
     }
@@ -63,11 +91,19 @@ public sealed class PartialValidationConfig
     /// </summary>
     public bool StrictMode { get; }
 
+    /// <summary>
+    /// Gets the validation direction for readOnly/writeOnly constraint handling.
+    /// Default is <see cref="ValidationDirection.Both"/> which skips these checks for backward compatibility.
+    /// </summary>
+    public ValidationDirection Direction { get; }
+
     internal PartialValidationConfig(
         IReadOnlyList<string> propertiesToValidate,
-        bool strictMode = false)
+        bool strictMode = false,
+        ValidationDirection direction = ValidationDirection.Both)
     {
         PropertiesToValidate = propertiesToValidate;
         StrictMode = strictMode;
+        Direction = direction;
     }
 }

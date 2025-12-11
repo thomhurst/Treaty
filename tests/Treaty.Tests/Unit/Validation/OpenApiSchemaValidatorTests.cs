@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using FluentAssertions;
 using Microsoft.OpenApi;
+using Treaty.Contracts;
 using Treaty.OpenApi;
 using Treaty.Serialization;
 using Treaty.Validation;
@@ -902,6 +903,551 @@ public class OpenApiSchemaValidatorTests
         // Assert
         value.Should().NotBeNull();
         value.Should().MatchRegex(@"^[A-Z]+$");
+    }
+
+    #endregion
+
+    #region MultipleOf Validation
+
+    [Test]
+    public void Validate_MultipleOf_Valid_NoViolations()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            MultipleOf = 5
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "15";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Validate_MultipleOf_Invalid_ReturnsViolation()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            MultipleOf = 5
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "13";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().ContainSingle()
+            .Which.Type.Should().Be(ViolationType.OutOfRange);
+    }
+
+    [Test]
+    public void Validate_MultipleOf_Number_Valid_NoViolations()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Number,
+            MultipleOf = 0.5m
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "2.5";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void GenerateSample_Integer_RespectsMultipleOf()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Integer,
+            Minimum = "10",
+            MultipleOf = 7
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<long>(sampleJson);
+
+        // Assert
+        value.Should().BeGreaterThanOrEqualTo(10);
+        (value % 7).Should().Be(0);
+    }
+
+    [Test]
+    public void GenerateSample_Number_RespectsMultipleOf()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Number,
+            Minimum = "1",
+            MultipleOf = 0.5m
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<decimal>(sampleJson);
+
+        // Assert
+        value.Should().BeGreaterThanOrEqualTo(1);
+        (value % 0.5m).Should().Be(0);
+    }
+
+    #endregion
+
+    #region Default Value Generation
+
+    [Test]
+    public void GenerateSample_UsesDefaultValue_WhenNoExampleOrEnum()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Default = JsonValue.Create("pending")
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().Be("pending");
+    }
+
+    [Test]
+    public void GenerateSample_PrefersExample_OverDefault()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Example = JsonValue.Create("active"),
+            Default = JsonValue.Create("pending")
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().Be("active");
+    }
+
+    [Test]
+    public void GenerateSample_PrefersEnum_OverDefault()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Enum = new List<JsonNode?> { JsonValue.Create("enumValue") },
+            Default = JsonValue.Create("defaultValue")
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().Be("enumValue");
+    }
+
+    #endregion
+
+    #region UniqueItems Validation
+
+    [Test]
+    public void Validate_UniqueItems_Valid_NoViolations()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            UniqueItems = true,
+            Items = new OpenApiSchema { Type = JsonSchemaType.Integer }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "[1, 2, 3]";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Validate_UniqueItems_HasDuplicates_ReturnsViolation()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            UniqueItems = true,
+            Items = new OpenApiSchema { Type = JsonSchemaType.Integer }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "[1, 2, 1]";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().ContainSingle()
+            .Which.Type.Should().Be(ViolationType.OutOfRange);
+    }
+
+    [Test]
+    public void Validate_UniqueItems_False_AllowsDuplicates()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            UniqueItems = false,
+            Items = new OpenApiSchema { Type = JsonSchemaType.Integer }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "[1, 2, 1]";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void GenerateSample_UniqueItems_GeneratesDistinctValues()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            MinItems = 3,
+            UniqueItems = true,
+            Items = new OpenApiSchema { Type = JsonSchemaType.Integer }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var array = JsonSerializer.Deserialize<int[]>(sampleJson);
+
+        // Assert
+        array.Should().NotBeNull();
+        array.Should().OnlyHaveUniqueItems();
+    }
+
+    #endregion
+
+    #region Const Validation
+
+    [Test]
+    public void Validate_Const_Valid_NoViolations()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Const = "fixed-value"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "\"fixed-value\"";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Validate_Const_Invalid_ReturnsViolation()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Const = "fixed-value"
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = "\"other-value\"";
+
+        // Act
+        var violations = validator.Validate(json, "GET /test");
+
+        // Assert
+        violations.Should().ContainSingle()
+            .Which.Type.Should().Be(ViolationType.InvalidEnumValue);
+    }
+
+    [Test]
+    public void GenerateSample_ReturnsConstValue()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String,
+            Const = "fixed-value",
+            Example = JsonValue.Create("ignored-example")
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample();
+        var value = JsonSerializer.Deserialize<string>(sampleJson);
+
+        // Assert
+        value.Should().Be("fixed-value");
+    }
+
+    #endregion
+
+    #region ReadOnly/WriteOnly Validation
+
+    [Test]
+    public void Validate_ReadOnlyField_InRequest_ReturnsViolation()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "id", new OpenApiSchema { Type = JsonSchemaType.Integer, ReadOnly = true } },
+                { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = """{"id": 123, "name": "test"}""";
+        var config = new PartialValidationConfig([], false, ValidationDirection.Request);
+
+        // Act
+        var violations = validator.Validate(json, "POST /users", config);
+
+        // Assert
+        violations.Should().ContainSingle()
+            .Which.Message.Should().Contain("ReadOnly");
+    }
+
+    [Test]
+    public void Validate_ReadOnlyField_InResponse_NoViolations()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "id", new OpenApiSchema { Type = JsonSchemaType.Integer, ReadOnly = true } },
+                { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = """{"id": 123, "name": "test"}""";
+        var config = new PartialValidationConfig([], false, ValidationDirection.Response);
+
+        // Act
+        var violations = validator.Validate(json, "GET /users/123", config);
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Validate_WriteOnlyField_InResponse_ReturnsViolation()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "password", new OpenApiSchema { Type = JsonSchemaType.String, WriteOnly = true } },
+                { "username", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = """{"password": "secret", "username": "john"}""";
+        var config = new PartialValidationConfig([], false, ValidationDirection.Response);
+
+        // Act
+        var violations = validator.Validate(json, "GET /users/1", config);
+
+        // Assert
+        violations.Should().ContainSingle()
+            .Which.Message.Should().Contain("WriteOnly");
+    }
+
+    [Test]
+    public void Validate_WriteOnlyField_InRequest_NoViolations()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "password", new OpenApiSchema { Type = JsonSchemaType.String, WriteOnly = true } },
+                { "username", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = """{"password": "secret", "username": "john"}""";
+        var config = new PartialValidationConfig([], false, ValidationDirection.Request);
+
+        // Act
+        var violations = validator.Validate(json, "POST /users", config);
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Validate_DirectionBoth_IgnoresReadOnlyWriteOnly()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "id", new OpenApiSchema { Type = JsonSchemaType.Integer, ReadOnly = true } },
+                { "password", new OpenApiSchema { Type = JsonSchemaType.String, WriteOnly = true } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = """{"id": 123, "password": "secret"}""";
+        var config = new PartialValidationConfig([], false, ValidationDirection.Both);
+
+        // Act
+        var violations = validator.Validate(json, "GET /test", config);
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Validate_RequiredReadOnlyField_InRequest_NotRequired()
+    {
+        // Arrange - readOnly fields shouldn't be required in requests
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "id", new OpenApiSchema { Type = JsonSchemaType.Integer, ReadOnly = true } },
+                { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
+            },
+            Required = new HashSet<string> { "id", "name" }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+        var json = """{"name": "test"}""";  // id is missing but it's readOnly
+        var config = new PartialValidationConfig([], false, ValidationDirection.Request);
+
+        // Act
+        var violations = validator.Validate(json, "POST /users", config);
+
+        // Assert
+        violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public void GenerateSample_Request_ExcludesReadOnlyFields()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "id", new OpenApiSchema { Type = JsonSchemaType.Integer, ReadOnly = true } },
+                { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample(ValidationDirection.Request);
+        var obj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sampleJson);
+
+        // Assert
+        obj.Should().NotBeNull();
+        obj.Should().NotContainKey("id");
+        obj.Should().ContainKey("name");
+    }
+
+    [Test]
+    public void GenerateSample_Response_ExcludesWriteOnlyFields()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "password", new OpenApiSchema { Type = JsonSchemaType.String, WriteOnly = true } },
+                { "username", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample(ValidationDirection.Response);
+        var obj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sampleJson);
+
+        // Assert
+        obj.Should().NotBeNull();
+        obj.Should().NotContainKey("password");
+        obj.Should().ContainKey("username");
+    }
+
+    [Test]
+    public void GenerateSample_Both_IncludesAllFields()
+    {
+        // Arrange
+        var schema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                { "id", new OpenApiSchema { Type = JsonSchemaType.Integer, ReadOnly = true } },
+                { "password", new OpenApiSchema { Type = JsonSchemaType.String, WriteOnly = true } },
+                { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
+            }
+        };
+        var validator = new OpenApiSchemaValidator(schema, _serializer);
+
+        // Act
+        var sampleJson = validator.GenerateSample(ValidationDirection.Both);
+        var obj = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sampleJson);
+
+        // Assert
+        obj.Should().NotBeNull();
+        obj.Should().ContainKey("id");
+        obj.Should().ContainKey("password");
+        obj.Should().ContainKey("name");
     }
 
     #endregion

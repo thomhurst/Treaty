@@ -262,10 +262,10 @@ public sealed class ContractMockServer : IMockServer
             var responseExpectation = endpointContract.ResponseExpectations
                 .FirstOrDefault(r => r.StatusCode == statusCode);
 
-            if (responseExpectation?.BodyValidator != null)
+            if (responseExpectation?.BodyGenerator != null)
             {
                 context.Response.ContentType = responseExpectation.ContentType ?? "application/json";
-                var sampleJson = responseExpectation.BodyValidator.GenerateSample();
+                var sampleJson = responseExpectation.BodyGenerator.GenerateSample();
                 await context.Response.WriteAsync(sampleJson);
             }
         }
@@ -295,10 +295,10 @@ public sealed class ContractMockServer : IMockServer
         }
 
         // Generate response body
-        if (responseExpectation.BodyValidator != null)
+        if (responseExpectation.BodyGenerator != null)
         {
             context.Response.ContentType = responseExpectation.ContentType ?? "application/json";
-            var sampleJson = responseExpectation.BodyValidator.GenerateSample();
+            var sampleJson = responseExpectation.BodyGenerator.GenerateSample();
 
             // Apply custom generators if needed
             if (_customGenerators.Count > 0)

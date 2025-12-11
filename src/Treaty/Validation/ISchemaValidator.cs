@@ -26,10 +26,4 @@ public interface ISchemaValidator
     /// <param name="partialValidation">Optional partial validation configuration.</param>
     /// <returns>A list of validation violations, empty if valid.</returns>
     IReadOnlyList<ContractViolation> Validate(string json, string path, PartialValidationConfig? partialValidation = null);
-
-    /// <summary>
-    /// Generates a sample value conforming to this schema.
-    /// </summary>
-    /// <returns>A JSON string representing a valid sample value.</returns>
-    string GenerateSample();
 }
