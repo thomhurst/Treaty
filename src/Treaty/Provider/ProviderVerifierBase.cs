@@ -77,13 +77,33 @@ public abstract class ProviderVerifierBase : IProviderVerifier
     }
 
     /// <inheritdoc />
-    public async Task<ValidationResult> TryVerifyAsync(
+    public async Task VerifyAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await TryVerifyAsync(request, cancellationToken);
+        result.ThrowIfInvalid();
+    }
+
+    /// <inheritdoc />
+    public Task<ValidationResult> TryVerifyAsync(
         string path,
         HttpMethod method,
         object? body = null,
         Dictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default)
     {
+        var request = BuildRequest(path, method, body, headers);
+        return TryVerifyAsync(request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ValidationResult> TryVerifyAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken = default)
+    {
+        var path = GetPathFromRequest(request);
+        var method = request.Method;
         var endpoint = $"{method.Method} {path}";
         _logger.LogInformation("[Treaty] Validating {Endpoint}", endpoint);
 
@@ -107,13 +127,57 @@ public abstract class ProviderVerifierBase : IProviderVerifier
                 await SetupProviderStatesAsync(endpointContract, endpoint, statesToTeardown, cancellationToken);
             }
 
-            return await ExecuteVerificationAsync(endpointContract, path, method, body, headers, endpoint, cancellationToken);
+            return await ExecuteVerificationAsync(endpointContract, request, endpoint, cancellationToken);
         }
         finally
         {
             // Tear down provider states in reverse order
             await TeardownProviderStatesAsync(statesToTeardown, endpoint, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Builds an HttpRequestMessage from the provided parameters.
+    /// </summary>
+    private HttpRequestMessage BuildRequest(
+        string path,
+        HttpMethod method,
+        object? body,
+        Dictionary<string, string>? headers)
+    {
+        var request = new HttpRequestMessage(method, path);
+
+        if (headers != null)
+        {
+            foreach (var (name, value) in headers)
+            {
+                request.Headers.TryAddWithoutValidation(name, value);
+            }
+        }
+
+        if (body != null)
+        {
+            var json = _contract.JsonSerializer.Serialize(body, body.GetType());
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+        }
+
+        return request;
+    }
+
+    /// <summary>
+    /// Extracts the path from an HttpRequestMessage, handling both relative and absolute URIs.
+    /// </summary>
+    private static string GetPathFromRequest(HttpRequestMessage request)
+    {
+        if (request.RequestUri == null)
+            return "/";
+
+        // For absolute URIs, use PathAndQuery
+        if (request.RequestUri.IsAbsoluteUri)
+            return request.RequestUri.PathAndQuery;
+
+        // For relative URIs, use OriginalString (which contains the path)
+        return request.RequestUri.OriginalString;
     }
 
     /// <summary>
@@ -174,38 +238,21 @@ public abstract class ProviderVerifierBase : IProviderVerifier
     /// </summary>
     protected async Task<ValidationResult> ExecuteVerificationAsync(
         EndpointContract endpointContract,
-        string path,
-        HttpMethod method,
-        object? body,
-        Dictionary<string, string>? headers,
+        HttpRequestMessage request,
         string endpoint,
         CancellationToken cancellationToken)
     {
         var violations = new List<ContractViolation>();
 
-        // Build and send request
-        var request = new HttpRequestMessage(method, path);
-
-        // Add headers
-        if (headers != null)
+        // Validate request body if present
+        if (request.Content != null)
         {
-            foreach (var (name, value) in headers)
-            {
-                request.Headers.TryAddWithoutValidation(name, value);
-            }
-        }
+            var bodyContent = await request.Content.ReadAsStringAsync(cancellationToken);
 
-        // Add body
-        if (body != null)
-        {
-            var json = _contract.JsonSerializer.Serialize(body, body.GetType());
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            // Validate request body
             if (endpointContract.RequestExpectation?.BodyValidator != null)
             {
                 _logger.LogDebug("[Treaty] Validating request body");
-                var requestViolations = endpointContract.RequestExpectation.BodyValidator.Validate(json, endpoint);
+                var requestViolations = endpointContract.RequestExpectation.BodyValidator.Validate(bodyContent, endpoint);
                 violations.AddRange(requestViolations);
             }
         }

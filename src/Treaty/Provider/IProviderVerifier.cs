@@ -31,6 +31,26 @@ public interface IProviderVerifier : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Verifies that the request meets contract expectations.
+    /// Throws <see cref="ContractViolationException"/> if validation fails.
+    /// </summary>
+    /// <param name="request">The HTTP request message to verify.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="ContractViolationException">Thrown when contract violations are detected.</exception>
+    /// <example>
+    /// <code>
+    /// var request = new HttpRequestMessage(HttpMethod.Post, "/users")
+    /// {
+    ///     Content = JsonContent.Create(new { name = "John", email = "john@example.com" })
+    /// };
+    /// await provider.VerifyAsync(request);
+    /// </code>
+    /// </example>
+    Task VerifyAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Verifies that the endpoint meets contract expectations without throwing.
     /// </summary>
     /// <param name="path">The request path (e.g., "/users/123").</param>
@@ -44,6 +64,23 @@ public interface IProviderVerifier : IDisposable
         HttpMethod method,
         object? body = null,
         Dictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifies that the request meets contract expectations without throwing.
+    /// </summary>
+    /// <param name="request">The HTTP request message to verify.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A validation result indicating success or failure with violations.</returns>
+    /// <example>
+    /// <code>
+    /// var request = new HttpRequestMessage(HttpMethod.Get, "/users/1");
+    /// request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "token");
+    /// var result = await provider.TryVerifyAsync(request);
+    /// </code>
+    /// </example>
+    Task<ValidationResult> TryVerifyAsync(
+        HttpRequestMessage request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

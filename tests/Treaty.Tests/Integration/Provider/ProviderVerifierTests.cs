@@ -167,6 +167,61 @@ public class ProviderVerifierTests : IDisposable
         await _provider.VerifyAsync("/users/abc", HttpMethod.Get);
     }
 
+    [Test]
+    public async Task VerifyAsync_WithHttpRequestMessage_GetUsers_PassesValidation()
+    {
+        // Arrange
+        var request = new HttpRequestMessage(HttpMethod.Get, "/users");
+
+        // Act & Assert - should not throw
+        await _provider.VerifyAsync(request);
+    }
+
+    [Test]
+    public async Task VerifyAsync_WithHttpRequestMessage_CreateUser_PassesValidation()
+    {
+        // Arrange
+        var request = new HttpRequestMessage(HttpMethod.Post, "/users")
+        {
+            Content = new StringContent(
+                """{"name": "Test User", "email": "test@example.com"}""",
+                Encoding.UTF8,
+                "application/json")
+        };
+
+        // Act & Assert - should not throw
+        await _provider.VerifyAsync(request);
+    }
+
+    [Test]
+    public async Task TryVerifyAsync_WithHttpRequestMessage_ReturnsSuccessResult()
+    {
+        // Arrange
+        var request = new HttpRequestMessage(HttpMethod.Get, "/users/1");
+
+        // Act
+        var result = await _provider.TryVerifyAsync(request);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+        result.Violations.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task TryVerifyAsync_WithHttpRequestMessage_UndefinedEndpoint_ReturnsFailure()
+    {
+        // Arrange
+        var request = new HttpRequestMessage(HttpMethod.Get, "/nonexistent");
+
+        // Act
+        var result = await _provider.TryVerifyAsync(request);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Violations.Should().ContainSingle()
+            .Which.Message.Should().Contain("No contract definition found");
+    }
+
     public void Dispose()
     {
         _provider.Dispose();
