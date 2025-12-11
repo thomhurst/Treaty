@@ -225,7 +225,7 @@ public sealed class HttpProviderBuilder
     /// </summary>
     /// <returns>A new HTTP provider verifier instance.</returns>
     /// <exception cref="InvalidOperationException">Thrown when required options are not specified.</exception>
-    public HttpProviderVerifier Build()
+    public Task<HttpProviderVerifier> BuildAsync()
     {
         if (_baseUri == null)
         {
@@ -236,7 +236,7 @@ public sealed class HttpProviderBuilder
             throw new InvalidOperationException("A contract must be specified using WithContract().");
         }
 
-        return new HttpProviderVerifier(
+        var verifier = new HttpProviderVerifier(
             _baseUri,
             _contract,
             _loggerFactory,
@@ -245,5 +245,6 @@ public sealed class HttpProviderBuilder
             _retryPolicy,
             _httpOptions,
             _httpClient);
+        return Task.FromResult(verifier);
     }
 }

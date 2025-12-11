@@ -12,13 +12,36 @@ namespace Treaty.Testing;
 public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoint : class
 {
     private ProviderVerifier<TEntryPoint>? _provider;
+    private readonly SemaphoreSlim _providerLock = new(1, 1);
     private bool _disposed;
 
     /// <summary>
-    /// Gets the provider verifier instance.
+    /// Gets the provider verifier instance asynchronously.
     /// The verifier is lazily created when first accessed.
     /// </summary>
-    protected ProviderVerifier<TEntryPoint> Provider => _provider ??= CreateVerifier();
+    protected async Task<ProviderVerifier<TEntryPoint>> GetProviderAsync()
+    {
+        if (_provider != null)
+        {
+            return _provider;
+        }
+
+        await _providerLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (_provider != null)
+            {
+                return _provider;
+            }
+
+            _provider = await CreateVerifierAsync().ConfigureAwait(false);
+            return _provider;
+        }
+        finally
+        {
+            _providerLock.Release();
+        }
+    }
 
     /// <summary>
     /// Gets the contract to be verified.
@@ -43,10 +66,10 @@ public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoin
     });
 
     /// <summary>
-    /// Creates the provider verifier.
+    /// Creates the provider verifier asynchronously.
     /// Override to customize verifier creation.
     /// </summary>
-    protected virtual ProviderVerifier<TEntryPoint> CreateVerifier()
+    protected virtual async Task<ProviderVerifier<TEntryPoint>> CreateVerifierAsync()
     {
         var builder = new ProviderBuilder<TEntryPoint>()
             .WithContract(Contract)
@@ -59,7 +82,7 @@ public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoin
 
         ConfigureProvider(builder);
 
-        return builder.Build();
+        return await builder.BuildAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -82,7 +105,8 @@ public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoin
         VerificationOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        return await Provider.VerifyAllAsync(options, null, cancellationToken);
+        var provider = await GetProviderAsync().ConfigureAwait(false);
+        return await provider.VerifyAllAsync(options, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -110,7 +134,8 @@ public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoin
         VerificationOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        return await Provider.VerifyAsync(filter, options, null, cancellationToken);
+        var provider = await GetProviderAsync().ConfigureAwait(false);
+        return await provider.VerifyAsync(filter, options, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -143,6 +168,7 @@ public abstract class TreatyTestBase<TEntryPoint> : IDisposable where TEntryPoin
             if (disposing)
             {
                 _provider?.Dispose();
+                _providerLock?.Dispose();
             }
             _disposed = true;
         }

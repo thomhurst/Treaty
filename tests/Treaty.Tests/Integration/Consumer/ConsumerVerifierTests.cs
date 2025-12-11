@@ -109,7 +109,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         _consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer.BaseUrl!)
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
     }
@@ -236,7 +236,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
-            .Build();
+            .BuildAsync();
 
         var client = consumer.CreateHttpClient();
 
@@ -278,7 +278,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
-            .Build();
+            .BuildAsync();
 
         var client = consumer.CreateHttpClient();
         client.DefaultRequestHeaders.Add("Authorization", "Bearer token123");
@@ -316,7 +316,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
         var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
             .WithBaseUrl(_mockServer!.BaseUrl!)
-            .Build();
+            .BuildAsync();
 
         var handler = consumer.CreateHandler(new HttpClientHandler());
         var client = new HttpClient(handler)

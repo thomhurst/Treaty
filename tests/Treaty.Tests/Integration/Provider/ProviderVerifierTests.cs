@@ -94,7 +94,7 @@ public class ProviderVerifierTests : IDisposable
 
         _provider = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
     }
 
     [Test]

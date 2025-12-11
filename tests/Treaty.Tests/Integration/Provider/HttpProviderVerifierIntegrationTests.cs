@@ -131,7 +131,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
         _verifier = ProviderVerifier.ForHttpClient()
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
     }
@@ -238,7 +238,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithBearerToken("test-token-123")
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -263,7 +263,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithApiKey("my-api-key", "X-API-Key")
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -288,7 +288,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithBasicAuth("user", "pass")
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -323,7 +323,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
                 InitialDelayMs = 10,
                 UseExponentialBackoff = true
             })
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -348,7 +348,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithRetryPolicy() // Default options
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -377,7 +377,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpOptions(opts => opts.WithTimeout(TimeSpan.FromSeconds(60)))
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -402,7 +402,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpOptions(opts => opts.FollowRedirects(true, maxRedirects: 10))
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 
@@ -437,7 +437,7 @@ public class HttpProviderVerifierIntegrationTests : IAsyncDisposable
             .WithBaseUrl(_mockServer.BaseUrl!)
             .WithContract(contract)
             .WithHttpClient(customClient)
-            .Build();
+            .BuildAsync();
 
         File.Delete(specPath);
 

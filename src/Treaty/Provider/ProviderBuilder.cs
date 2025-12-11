@@ -175,14 +175,14 @@ public sealed class ProviderBuilder<TEntryPoint> where TEntryPoint : class
     /// </summary>
     /// <returns>The configured provider verifier.</returns>
     /// <exception cref="InvalidOperationException">Thrown if no contract was specified.</exception>
-    public ProviderVerifier<TEntryPoint> Build()
+    public Task<ProviderVerifier<TEntryPoint>> BuildAsync()
     {
         if (_contract == null)
         {
             throw new InvalidOperationException("A contract must be specified using WithContract().");
         }
 
-        return new ProviderVerifier<TEntryPoint>(
+        var verifier = new ProviderVerifier<TEntryPoint>(
             _contract,
             _loggerFactory,
             _stateHandler,
@@ -190,5 +190,6 @@ public sealed class ProviderBuilder<TEntryPoint> where TEntryPoint : class
             _configurationActions,
             _webHostConfigurations,
             _environment);
+        return Task.FromResult(verifier);
     }
 }

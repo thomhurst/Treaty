@@ -110,18 +110,17 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configureServer">Optional action to configure the mock server.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddMockServer(
+    /// <returns>A task representing the service collection for chaining.</returns>
+    public static async Task<IServiceCollection> AddMockServerAsync(
         this IServiceCollection services,
         Action<ContractMockServerBuilder>? configureServer = null)
     {
-        services.AddSingleton<IMockServer>(sp =>
-        {
-            var contract = sp.GetRequiredService<ContractDefinition>();
-            var builder = MockServer.FromContract(contract);
-            configureServer?.Invoke(builder);
-            return builder.Build();
-        });
+        var sp = services.BuildServiceProvider();
+        var contract = sp.GetRequiredService<ContractDefinition>();
+        var builder = MockServer.FromContract(contract);
+        configureServer?.Invoke(builder);
+        var mockServer = await builder.BuildAsync().ConfigureAwait(false);
+        services.AddSingleton(mockServer);
         return services;
     }
 
@@ -198,11 +197,10 @@ public sealed class TreatyOptions
     /// Adds a mock server based on the registered contract.
     /// </summary>
     /// <param name="configureServer">Optional action to configure the mock server.</param>
-    /// <returns>This options instance for chaining.</returns>
-    public TreatyOptions AddMockServer(Action<ContractMockServerBuilder>? configureServer = null)
+    /// <returns>A task for async chaining.</returns>
+    public async Task AddMockServerAsync(Action<ContractMockServerBuilder>? configureServer = null)
     {
-        _services.AddMockServer(configureServer);
-        return this;
+        await _services.AddMockServerAsync(configureServer).ConfigureAwait(false);
     }
 
     /// <summary>

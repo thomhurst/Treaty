@@ -111,9 +111,9 @@ public sealed class ContractMockServerBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public IMockServer Build()
+    public Task<IMockServer> BuildAsync()
     {
-        return new ContractMockServer(
+        var server = new ContractMockServer(
             _contract,
             _loggerFactory,
             _useHttps,
@@ -122,6 +122,7 @@ public sealed class ContractMockServerBuilder
             _authConfig,
             _customGenerators,
             _endpointConfigs);
+        return Task.FromResult<IMockServer>(server);
     }
 }
 
@@ -182,7 +183,7 @@ public sealed class ContractMockEndpointBuilder
     /// Builds the mock server.
     /// </summary>
     /// <returns>The configured mock server.</returns>
-    public IMockServer Build() => _parent.Build();
+    public Task<IMockServer> BuildAsync() => _parent.BuildAsync();
 }
 
 /// <summary>

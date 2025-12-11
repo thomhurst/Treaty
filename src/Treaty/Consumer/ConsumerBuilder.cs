@@ -200,14 +200,14 @@ public sealed class ConsumerBuilder
     /// </summary>
     /// <returns>The configured consumer validation client.</returns>
     /// <exception cref="InvalidOperationException">Thrown if no contract was specified.</exception>
-    public ConsumerValidationClient Build()
+    public Task<ConsumerValidationClient> BuildAsync()
     {
         if (_contract == null)
         {
             throw new InvalidOperationException("A contract must be specified using WithContract().");
         }
 
-        return new ConsumerValidationClient(
+        var client = new ConsumerValidationClient(
             _contract,
             _baseUrl,
             _loggerFactory,
@@ -215,5 +215,6 @@ public sealed class ConsumerBuilder
             _retryPolicy,
             _httpOptions,
             _innerHandler);
+        return Task.FromResult(client);
     }
 }

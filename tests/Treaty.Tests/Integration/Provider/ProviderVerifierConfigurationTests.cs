@@ -76,7 +76,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
 
                 services.AddSingleton<ITestService>(new MockTestService("Mocked response"));
             })
-            .Build();
+            .BuildAsync();
 
         // Act
         var result = await _provider.TryVerifyAsync("/service", HttpMethod.Get);
@@ -101,7 +101,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
                     ["TestSettings:ConfigValue"] = "OverriddenValue"
                 });
             })
-            .Build();
+            .BuildAsync();
 
         // Act
         var result = await _provider.TryVerifyAsync("/config", HttpMethod.Get);
@@ -120,7 +120,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
         _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
             .UseEnvironment("Testing")
-            .Build();
+            .BuildAsync();
 
         // Act
         var result = await _provider.TryVerifyAsync("/environment", HttpMethod.Get);
@@ -142,7 +142,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
             {
                 webBuilder.UseSetting("TestSettings:ConfigValue", "WebHostConfiguredValue");
             })
-            .Build();
+            .BuildAsync();
 
         // Act
         var result = await _provider.TryVerifyAsync("/config", HttpMethod.Get);
@@ -170,7 +170,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
             {
                 servicesCalled.Add("Second");
             })
-            .Build();
+            .BuildAsync();
 
         // Act
         await _provider.TryVerifyAsync("/config", HttpMethod.Get);

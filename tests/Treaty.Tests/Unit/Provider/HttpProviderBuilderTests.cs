@@ -41,7 +41,7 @@ public class HttpProviderBuilderTests
         var verifier = builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -59,7 +59,7 @@ public class HttpProviderBuilderTests
         var verifier = builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         // Assert - verifier should be created successfully
         await Assert.That(verifier).IsNotNull();
@@ -77,7 +77,7 @@ public class HttpProviderBuilderTests
         var verifier = builder
             .WithBaseUrl("https://api.example.com/")
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -125,7 +125,7 @@ public class HttpProviderBuilderTests
         var verifier = builder
             .WithBaseUrl(new Uri("https://api.example.com/"))
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -157,7 +157,7 @@ public class HttpProviderBuilderTests
         var verifier = builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -191,7 +191,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithLogging(loggerFactory)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -220,14 +220,14 @@ public class HttpProviderBuilderTests
         var contract = await CreateTestContractAsync();
         var stateHandler = new StateHandlerBuilder()
             .ForState("test state", () => { })
-            .Build();
+            .BuildAsync();
 
         // Act
         var verifier = builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithStateHandler(stateHandler)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -257,7 +257,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithStateHandler(states => states.ForState("test state", () => { }))
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -291,7 +291,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithBearerToken("test-token")
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -314,7 +314,7 @@ public class HttpProviderBuilderTests
                 await Task.Delay(1, ct);
                 return "async-token";
             })
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -333,7 +333,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithApiKey("my-api-key")
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -352,7 +352,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithApiKey("my-api-key", "Authorization-Key")
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -371,7 +371,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithApiKey("my-api-key", "api_key", ApiKeyLocation.QueryString)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -390,7 +390,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithBasicAuth("username", "password")
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -413,7 +413,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithCustomHeaders(headers)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -433,7 +433,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithAuthentication(customProvider)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -466,7 +466,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithRetryPolicy()
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -486,7 +486,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithRetryPolicy(options)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -506,7 +506,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithRetryPolicy(customPolicy)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -544,7 +544,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithHttpOptions(options)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -576,7 +576,7 @@ public class HttpProviderBuilderTests
                 .WithTimeout(60)
                 .FollowRedirects(false)
                 .SkipCertificateValidation())
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -610,7 +610,7 @@ public class HttpProviderBuilderTests
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
             .WithHttpClient(httpClient)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -643,7 +643,7 @@ public class HttpProviderBuilderTests
 
         // Act & Assert
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            builder.WithContract(contract).Build());
+            builder.WithContract(contract).BuildAsync());
 
         await Assert.That(ex!.Message).Contains("base URL");
     }
@@ -656,7 +656,7 @@ public class HttpProviderBuilderTests
 
         // Act & Assert
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            builder.WithBaseUrl("https://api.example.com").Build());
+            builder.WithBaseUrl("https://api.example.com").BuildAsync());
 
         await Assert.That(ex!.Message).Contains("contract");
     }
@@ -672,7 +672,7 @@ public class HttpProviderBuilderTests
         var verifier = builder
             .WithBaseUrl("https://api.example.com")
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -695,7 +695,7 @@ public class HttpProviderBuilderTests
             .WithBearerToken("token")
             .WithRetryPolicy()
             .WithHttpOptions(opts => opts.WithTimeout(60))
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(verifier).IsNotNull();
@@ -738,7 +738,7 @@ public class HttpProviderBuilderTests
             .WithBearerToken("first-token")
             .WithApiKey("api-key")
             .WithBasicAuth("user", "pass")
-            .Build();
+            .BuildAsync();
 
         // Assert - Should create successfully with last auth provider
         await Assert.That(verifier).IsNotNull();

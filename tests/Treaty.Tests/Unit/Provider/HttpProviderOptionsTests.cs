@@ -60,7 +60,7 @@ public class HttpProviderOptionsTests
         var builder = new HttpProviderOptionsBuilder();
 
         // Act
-        var options = builder.Build();
+        var options = await builder.BuildAsync();
 
         // Assert
         await Assert.That(options.RequestTimeout).IsEqualTo(TimeSpan.FromSeconds(30));
@@ -78,7 +78,7 @@ public class HttpProviderOptionsTests
         // Act
         var options = builder
             .WithTimeout(TimeSpan.FromMinutes(2))
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.RequestTimeout).IsEqualTo(TimeSpan.FromMinutes(2));
@@ -93,7 +93,7 @@ public class HttpProviderOptionsTests
         // Act
         var options = builder
             .WithTimeout(90)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.RequestTimeout).IsEqualTo(TimeSpan.FromSeconds(90));
@@ -108,7 +108,7 @@ public class HttpProviderOptionsTests
         // Act
         var options = builder
             .FollowRedirects(true)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.FollowRedirects).IsTrue();
@@ -123,7 +123,7 @@ public class HttpProviderOptionsTests
         // Act
         var options = builder
             .FollowRedirects(false)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.FollowRedirects).IsFalse();
@@ -138,7 +138,7 @@ public class HttpProviderOptionsTests
         // Act
         var options = builder
             .FollowRedirects(true, maxRedirects: 10)
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.FollowRedirects).IsTrue();
@@ -154,7 +154,7 @@ public class HttpProviderOptionsTests
         // Act
         var options = builder
             .SkipCertificateValidation()
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.ValidateCertificates).IsFalse();
@@ -188,7 +188,7 @@ public class HttpProviderOptionsTests
             .WithTimeout(TimeSpan.FromMinutes(5))
             .FollowRedirects(true, maxRedirects: 20)
             .SkipCertificateValidation()
-            .Build();
+            .BuildAsync();
 
         // Assert
         await Assert.That(options.RequestTimeout).IsEqualTo(TimeSpan.FromMinutes(5));

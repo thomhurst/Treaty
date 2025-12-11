@@ -64,7 +64,7 @@ public class ProviderVerifierBulkTests : IDisposable
 
         _verifier = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contract)
-            .Build();
+            .BuildAsync();
     }
 
     public void Dispose()
@@ -116,7 +116,7 @@ public class ProviderVerifierBulkTests : IDisposable
 
         using var verifier = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contractWithMissingExampleData)
-            .Build();
+            .BuildAsync();
 
         // Act
         var result = await verifier.VerifyAllAsync();
@@ -171,7 +171,7 @@ public class ProviderVerifierBulkTests : IDisposable
 
         using var verifier = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contractWithFailure)
-            .Build();
+            .BuildAsync();
 
         var options = new VerificationOptions { StopOnFirstFailure = true };
 
