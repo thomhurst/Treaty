@@ -36,9 +36,9 @@ var contract = await Contract.FromOpenApi("api-spec.yaml")
 // In your test class
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-var provider = ProviderVerifier.ForWebApplication<Startup>()
+var provider = await ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
-    .Build();
+    .BuildAsync();
 
 // Verify a single endpoint
 await provider.VerifyAsync("/users/1", HttpMethod.Get);
@@ -61,7 +61,7 @@ var response = await client.GetAsync("/users/1");
 
 // Or create a mock from an already-loaded contract
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
-var mockServer = MockServer.FromContract(contract).Build();
+var mockServer = await MockServer.FromContract(contract).BuildAsync();
 ```
 
 ### Conditional Mock Responses
@@ -79,10 +79,10 @@ var mockServer = await MockServer.FromOpenApi("api-spec.yaml")
 ```csharp
 var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
-var consumer = ConsumerVerifier.Create()
+var consumer = await ConsumerVerifier.Create()
     .WithContract(contract)
     .WithBaseUrl("https://api.example.com")
-    .Build();
+    .BuildAsync();
 
 // HttpClient validates all requests against the contract
 var client = consumer.CreateHttpClient();
