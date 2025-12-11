@@ -64,6 +64,6 @@ public class UploadPackagesToNugetModule(IOptions<NuGetSettings> nuGetSettings) 
             results.Add(result);
         }
 
-        return results.ToArray();
+        return [.. results];
     }
 }

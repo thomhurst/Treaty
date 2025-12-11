@@ -132,7 +132,7 @@ internal sealed class ContractValidatingHandler(ContractDefinition contract, ILo
         }
     }
 
-    private void ValidateQueryParameters(
+    private static void ValidateQueryParameters(
         EndpointContract endpointContract,
         HttpRequestMessage request,
         string endpoint,

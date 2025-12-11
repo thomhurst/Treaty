@@ -11,7 +11,7 @@ namespace Treaty.OpenApi;
 /// <summary>
 /// Validates JSON content against an OpenAPI schema.
 /// </summary>
-internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSerializer serializer) : ISchemaValidator, ISchemaGenerator
+internal sealed partial class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSerializer serializer) : ISchemaValidator, ISchemaGenerator
 {
     private readonly IOpenApiSchema _schema = schema;
     private readonly IJsonSerializer _serializer = serializer;
@@ -427,7 +427,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         }
     }
 
-    private void ValidateString(JsonNode node, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
+    private static void ValidateString(JsonNode node, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
     {
         if (node.GetValueKind() != JsonValueKind.String)
         {
@@ -580,7 +580,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         ValidateNumericConstraints(value, schema, endpoint, path, violations);
     }
 
-    private void ValidateNumericConstraints(decimal value, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
+    private static void ValidateNumericConstraints(decimal value, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
     {
         // In OpenAPI 3.1 / Microsoft.OpenApi v3, Minimum/Maximum/ExclusiveMinimum/ExclusiveMaximum are all string values
         // ExclusiveMinimum/Maximum are the actual exclusive boundary values (not boolean flags)
@@ -670,7 +670,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         }
     }
 
-    private void ValidateBoolean(JsonNode node, string endpoint, string path, List<ContractViolation> violations)
+    private static void ValidateBoolean(JsonNode node, string endpoint, string path, List<ContractViolation> violations)
     {
         var kind = node.GetValueKind();
         if (kind != JsonValueKind.True && kind != JsonValueKind.False)
@@ -691,7 +691,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         {
             return false;
         }
-        return Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+        return MyRegex().IsMatch(value);
     }
 
     private object? GenerateSampleValue(IOpenApiSchema schema, ValidationDirection direction = ValidationDirection.Both)
@@ -827,7 +827,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         };
     }
 
-    private string GenerateSampleString(IOpenApiSchema schema)
+    private static string GenerateSampleString(IOpenApiSchema schema)
     {
         var format = schema.Format;
 
@@ -981,7 +981,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         return charClass.Length > 0 ? charClass[0] : 'x';
     }
 
-    private long GenerateSampleInteger(IOpenApiSchema schema)
+    private static long GenerateSampleInteger(IOpenApiSchema schema)
     {
         long? min = null;
         long? max = null;
@@ -1068,7 +1068,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
         return 1;
     }
 
-    private decimal GenerateSampleNumber(IOpenApiSchema schema)
+    private static decimal GenerateSampleNumber(IOpenApiSchema schema)
     {
         decimal? min = null;
         decimal? max = null;
@@ -1397,4 +1397,7 @@ internal sealed class OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSeriali
             .Where(name => name != null)
             .Cast<string>();
     }
+
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
+    private static partial Regex MyRegex();
 }

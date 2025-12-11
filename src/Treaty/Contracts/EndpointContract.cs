@@ -5,7 +5,7 @@ namespace Treaty.Contracts;
 /// <summary>
 /// Represents the contract for a single API endpoint.
 /// </summary>
-public sealed class EndpointContract
+public sealed partial class EndpointContract
 {
     private readonly Regex _pathPattern;
     private readonly List<string> _pathParameterNames;
@@ -197,10 +197,7 @@ public sealed class EndpointContract
         var escaped = Regex.Escape(pathTemplate);
         // After Regex.Escape, {id} becomes \{id} (only { is escaped, not })
         // So we match \{ followed by anything except }, then }
-        var pattern = "^" + Regex.Replace(
-            escaped,
-            @"\\{([^}]+)}",
-            match =>
+        var pattern = "^" + MyRegex().Replace(escaped, match =>
             {
                 parameterNames.Add(match.Groups[1].Value);
                 return $"(?<param{parameterNames.Count - 1}>[^/]+)";
@@ -208,4 +205,7 @@ public sealed class EndpointContract
 
         return (new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase), parameterNames);
     }
+
+    [GeneratedRegex(@"\\{([^}]+)}")]
+    private static partial Regex MyRegex();
 }

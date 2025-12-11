@@ -15,19 +15,19 @@ public sealed record ContractDiff(
     /// Gets only the breaking changes.
     /// </summary>
     public IReadOnlyList<ContractChange> BreakingChanges { get; } =
-        AllChanges.Where(c => c.Severity == ChangeSeverity.Breaking).ToList();
+        [.. AllChanges.Where(c => c.Severity == ChangeSeverity.Breaking)];
 
     /// <summary>
     /// Gets only the warning-level changes.
     /// </summary>
     public IReadOnlyList<ContractChange> Warnings { get; } =
-        AllChanges.Where(c => c.Severity == ChangeSeverity.Warning).ToList();
+        [.. AllChanges.Where(c => c.Severity == ChangeSeverity.Warning)];
 
     /// <summary>
     /// Gets only the informational changes.
     /// </summary>
     public IReadOnlyList<ContractChange> InfoChanges { get; } =
-        AllChanges.Where(c => c.Severity == ChangeSeverity.Info).ToList();
+        [.. AllChanges.Where(c => c.Severity == ChangeSeverity.Info)];
 
     /// <summary>
     /// Gets a value indicating whether there are any breaking changes.

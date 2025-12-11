@@ -6,21 +6,15 @@ namespace Treaty.Provider.Resilience;
 /// <summary>
 /// Default retry policy implementation with configurable options.
 /// </summary>
-public sealed class RetryPolicy : IRetryPolicy
+/// <remarks>
+/// Initializes a new instance with optional options and logger.
+/// </remarks>
+/// <param name="options">The retry policy options. Uses defaults if not specified.</param>
+/// <param name="logger">Optional logger for diagnostic output.</param>
+public sealed class RetryPolicy(RetryPolicyOptions? options = null, ILogger? logger = null) : IRetryPolicy
 {
-    private readonly RetryPolicyOptions _options;
-    private readonly ILogger _logger;
-
-    /// <summary>
-    /// Initializes a new instance with optional options and logger.
-    /// </summary>
-    /// <param name="options">The retry policy options. Uses defaults if not specified.</param>
-    /// <param name="logger">Optional logger for diagnostic output.</param>
-    public RetryPolicy(RetryPolicyOptions? options = null, ILogger? logger = null)
-    {
-        _options = options ?? RetryPolicyOptions.Default;
-        _logger = logger ?? NullLogger.Instance;
-    }
+    private readonly RetryPolicyOptions _options = options ?? RetryPolicyOptions.Default;
+    private readonly ILogger _logger = logger ?? NullLogger.Instance;
 
     /// <inheritdoc />
     public async Task<T> ExecuteAsync<T>(
@@ -28,8 +22,6 @@ public sealed class RetryPolicy : IRetryPolicy
         CancellationToken cancellationToken = default)
     {
         var attempt = 0;
-        Exception? lastException = null;
-
         while (true)
         {
             try
@@ -38,7 +30,6 @@ public sealed class RetryPolicy : IRetryPolicy
             }
             catch (Exception ex) when (ShouldRetry(ex, attempt))
             {
-                lastException = ex;
                 attempt++;
 
                 var delay = CalculateDelay(attempt);

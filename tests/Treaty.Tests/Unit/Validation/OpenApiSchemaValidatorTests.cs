@@ -22,12 +22,12 @@ public class OpenApiSchemaValidatorTests
         var schema = new OpenApiSchema
         {
             Type = JsonSchemaType.String,
-            Enum = new List<JsonNode?>
-            {
+            Enum =
+            [
                 JsonValue.Create("active"),
                 JsonValue.Create("inactive"),
                 JsonValue.Create("pending")
-            }
+            ]
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "\"active\"";
@@ -46,11 +46,11 @@ public class OpenApiSchemaValidatorTests
         var schema = new OpenApiSchema
         {
             Type = JsonSchemaType.String,
-            Enum = new List<JsonNode?>
-            {
+            Enum =
+            [
                 JsonValue.Create("active"),
                 JsonValue.Create("inactive")
-            }
+            ]
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "\"unknown\"";
@@ -406,11 +406,11 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            AnyOf = new List<IOpenApiSchema>
-            {
+            AnyOf =
+            [
                 new OpenApiSchema { Type = JsonSchemaType.String },
                 new OpenApiSchema { Type = JsonSchemaType.Integer }
-            }
+            ]
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "\"hello\"";
@@ -428,11 +428,11 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            AnyOf = new List<IOpenApiSchema>
-            {
+            AnyOf =
+            [
                 new OpenApiSchema { Type = JsonSchemaType.String },
                 new OpenApiSchema { Type = JsonSchemaType.Integer }
-            }
+            ]
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "true";  // Boolean doesn't match string or integer
@@ -451,8 +451,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange - object must have both 'id' and 'name'
         var schema = new OpenApiSchema
         {
-            AllOf = new List<IOpenApiSchema>
-            {
+            AllOf =
+            [
                 new OpenApiSchema
                 {
                     Type = JsonSchemaType.Object,
@@ -471,7 +471,7 @@ public class OpenApiSchemaValidatorTests
                     },
                     Required = new HashSet<string> { "name" }
                 }
-            }
+            ]
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = """{"id": 1, "name": "John"}""";
@@ -489,8 +489,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange - object must have both 'id' and 'name'
         var schema = new OpenApiSchema
         {
-            AllOf = new List<IOpenApiSchema>
-            {
+            AllOf =
+            [
                 new OpenApiSchema
                 {
                     Type = JsonSchemaType.Object,
@@ -509,7 +509,7 @@ public class OpenApiSchemaValidatorTests
                     },
                     Required = new HashSet<string> { "name" }
                 }
-            }
+            ]
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = """{"id": 1}""";  // Missing 'name'
@@ -1059,7 +1059,7 @@ public class OpenApiSchemaValidatorTests
         var schema = new OpenApiSchema
         {
             Type = JsonSchemaType.String,
-            Enum = new List<JsonNode?> { JsonValue.Create("enumValue") },
+            Enum = [JsonValue.Create("enumValue")],
             Default = JsonValue.Create("defaultValue")
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);

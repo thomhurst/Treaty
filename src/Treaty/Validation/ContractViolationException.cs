@@ -97,7 +97,7 @@ public sealed class ContractViolationException : Exception
 
         foreach (var group in groupedByEndpoint)
         {
-            sb.AppendLine(DiagnosticFormatter.FormatSummaryLine(group.Key, group.ToList()));
+            sb.AppendLine(DiagnosticFormatter.FormatSummaryLine(group.Key, [.. group]));
         }
 
         return sb.ToString().TrimEnd();

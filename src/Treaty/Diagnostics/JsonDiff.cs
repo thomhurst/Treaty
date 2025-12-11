@@ -3,44 +3,35 @@ namespace Treaty.Diagnostics;
 /// <summary>
 /// Represents a difference between expected and actual JSON at a specific path.
 /// </summary>
-public sealed class JsonDiff
+/// <remarks>
+/// Creates a new JSON diff entry.
+/// </remarks>
+public sealed class JsonDiff(string path, DiffType type, string? expected, string? actual, string? description = null)
 {
     /// <summary>
     /// Gets the JSON path where the difference occurred (e.g., "$.user.address.street").
     /// </summary>
-    public string Path { get; }
+    public string Path { get; } = path;
 
     /// <summary>
     /// Gets the type of difference.
     /// </summary>
-    public DiffType Type { get; }
+    public DiffType Type { get; } = type;
 
     /// <summary>
     /// Gets the expected value (from the contract schema).
     /// </summary>
-    public string? Expected { get; }
+    public string? Expected { get; } = expected;
 
     /// <summary>
     /// Gets the actual value (from the response).
     /// </summary>
-    public string? Actual { get; }
+    public string? Actual { get; } = actual;
 
     /// <summary>
     /// Gets an optional description of the difference.
     /// </summary>
-    public string? Description { get; }
-
-    /// <summary>
-    /// Creates a new JSON diff entry.
-    /// </summary>
-    public JsonDiff(string path, DiffType type, string? expected, string? actual, string? description = null)
-    {
-        Path = path;
-        Type = type;
-        Expected = expected;
-        Actual = actual;
-        Description = description;
-    }
+    public string? Description { get; } = description;
 
     /// <summary>
     /// Creates a diff for a field that is present in actual but not expected.

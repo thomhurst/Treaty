@@ -9,7 +9,7 @@ public class DiscriminatorValidationTests
 {
     private readonly IJsonSerializer _serializer = new SystemTextJsonSerializer();
 
-    private OpenApiSchema CreatePetSchema()
+    private static OpenApiSchema CreatePetSchema()
     {
         var catSchema = new OpenApiSchema
         {
@@ -43,7 +43,7 @@ public class DiscriminatorValidationTests
 
         return new OpenApiSchema
         {
-            OneOf = new List<IOpenApiSchema> { catSchema, dogSchema },
+            OneOf = [catSchema, dogSchema],
             Discriminator = new OpenApiDiscriminator
             {
                 PropertyName = "petType",
@@ -166,7 +166,7 @@ public class DiscriminatorValidationTests
 
         var schema = new OpenApiSchema
         {
-            OneOf = new List<IOpenApiSchema> { stringSchema, integerSchema }
+            OneOf = [stringSchema, integerSchema]
             // No discriminator
         };
 
@@ -189,7 +189,7 @@ public class DiscriminatorValidationTests
 
         var schema = new OpenApiSchema
         {
-            OneOf = new List<IOpenApiSchema> { stringSchema, integerSchema }
+            OneOf = [stringSchema, integerSchema]
             // No discriminator
         };
 
@@ -223,7 +223,7 @@ public class DiscriminatorValidationTests
 
         var schema = new OpenApiSchema
         {
-            OneOf = new List<IOpenApiSchema> { catSchema },
+            OneOf = [catSchema],
             Discriminator = new OpenApiDiscriminator
             {
                 PropertyName = "type",
@@ -264,7 +264,7 @@ public class DiscriminatorValidationTests
 
         var schema = new OpenApiSchema
         {
-            AnyOf = new List<IOpenApiSchema> { catSchema },
+            AnyOf = [catSchema],
             Discriminator = new OpenApiDiscriminator
             {
                 PropertyName = "petType",

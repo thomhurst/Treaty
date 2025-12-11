@@ -5,42 +5,52 @@ namespace Treaty.Provider;
 /// <summary>
 /// Reports progress during bulk verification operations.
 /// </summary>
-public sealed class VerificationProgress
+/// <remarks>
+/// Creates a new progress report.
+/// </remarks>
+public sealed class VerificationProgress(
+    int totalEndpoints,
+    int completedEndpoints,
+    int passedEndpoints,
+    int failedEndpoints,
+    int skippedEndpoints = 0,
+    EndpointContract? currentEndpoint = null,
+    string? statusMessage = null)
 {
     /// <summary>
     /// Gets the total number of endpoints to verify.
     /// </summary>
-    public int TotalEndpoints { get; }
+    public int TotalEndpoints { get; } = totalEndpoints;
 
     /// <summary>
     /// Gets the number of endpoints that have been verified (passed or failed).
     /// </summary>
-    public int CompletedEndpoints { get; }
+    public int CompletedEndpoints { get; } = completedEndpoints;
 
     /// <summary>
     /// Gets the number of endpoints that passed verification.
     /// </summary>
-    public int PassedEndpoints { get; }
+    public int PassedEndpoints { get; } = passedEndpoints;
 
     /// <summary>
     /// Gets the number of endpoints that failed verification.
     /// </summary>
-    public int FailedEndpoints { get; }
+    public int FailedEndpoints { get; } = failedEndpoints;
 
     /// <summary>
     /// Gets the number of endpoints that were skipped (e.g., no example data).
     /// </summary>
-    public int SkippedEndpoints { get; }
+    public int SkippedEndpoints { get; } = skippedEndpoints;
 
     /// <summary>
     /// Gets the endpoint currently being verified, if any.
     /// </summary>
-    public EndpointContract? CurrentEndpoint { get; }
+    public EndpointContract? CurrentEndpoint { get; } = currentEndpoint;
 
     /// <summary>
     /// Gets the current status message.
     /// </summary>
-    public string? StatusMessage { get; }
+    public string? StatusMessage { get; } = statusMessage;
 
     /// <summary>
     /// Gets the percentage of verification complete (0-100).
@@ -48,27 +58,6 @@ public sealed class VerificationProgress
     public double PercentComplete => TotalEndpoints > 0
         ? (double)CompletedEndpoints / TotalEndpoints * 100
         : 0;
-
-    /// <summary>
-    /// Creates a new progress report.
-    /// </summary>
-    public VerificationProgress(
-        int totalEndpoints,
-        int completedEndpoints,
-        int passedEndpoints,
-        int failedEndpoints,
-        int skippedEndpoints = 0,
-        EndpointContract? currentEndpoint = null,
-        string? statusMessage = null)
-    {
-        TotalEndpoints = totalEndpoints;
-        CompletedEndpoints = completedEndpoints;
-        PassedEndpoints = passedEndpoints;
-        FailedEndpoints = failedEndpoints;
-        SkippedEndpoints = skippedEndpoints;
-        CurrentEndpoint = currentEndpoint;
-        StatusMessage = statusMessage;
-    }
 
     /// <summary>
     /// Creates an initial progress report.

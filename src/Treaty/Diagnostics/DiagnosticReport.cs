@@ -8,70 +8,58 @@ namespace Treaty.Diagnostics;
 /// A comprehensive diagnostic report for a contract verification failure.
 /// Provides detailed information to help debug verification issues.
 /// </summary>
-public sealed class DiagnosticReport
+/// <remarks>
+/// Creates a new diagnostic report.
+/// </remarks>
+public sealed class DiagnosticReport(
+    string endpoint,
+    IReadOnlyList<ContractViolation> violations,
+    IReadOnlyList<ProviderState>? providerStates = null,
+    string? requestSent = null,
+    string? responseReceived = null,
+    IReadOnlyList<JsonDiff>? bodyDiffs = null,
+    int? statusCode = null,
+    IReadOnlyList<int>? expectedStatusCodes = null)
 {
     /// <summary>
     /// Gets the endpoint being verified (e.g., "GET /users/123").
     /// </summary>
-    public string Endpoint { get; }
+    public string Endpoint { get; } = endpoint;
 
     /// <summary>
     /// Gets the contract violations found during verification.
     /// </summary>
-    public IReadOnlyList<ContractViolation> Violations { get; }
+    public IReadOnlyList<ContractViolation> Violations { get; } = violations;
 
     /// <summary>
     /// Gets the provider states that were set up for this verification.
     /// </summary>
-    public IReadOnlyList<ProviderState> ProviderStates { get; }
+    public IReadOnlyList<ProviderState> ProviderStates { get; } = providerStates ?? [];
 
     /// <summary>
     /// Gets the request that was sent.
     /// </summary>
-    public string? RequestSent { get; }
+    public string? RequestSent { get; } = requestSent;
 
     /// <summary>
     /// Gets the response that was received.
     /// </summary>
-    public string? ResponseReceived { get; }
+    public string? ResponseReceived { get; } = responseReceived;
 
     /// <summary>
     /// Gets the body diffs if response body validation failed.
     /// </summary>
-    public IReadOnlyList<JsonDiff>? BodyDiffs { get; }
+    public IReadOnlyList<JsonDiff>? BodyDiffs { get; } = bodyDiffs;
 
     /// <summary>
     /// Gets the HTTP status code received.
     /// </summary>
-    public int? StatusCode { get; }
+    public int? StatusCode { get; } = statusCode;
 
     /// <summary>
     /// Gets the expected status codes from the contract.
     /// </summary>
-    public IReadOnlyList<int>? ExpectedStatusCodes { get; }
-
-    /// <summary>
-    /// Creates a new diagnostic report.
-    /// </summary>
-    public DiagnosticReport(
-        string endpoint,
-        IReadOnlyList<ContractViolation> violations,
-        IReadOnlyList<ProviderState>? providerStates = null,
-        string? requestSent = null,
-        string? responseReceived = null,
-        IReadOnlyList<JsonDiff>? bodyDiffs = null,
-        int? statusCode = null,
-        IReadOnlyList<int>? expectedStatusCodes = null)
-    {
-        Endpoint = endpoint;
-        Violations = violations;
-        ProviderStates = providerStates ?? [];
-        RequestSent = requestSent;
-        ResponseReceived = responseReceived;
-        BodyDiffs = bodyDiffs;
-        StatusCode = statusCode;
-        ExpectedStatusCodes = expectedStatusCodes;
-    }
+    public IReadOnlyList<int>? ExpectedStatusCodes { get; } = expectedStatusCodes;
 
     /// <summary>
     /// Formats the diagnostic report as a detailed string.

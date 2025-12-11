@@ -24,7 +24,7 @@ public sealed class CompositeAuthProvider : IAuthenticationProvider
     public CompositeAuthProvider(IEnumerable<IAuthenticationProvider> providers)
     {
         ArgumentNullException.ThrowIfNull(providers);
-        _providers = providers.ToList();
+        _providers = [.. providers];
     }
 
     /// <inheritdoc />

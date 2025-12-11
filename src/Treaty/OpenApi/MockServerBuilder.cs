@@ -15,8 +15,8 @@ public sealed class MockServerBuilder
     private int? _minLatencyMs;
     private int? _maxLatencyMs;
     private AuthConfig? _authConfig;
-    private readonly Dictionary<string, Func<object>> _customGenerators = new();
-    private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs = new();
+    private readonly Dictionary<string, Func<object>> _customGenerators = [];
+    private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs = [];
 
     internal MockServerBuilder(string specPath)
     {

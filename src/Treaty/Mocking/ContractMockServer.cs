@@ -26,7 +26,7 @@ public sealed class ContractMockServer : IMockServer
     private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs;
     private readonly ConcurrentDictionary<ContractMockResponseRule, int> _sequenceCallCounts = new();
     private readonly ConcurrentBag<RecordedRequest> _recordedRequests = [];
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     private WebApplication? _app;
 
@@ -38,7 +38,7 @@ public sealed class ContractMockServer : IMockServer
     /// <summary>
     /// Gets all recorded requests received by the mock server.
     /// </summary>
-    public IReadOnlyList<RecordedRequest> RecordedRequests => _recordedRequests.ToArray();
+    public IReadOnlyList<RecordedRequest> RecordedRequests => [.. _recordedRequests];
 
     /// <summary>
     /// Clears all recorded requests.
@@ -388,7 +388,7 @@ public sealed class ContractMockServer : IMockServer
         await context.Response.WriteAsync(json);
     }
 
-    private async Task InjectFaultAsync(HttpContext context, FaultType fault)
+    private static async Task InjectFaultAsync(HttpContext context, FaultType fault)
     {
         switch (fault)
         {

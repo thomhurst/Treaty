@@ -8,33 +8,27 @@ namespace Treaty.Testing;
 /// Represents a single endpoint test case generated from a contract.
 /// Used with TUnit data sources to run parameterized contract tests.
 /// </summary>
-public sealed class EndpointTest
+/// <remarks>
+/// Creates a new endpoint test case.
+/// </remarks>
+/// <param name="endpoint">The endpoint contract.</param>
+/// <param name="contract">The parent contract.</param>
+public sealed class EndpointTest(EndpointContract endpoint, ContractDefinition contract)
 {
     /// <summary>
     /// Gets the endpoint contract being tested.
     /// </summary>
-    public EndpointContract Endpoint { get; }
+    public EndpointContract Endpoint { get; } = endpoint;
 
     /// <summary>
     /// Gets the full contract containing this endpoint.
     /// </summary>
-    public ContractDefinition Contract { get; }
+    public ContractDefinition Contract { get; } = contract;
 
     /// <summary>
     /// Gets the display name for this test case.
     /// </summary>
     public string DisplayName => Endpoint.ToString();
-
-    /// <summary>
-    /// Creates a new endpoint test case.
-    /// </summary>
-    /// <param name="endpoint">The endpoint contract.</param>
-    /// <param name="contract">The parent contract.</param>
-    public EndpointTest(EndpointContract endpoint, ContractDefinition contract)
-    {
-        Endpoint = endpoint;
-        Contract = contract;
-    }
 
     /// <summary>
     /// Verifies this endpoint against a provider using the specified verifier.

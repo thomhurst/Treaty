@@ -16,8 +16,8 @@ public sealed class ContractMockServerBuilder
     private int? _minLatencyMs;
     private int? _maxLatencyMs;
     private AuthConfig? _authConfig;
-    private readonly Dictionary<string, Func<object>> _customGenerators = new();
-    private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs = new();
+    private readonly Dictionary<string, Func<object>> _customGenerators = [];
+    private readonly Dictionary<string, ContractMockEndpointConfig> _endpointConfigs = [];
 
     internal ContractMockServerBuilder(ContractDefinition contract)
     {
@@ -316,26 +316,20 @@ internal sealed class ContractMockResponseRule
 /// <summary>
 /// Represents a single response in a sequence.
 /// </summary>
-public sealed class MockSequenceResponse
+/// <remarks>
+/// Creates a new sequence response.
+/// </remarks>
+/// <param name="statusCode">The HTTP status code.</param>
+/// <param name="body">The response body, or null for no body.</param>
+public sealed class MockSequenceResponse(int statusCode, object? body = null)
 {
     /// <summary>
     /// The HTTP status code.
     /// </summary>
-    public int StatusCode { get; }
+    public int StatusCode { get; } = statusCode;
 
     /// <summary>
     /// The response body, or null for no body.
     /// </summary>
-    public object? Body { get; }
-
-    /// <summary>
-    /// Creates a new sequence response.
-    /// </summary>
-    /// <param name="statusCode">The HTTP status code.</param>
-    /// <param name="body">The response body, or null for no body.</param>
-    public MockSequenceResponse(int statusCode, object? body = null)
-    {
-        StatusCode = statusCode;
-        Body = body;
-    }
+    public object? Body { get; } = body;
 }

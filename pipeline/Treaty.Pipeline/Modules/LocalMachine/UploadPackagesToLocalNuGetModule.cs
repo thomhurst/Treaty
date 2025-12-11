@@ -41,6 +41,6 @@ public class UploadPackagesToLocalNuGetModule : Module<CommandResult[]>
             results.Add(result);
         }
 
-        return results.ToArray();
+        return [.. results];
     }
 }

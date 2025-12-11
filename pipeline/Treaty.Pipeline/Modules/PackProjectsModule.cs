@@ -39,7 +39,7 @@ public class PackProjectsModule : Module<List<CommandResult>>
         return results;
     }
 
-    private bool GetProjectsPredicate(File file, IPipelineContext context)
+    private static bool GetProjectsPredicate(File file, IPipelineContext context)
     {
         var path = file.Path;
 

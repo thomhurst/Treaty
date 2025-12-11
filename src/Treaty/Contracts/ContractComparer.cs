@@ -3,7 +3,7 @@ namespace Treaty.Contracts;
 /// <summary>
 /// Compares two contracts to detect changes between versions.
 /// </summary>
-public static class ContractComparer
+public static partial class ContractComparer
 {
     /// <summary>
     /// Compares two contracts and returns a diff describing all changes.
@@ -389,11 +389,11 @@ public static class ContractComparer
     private static string NormalizeEndpointKey(string pathTemplate, HttpMethod method)
     {
         // Normalize path parameters to a consistent format
-        var normalizedPath = System.Text.RegularExpressions.Regex.Replace(
-            pathTemplate,
-            @"\{[^}]+\}",
-            "{param}");
+        var normalizedPath = MyRegex().Replace(pathTemplate, "{param}");
 
         return $"{method.Method.ToUpperInvariant()} {normalizedPath}";
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{[^}]+\}")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
 }

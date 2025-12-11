@@ -289,7 +289,7 @@ public class MockServerBuilderTests : IAsyncDisposable
         response2.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    private async Task<string> WriteSpecToTempFile()
+    private static async Task<string> WriteSpecToTempFile()
     {
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);

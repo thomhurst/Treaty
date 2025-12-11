@@ -7,12 +7,12 @@ namespace Treaty.Tests.TestApi;
 
 public class TestStartup
 {
-    public void ConfigureServices(IServiceCollection services)
+    public static void ConfigureServices(IServiceCollection services)
     {
         services.AddRouting();
     }
 
-    public void Configure(IApplicationBuilder app)
+    public static void Configure(IApplicationBuilder app)
     {
         app.UseRouting();
         app.UseEndpoints(endpoints =>

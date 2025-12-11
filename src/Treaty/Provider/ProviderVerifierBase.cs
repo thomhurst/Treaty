@@ -608,7 +608,7 @@ public abstract class ProviderVerifierBase : IProviderVerifier
             }
         });
 
-        return results.ToList();
+        return [.. results];
     }
 
     /// <summary>
@@ -628,10 +628,7 @@ public abstract class ProviderVerifierBase : IProviderVerifier
                 ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
                 : null;
 
-            if (timeoutCts != null)
-            {
-                timeoutCts.CancelAfter(options.PerEndpointTimeout!.Value);
-            }
+            timeoutCts?.CancelAfter(options.PerEndpointTimeout!.Value);
 
             var effectiveCt = timeoutCts?.Token ?? cancellationToken;
 

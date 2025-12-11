@@ -34,7 +34,7 @@ public class StateHandlerTests
         var tornDown = false;
         var handler = new DelegateStateHandler()
             .OnState("test state", () => { })
-            .WithTeardown("test state", (ProviderState _) =>
+            .WithTeardown("test state", _ =>
             {
                 tornDown = true;
                 return Task.CompletedTask;
@@ -123,7 +123,7 @@ public class StateHandlerTests
 
         var builder = new StateHandlerBuilder();
         builder.ForState("test state", () => { });
-        builder.WithTeardown("test state", (ProviderState _) =>
+        builder.WithTeardown("test state", _ =>
         {
             tornDown = true;
             return Task.CompletedTask;

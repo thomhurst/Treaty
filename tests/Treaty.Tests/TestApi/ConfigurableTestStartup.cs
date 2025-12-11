@@ -13,7 +13,7 @@ public class ConfigurableTestStartup(IConfiguration configuration, IWebHostEnvir
     private readonly IConfiguration _configuration = configuration;
     private readonly IWebHostEnvironment _environment = environment;
 
-    public void ConfigureServices(IServiceCollection services)
+    public static void ConfigureServices(IServiceCollection services)
     {
         services.AddRouting();
         services.AddSingleton<ITestService, DefaultTestService>();

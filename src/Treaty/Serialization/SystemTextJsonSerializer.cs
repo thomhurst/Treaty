@@ -7,9 +7,13 @@ namespace Treaty.Serialization;
 /// <summary>
 /// Default JSON serializer implementation using System.Text.Json.
 /// </summary>
-public sealed class SystemTextJsonSerializer : IJsonSerializer
+/// <remarks>
+/// Creates a new instance with custom options.
+/// </remarks>
+/// <param name="options">The JSON serializer options to use.</param>
+public sealed class SystemTextJsonSerializer(JsonSerializerOptions options) : IJsonSerializer
 {
-    private readonly JsonSerializerOptions _options;
+    private readonly JsonSerializerOptions _options = options;
 
     /// <summary>
     /// Creates a new instance with default options.
@@ -22,15 +26,6 @@ public sealed class SystemTextJsonSerializer : IJsonSerializer
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         })
     {
-    }
-
-    /// <summary>
-    /// Creates a new instance with custom options.
-    /// </summary>
-    /// <param name="options">The JSON serializer options to use.</param>
-    public SystemTextJsonSerializer(JsonSerializerOptions options)
-    {
-        _options = options;
     }
 
     /// <inheritdoc/>

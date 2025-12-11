@@ -38,7 +38,7 @@ public sealed record BulkVerificationResult(
     /// <summary>
     /// Gets only the failed verification results.
     /// </summary>
-    public IReadOnlyList<EndpointVerificationResult> Failures { get; } = Results.Where(r => !r.Passed).ToList();
+    public IReadOnlyList<EndpointVerificationResult> Failures { get; } = [.. Results.Where(r => !r.Passed)];
 
     /// <summary>
     /// Throws <see cref="ContractViolationException"/> if any endpoints failed verification.
