@@ -64,7 +64,7 @@ The library provides domain-specific static classes as entry points:
 **ConsumerVerifier** (`src/Treaty/ConsumerVerifier.cs`)
 - `ConsumerVerifier.Create()` - Create consumer verifier for client testing (returns builder, requires `await .BuildAsync()`)
 
-**Note**: All builders use async `BuildAsync()` for consistency. Always use `await` when calling `BuildAsync()`.
+**Note**: All builders use async `BuildAsync()` exclusively. There are no synchronous `Build()` methods. Always use `await` when calling `BuildAsync()`.
 
 ### Key Abstractions
 
@@ -81,6 +81,8 @@ The library provides domain-specific static classes as entry points:
 **Provider Verification** (`src/Treaty/Provider/`)
 - `ProviderVerifier<TEntryPoint>` - Uses WebApplicationFactory to verify API endpoints
 - `HttpProviderVerifier` - HTTP-based verifier for live APIs
+- `ProviderBuilder<TEntryPoint>` - Builder for configuring provider verifiers (requires `await .BuildAsync()`)
+- `HttpProviderBuilder` - Builder for HTTP provider verifiers (requires `await .BuildAsync()`)
 - `IStateHandler` - Interface for setting up provider states before verification
 - `BulkVerificationResult` - Results from `VerifyAllAsync()` with summary methods
 - `VerificationProgress` - Progress reporting for bulk verification
@@ -89,10 +91,13 @@ The library provides domain-specific static classes as entry points:
 
 **Consumer Verification** (`src/Treaty/Consumer/`)
 - `ConsumerValidationClient` - Validates outgoing HTTP requests against contracts
+- `ConsumerBuilder` - Builder for configuring consumer validation clients (requires `await .BuildAsync()`)
 - `ContractValidatingHandler` - DelegatingHandler that validates requests
 
 **Mock Servers** (`src/Treaty/Mocking/`)
 - `ContractMockServer` - Mock server from loaded contracts
+- `ContractMockServerBuilder` - Builder for configuring mock servers (requires `await .BuildAsync()`)
+- `MockServerBuilder` - Builder for OpenAPI-based mock servers (requires `await .BuildAsync()`)
 - Supports custom response rules, latency simulation, auth
 
 **Validation** (`src/Treaty/Validation/`)
@@ -128,6 +133,8 @@ The library provides domain-specific static classes as entry points:
 - `tests/Treaty.Tests/TestApi/` - Simple test API for integration tests
 
 ### Common Patterns
+
+**IMPORTANT**: All examples below use `await` with `BuildAsync()`. This is required - there are no synchronous builder methods.
 
 **Bulk Verification with Progress Reporting**
 ```csharp
@@ -271,3 +278,26 @@ catch (ContractViolationException ex)
 - **Missing provider states**: If verification fails because provider states aren't set up, use `.WithStateHandler()` to configure state setup logic. Each state in the contract can have a handler that seeds test data.
 
 - **Status code mismatches**: Ensure your API returns one of the status codes defined in the OpenAPI spec for that endpoint. The contract expects specific status codes (e.g., 200, 404) to be documented.
+
+- **"Build() not found" errors**: If you see compilation errors about `Build()` not being found, you need to use `BuildAsync()` instead. All builders in Treaty are async-only:
+  ```csharp
+  // ❌ WRONG - Build() doesn't exist
+  var provider = ProviderVerifier.ForWebApplication<Program>()
+      .WithContract(contract)
+      .Build();
+
+  // ✅ CORRECT - Use BuildAsync() with await
+  var provider = await ProviderVerifier.ForWebApplication<Program>()
+      .WithContract(contract)
+      .BuildAsync();
+  ```
+
+- **Dependency Injection**: When using Treaty with DI containers, use the async extension methods:
+  ```csharp
+  // Add contract to DI
+  services.AddContract(await Contract.FromOpenApi("spec.yaml").BuildAsync());
+
+  // Add mock server (async method)
+  await services.AddMockServerAsync(builder =>
+      builder.WithLatency(100, 200));
+  ```
