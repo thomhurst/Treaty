@@ -95,7 +95,7 @@ public static class ContractComparer
         var newResponses = newEndpoint.ResponseExpectations.ToDictionary(r => r.StatusCode, r => r);
 
         // Find removed status codes (BREAKING for success codes)
-        foreach (var (statusCode, oldResponse) in oldResponses)
+        foreach (var (statusCode, _) in oldResponses)
         {
             if (!newResponses.ContainsKey(statusCode))
             {
@@ -112,7 +112,7 @@ public static class ContractComparer
         }
 
         // Find added status codes (INFO)
-        foreach (var (statusCode, newResponse) in newResponses)
+        foreach (var (statusCode, _) in newResponses)
         {
             if (!oldResponses.ContainsKey(statusCode))
             {
@@ -219,7 +219,7 @@ public static class ContractComparer
         var newHeaders = newResponse.ExpectedHeaders;
 
         // Find removed headers (WARNING - clients might expect them)
-        foreach (var (name, oldHeader) in oldHeaders)
+        foreach (var (name, _) in oldHeaders)
         {
             if (!newHeaders.ContainsKey(name))
             {
@@ -235,7 +235,7 @@ public static class ContractComparer
         }
 
         // Find added headers (INFO)
-        foreach (var (name, newHeader) in newHeaders)
+        foreach (var (name, _) in newHeaders)
         {
             if (!oldHeaders.ContainsKey(name))
             {
@@ -349,7 +349,7 @@ public static class ContractComparer
         var newHeaders = newEndpoint.ExpectedHeaders;
 
         // Find removed required headers (INFO - server no longer requires)
-        foreach (var (name, oldHeader) in oldHeaders)
+        foreach (var (name, _) in oldHeaders)
         {
             if (!newHeaders.ContainsKey(name))
             {

@@ -171,7 +171,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
             .Build();
 
         // Act
-        var result = await _provider.TryVerifyAsync("/config", HttpMethod.Get);
+        await _provider.TryVerifyAsync("/config", HttpMethod.Get);
 
         // Assert
         servicesCalled.Should().ContainInOrder("First", "Second");
