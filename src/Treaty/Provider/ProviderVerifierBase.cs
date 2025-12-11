@@ -252,7 +252,9 @@ public abstract class ProviderVerifierBase : IProviderVerifier
             if (endpointContract.RequestExpectation?.BodyValidator != null)
             {
                 _logger.LogDebug("[Treaty] Validating request body");
-                var requestViolations = endpointContract.RequestExpectation.BodyValidator.Validate(bodyContent, endpoint);
+                // Use Request direction to enforce readOnly constraint (readOnly fields should not be sent)
+                var requestViolations = endpointContract.RequestExpectation.BodyValidator.Validate(
+                    bodyContent, endpoint, PartialValidationConfig.ForRequest);
                 violations.AddRange(requestViolations);
             }
         }
@@ -420,8 +422,11 @@ public abstract class ProviderVerifierBase : IProviderVerifier
             if (!string.IsNullOrEmpty(body))
             {
                 _logger.LogDebug("[Treaty] Validating response body");
+                // Ensure Response direction to enforce writeOnly constraint (writeOnly fields should not appear in responses)
+                var validationConfig = PartialValidationConfig.EnsureDirection(
+                    responseExpectation.PartialValidation, ValidationDirection.Response);
                 var bodyViolations = responseExpectation.BodyValidator.Validate(
-                    body, endpoint, responseExpectation.PartialValidation);
+                    body, endpoint, validationConfig);
 
                 if (bodyViolations.Count == 0)
                 {

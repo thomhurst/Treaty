@@ -298,7 +298,8 @@ public sealed class ContractMockServer : IMockServer
         if (responseExpectation.BodyGenerator != null)
         {
             context.Response.ContentType = responseExpectation.ContentType ?? "application/json";
-            var sampleJson = responseExpectation.BodyGenerator.GenerateSample();
+            // Use Response direction to exclude writeOnly fields from mock responses
+            var sampleJson = responseExpectation.BodyGenerator.GenerateSample(ValidationDirection.Response);
 
             // Apply custom generators if needed
             if (_customGenerators.Count > 0)

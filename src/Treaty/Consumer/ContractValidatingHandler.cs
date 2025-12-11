@@ -49,7 +49,9 @@ internal sealed class ContractValidatingHandler : DelegatingHandler
             if (!string.IsNullOrEmpty(body) && endpointContract.RequestExpectation?.BodyValidator != null)
             {
                 _logger.LogDebug("[Treaty] Consumer: Validating request body");
-                var bodyViolations = endpointContract.RequestExpectation.BodyValidator.Validate(body, endpoint);
+                // Use Request direction to enforce readOnly constraint (readOnly fields should not be sent)
+                var bodyViolations = endpointContract.RequestExpectation.BodyValidator.Validate(
+                    body, endpoint, PartialValidationConfig.ForRequest);
                 violations.AddRange(bodyViolations);
             }
         }
@@ -215,8 +217,11 @@ internal sealed class ContractValidatingHandler : DelegatingHandler
             if (!string.IsNullOrEmpty(body))
             {
                 _logger.LogDebug("[Treaty] Consumer: Validating response body");
+                // Ensure Response direction to enforce writeOnly constraint (writeOnly fields should not appear in responses)
+                var validationConfig = PartialValidationConfig.EnsureDirection(
+                    responseExpectation.PartialValidation, ValidationDirection.Response);
                 var bodyViolations = responseExpectation.BodyValidator.Validate(
-                    body, endpoint, responseExpectation.PartialValidation);
+                    body, endpoint, validationConfig);
                 violations.AddRange(bodyViolations);
             }
         }

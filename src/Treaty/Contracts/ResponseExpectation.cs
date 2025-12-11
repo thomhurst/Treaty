@@ -81,6 +81,16 @@ public sealed class ResponseExpectation
 public sealed class PartialValidationConfig
 {
     /// <summary>
+    /// Pre-configured validation for request bodies (readOnly fields should not be present).
+    /// </summary>
+    public static PartialValidationConfig ForRequest { get; } = new([], false, ValidationDirection.Request);
+
+    /// <summary>
+    /// Pre-configured validation for response bodies (writeOnly fields should not be present).
+    /// </summary>
+    public static PartialValidationConfig ForResponse { get; } = new([], false, ValidationDirection.Response);
+
+    /// <summary>
     /// Gets the property paths to validate. If empty, all properties are validated.
     /// </summary>
     public IReadOnlyList<string> PropertiesToValidate { get; }
@@ -105,5 +115,29 @@ public sealed class PartialValidationConfig
         PropertiesToValidate = propertiesToValidate;
         StrictMode = strictMode;
         Direction = direction;
+    }
+
+    /// <summary>
+    /// Returns a config with the specified direction, preserving other settings from the original config if provided.
+    /// </summary>
+    internal PartialValidationConfig WithDirection(ValidationDirection direction)
+    {
+        if (Direction == direction)
+            return this;
+        return new PartialValidationConfig(PropertiesToValidate, StrictMode, direction);
+    }
+
+    /// <summary>
+    /// Ensures the config has the specified direction. If null, returns a new config with the direction.
+    /// If the config already has the direction, returns as-is. Otherwise, creates a new config preserving other settings.
+    /// </summary>
+    internal static PartialValidationConfig EnsureDirection(PartialValidationConfig? existing, ValidationDirection direction)
+    {
+        if (existing == null)
+        {
+            return direction == ValidationDirection.Request ? ForRequest : ForResponse;
+        }
+
+        return existing.WithDirection(direction);
     }
 }
