@@ -1,6 +1,6 @@
+using System.Text.Json.Nodes;
 using FluentAssertions;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi;
 using Treaty.OpenApi;
 using Treaty.Serialization;
 using Treaty.Validation;
@@ -19,12 +19,12 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
-            Enum = new List<IOpenApiAny>
+            Type = JsonSchemaType.String,
+            Enum = new List<JsonNode?>
             {
-                new OpenApiString("active"),
-                new OpenApiString("inactive"),
-                new OpenApiString("pending")
+                JsonValue.Create("active"),
+                JsonValue.Create("inactive"),
+                JsonValue.Create("pending")
             }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -43,11 +43,11 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
-            Enum = new List<IOpenApiAny>
+            Type = JsonSchemaType.String,
+            Enum = new List<JsonNode?>
             {
-                new OpenApiString("active"),
-                new OpenApiString("inactive")
+                JsonValue.Create("active"),
+                JsonValue.Create("inactive")
             }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -71,7 +71,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             MinLength = 3
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -90,7 +90,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             MinLength = 5
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -110,7 +110,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             MaxLength = 10
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -129,7 +129,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             MaxLength = 3
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -153,7 +153,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             Pattern = @"^[A-Z]{2,3}-\d{4}$"  // e.g., AB-1234 or ABC-5678
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -172,7 +172,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             Pattern = @"^[A-Z]{2,3}-\d{4}$"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -196,8 +196,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "integer",
-            Minimum = 0
+            Type = JsonSchemaType.Integer,
+            Minimum = "0"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "5";
@@ -215,8 +215,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "integer",
-            Minimum = 0
+            Type = JsonSchemaType.Integer,
+            Minimum = "0"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "-5";
@@ -235,8 +235,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "integer",
-            Maximum = 100
+            Type = JsonSchemaType.Integer,
+            Maximum = "100"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "50";
@@ -254,8 +254,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "integer",
-            Maximum = 100
+            Type = JsonSchemaType.Integer,
+            Maximum = "100"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "150";
@@ -274,9 +274,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "number",
-            Minimum = 0,
-            ExclusiveMinimum = true
+            Type = JsonSchemaType.Number,
+            ExclusiveMinimum = "0"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "0";
@@ -295,9 +294,8 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "number",
-            Maximum = 100,
-            ExclusiveMaximum = true
+            Type = JsonSchemaType.Number,
+            ExclusiveMaximum = "100"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "100";
@@ -320,9 +318,9 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "array",
+            Type = JsonSchemaType.Array,
             MinItems = 1,
-            Items = new OpenApiSchema { Type = "string" }
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "[\"item1\", \"item2\"]";
@@ -340,9 +338,9 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "array",
+            Type = JsonSchemaType.Array,
             MinItems = 2,
-            Items = new OpenApiSchema { Type = "string" }
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "[\"item1\"]";
@@ -361,9 +359,9 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "array",
+            Type = JsonSchemaType.Array,
             MaxItems = 5,
-            Items = new OpenApiSchema { Type = "string" }
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "[\"item1\", \"item2\"]";
@@ -381,9 +379,9 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "array",
+            Type = JsonSchemaType.Array,
             MaxItems = 2,
-            Items = new OpenApiSchema { Type = "string" }
+            Items = new OpenApiSchema { Type = JsonSchemaType.String }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
         var json = "[\"item1\", \"item2\", \"item3\"]";
@@ -406,10 +404,10 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            AnyOf = new List<OpenApiSchema>
+            AnyOf = new List<IOpenApiSchema>
             {
-                new OpenApiSchema { Type = "string" },
-                new OpenApiSchema { Type = "integer" }
+                new OpenApiSchema { Type = JsonSchemaType.String },
+                new OpenApiSchema { Type = JsonSchemaType.Integer }
             }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -428,10 +426,10 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            AnyOf = new List<OpenApiSchema>
+            AnyOf = new List<IOpenApiSchema>
             {
-                new OpenApiSchema { Type = "string" },
-                new OpenApiSchema { Type = "integer" }
+                new OpenApiSchema { Type = JsonSchemaType.String },
+                new OpenApiSchema { Type = JsonSchemaType.Integer }
             }
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -451,23 +449,23 @@ public class OpenApiSchemaValidatorTests
         // Arrange - object must have both 'id' and 'name'
         var schema = new OpenApiSchema
         {
-            AllOf = new List<OpenApiSchema>
+            AllOf = new List<IOpenApiSchema>
             {
                 new OpenApiSchema
                 {
-                    Type = "object",
-                    Properties = new Dictionary<string, OpenApiSchema>
+                    Type = JsonSchemaType.Object,
+                    Properties = new Dictionary<string, IOpenApiSchema>
                     {
-                        { "id", new OpenApiSchema { Type = "integer" } }
+                        { "id", new OpenApiSchema { Type = JsonSchemaType.Integer } }
                     },
                     Required = new HashSet<string> { "id" }
                 },
                 new OpenApiSchema
                 {
-                    Type = "object",
-                    Properties = new Dictionary<string, OpenApiSchema>
+                    Type = JsonSchemaType.Object,
+                    Properties = new Dictionary<string, IOpenApiSchema>
                     {
-                        { "name", new OpenApiSchema { Type = "string" } }
+                        { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
                     },
                     Required = new HashSet<string> { "name" }
                 }
@@ -489,23 +487,23 @@ public class OpenApiSchemaValidatorTests
         // Arrange - object must have both 'id' and 'name'
         var schema = new OpenApiSchema
         {
-            AllOf = new List<OpenApiSchema>
+            AllOf = new List<IOpenApiSchema>
             {
                 new OpenApiSchema
                 {
-                    Type = "object",
-                    Properties = new Dictionary<string, OpenApiSchema>
+                    Type = JsonSchemaType.Object,
+                    Properties = new Dictionary<string, IOpenApiSchema>
                     {
-                        { "id", new OpenApiSchema { Type = "integer" } }
+                        { "id", new OpenApiSchema { Type = JsonSchemaType.Integer } }
                     },
                     Required = new HashSet<string> { "id" }
                 },
                 new OpenApiSchema
                 {
-                    Type = "object",
-                    Properties = new Dictionary<string, OpenApiSchema>
+                    Type = JsonSchemaType.Object,
+                    Properties = new Dictionary<string, IOpenApiSchema>
                     {
-                        { "name", new OpenApiSchema { Type = "string" } }
+                        { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
                     },
                     Required = new HashSet<string> { "name" }
                 }
@@ -532,7 +530,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             Format = "email"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -551,7 +549,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             Format = "email"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -571,7 +569,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             Format = "uuid"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);
@@ -590,7 +588,7 @@ public class OpenApiSchemaValidatorTests
         // Arrange
         var schema = new OpenApiSchema
         {
-            Type = "string",
+            Type = JsonSchemaType.String,
             Format = "uuid"
         };
         var validator = new OpenApiSchemaValidator(schema, _serializer);

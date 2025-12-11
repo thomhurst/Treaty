@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Treaty.Contracts;
 using Treaty.Serialization;
 using Treaty.Validation;
@@ -13,14 +13,14 @@ namespace Treaty.OpenApi;
 /// </summary>
 internal sealed class OpenApiSchemaValidator : ISchemaValidator
 {
-    private readonly OpenApiSchema _schema;
+    private readonly IOpenApiSchema _schema;
     private readonly IJsonSerializer _serializer;
 
     public Type? ExpectedType => null;
 
     public string? SchemaTypeName => GetSchemaTypeName(_schema);
 
-    public OpenApiSchemaValidator(OpenApiSchema schema, IJsonSerializer serializer)
+    public OpenApiSchemaValidator(IOpenApiSchema schema, IJsonSerializer serializer)
     {
         _schema = schema;
         _serializer = serializer;
@@ -55,16 +55,18 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
     private void ValidateNode(
         JsonNode? node,
-        OpenApiSchema schema,
+        IOpenApiSchema schema,
         string endpoint,
         string jsonPath,
         List<ContractViolation> violations,
         PartialValidationConfig? partialValidation)
     {
-        // Handle null
+        // Handle null - in v3, check if schema type includes "null" or if nullable types are allowed
         if (node == null)
         {
-            if (!schema.Nullable)
+            var schemaType = schema.Type;
+            var allowsNull = schemaType?.HasFlag(JsonSchemaType.Null) == true;
+            if (!allowsNull)
             {
                 violations.Add(new ContractViolation(
                     endpoint,
@@ -77,25 +79,28 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             return;
         }
 
-        var schemaType = schema.Type?.ToLowerInvariant();
+        var schemaTypeStr = GetSchemaTypeString(schema);
 
         // Handle anyOf, oneOf, allOf
-        if (schema.AnyOf?.Count > 0 || schema.OneOf?.Count > 0)
+        var anyOf = schema.AnyOf;
+        var oneOf = schema.OneOf;
+        if (anyOf?.Count > 0 || oneOf?.Count > 0)
         {
-            var subSchemas = schema.AnyOf?.Count > 0 ? schema.AnyOf : schema.OneOf;
+            var subSchemas = anyOf?.Count > 0 ? anyOf : oneOf!;
 
             // Try discriminator-based resolution first (strict mode)
-            if (TryGetDiscriminatorSchema(node, schema, subSchemas!, out var discriminatorSchema, out var discriminatorValue))
+            if (TryGetDiscriminatorSchema(node, schema, subSchemas, out var discriminatorSchema, out var discriminatorValue))
             {
                 if (discriminatorValue == null)
                 {
                     // Discriminator property missing from object
+                    var discriminator = schema.Discriminator;
                     violations.Add(new ContractViolation(
                         endpoint,
-                        $"{jsonPath}.{schema.Discriminator!.PropertyName}",
-                        $"Missing required discriminator property '{schema.Discriminator.PropertyName}'",
+                        $"{jsonPath}.{discriminator?.PropertyName}",
+                        $"Missing required discriminator property '{discriminator?.PropertyName}'",
                         ViolationType.MissingRequired,
-                        schema.Discriminator.PropertyName,
+                        discriminator?.PropertyName ?? "unknown",
                         "missing"));
                     return;
                 }
@@ -103,10 +108,11 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                 if (discriminatorSchema == null)
                 {
                     // Discriminator value doesn't map to any schema
-                    var validValues = GetValidDiscriminatorValues(schema, subSchemas!);
+                    var validValues = GetValidDiscriminatorValues(schema, subSchemas);
+                    var discriminator = schema.Discriminator;
                     violations.Add(new ContractViolation(
                         endpoint,
-                        $"{jsonPath}.{schema.Discriminator!.PropertyName}",
+                        $"{jsonPath}.{discriminator?.PropertyName}",
                         $"Discriminator value '{discriminatorValue}' does not match any known schema",
                         ViolationType.DiscriminatorMismatch,
                         string.Join(", ", validValues),
@@ -121,7 +127,7 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
             // Fallback to sequential matching (no discriminator present)
             var anyValid = false;
-            foreach (var subSchema in subSchemas!)
+            foreach (var subSchema in subSchemas)
             {
                 var subViolations = new List<ContractViolation>();
                 ValidateNode(node, subSchema, endpoint, jsonPath, subViolations, partialValidation);
@@ -142,17 +148,18 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             return;
         }
 
-        if (schema.AllOf?.Count > 0)
+        var allOf = schema.AllOf;
+        if (allOf?.Count > 0)
         {
             // For allOf, all schemas must pass
-            foreach (var subSchema in schema.AllOf)
+            foreach (var subSchema in allOf)
             {
                 ValidateNode(node, subSchema, endpoint, jsonPath, violations, partialValidation);
             }
             return;
         }
 
-        switch (schemaType)
+        switch (schemaTypeStr)
         {
             case "object":
                 ValidateObject(node, schema, endpoint, jsonPath, violations, partialValidation);
@@ -180,7 +187,8 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
             default:
                 // If type is not specified, infer from node or accept any
-                if (schema.Properties?.Count > 0)
+                var properties = schema.Properties;
+                if (properties?.Count > 0)
                 {
                     ValidateObject(node, schema, endpoint, jsonPath, violations, partialValidation);
                 }
@@ -190,7 +198,7 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
     private void ValidateObject(
         JsonNode node,
-        OpenApiSchema schema,
+        IOpenApiSchema schema,
         string endpoint,
         string path,
         List<ContractViolation> violations,
@@ -209,32 +217,34 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         }
 
         // Check required properties
-        if (schema.Required != null)
+        var required = schema.Required;
+        if (required != null)
         {
-            foreach (var required in schema.Required)
+            foreach (var requiredProp in required)
             {
                 if (partialValidation?.PropertiesToValidate.Count > 0 &&
                     !partialValidation.PropertiesToValidate.Any(p =>
-                        p.Equals(required, StringComparison.OrdinalIgnoreCase)))
+                        p.Equals(requiredProp, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
                 }
 
-                if (!obj.ContainsKey(required))
+                if (!obj.ContainsKey(requiredProp))
                 {
                     violations.Add(new ContractViolation(
                         endpoint,
-                        $"{path}.{required}",
-                        $"Missing required field '{required}'",
+                        $"{path}.{requiredProp}",
+                        $"Missing required field '{requiredProp}'",
                         ViolationType.MissingRequired));
                 }
             }
         }
 
         // Validate each property
-        if (schema.Properties != null)
+        var properties = schema.Properties;
+        if (properties != null)
         {
-            foreach (var (propName, propSchema) in schema.Properties)
+            foreach (var (propName, propSchema) in properties)
             {
                 if (partialValidation?.PropertiesToValidate.Count > 0 &&
                     !partialValidation.PropertiesToValidate.Any(p =>
@@ -253,11 +263,12 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         // Check for unexpected fields
         // Respect explicit additionalProperties: false in OpenAPI spec, OR explicit StrictMode
         // Otherwise, extra fields are ignored by default (lenient mode)
-        if (schema.AdditionalPropertiesAllowed == false || partialValidation?.StrictMode == true)
+        var additionalPropertiesAllowed = schema.AdditionalPropertiesAllowed;
+        if (additionalPropertiesAllowed == false || partialValidation?.StrictMode == true)
         {
             foreach (var propName in obj.Select(p => p.Key))
             {
-                if (schema.Properties == null || !schema.Properties.ContainsKey(propName))
+                if (properties == null || !properties.ContainsKey(propName))
                 {
                     violations.Add(new ContractViolation(
                         endpoint,
@@ -271,7 +282,7 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
 
     private void ValidateArray(
         JsonNode node,
-        OpenApiSchema schema,
+        IOpenApiSchema schema,
         string endpoint,
         string path,
         List<ContractViolation> violations,
@@ -290,39 +301,42 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         }
 
         // Validate min/max items
-        if (schema.MinItems.HasValue && arr.Count < schema.MinItems.Value)
+        var minItems = schema.MinItems;
+        if (minItems.HasValue && arr.Count < minItems.Value)
         {
             violations.Add(new ContractViolation(
                 endpoint,
                 path,
                 $"Array has fewer items than minimum",
                 ViolationType.OutOfRange,
-                $"at least {schema.MinItems} items",
+                $"at least {minItems} items",
                 arr.Count.ToString()));
         }
 
-        if (schema.MaxItems.HasValue && arr.Count > schema.MaxItems.Value)
+        var maxItems = schema.MaxItems;
+        if (maxItems.HasValue && arr.Count > maxItems.Value)
         {
             violations.Add(new ContractViolation(
                 endpoint,
                 path,
                 $"Array has more items than maximum",
                 ViolationType.OutOfRange,
-                $"at most {schema.MaxItems} items",
+                $"at most {maxItems} items",
                 arr.Count.ToString()));
         }
 
         // Validate items
-        if (schema.Items != null)
+        var items = schema.Items;
+        if (items != null)
         {
             for (int i = 0; i < arr.Count; i++)
             {
-                ValidateNode(arr[i], schema.Items, endpoint, $"{path}[{i}]", violations, partialValidation);
+                ValidateNode(arr[i], items, endpoint, $"{path}[{i}]", violations, partialValidation);
             }
         }
     }
 
-    private void ValidateString(JsonNode node, OpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
+    private void ValidateString(JsonNode node, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
     {
         if (node.GetValueKind() != JsonValueKind.String)
         {
@@ -339,66 +353,71 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         var value = node.GetValue<string>();
 
         // Validate enum
-        if (schema.Enum?.Count > 0)
+        var enumValues = schema.Enum;
+        if (enumValues?.Count > 0)
         {
-            var enumValues = schema.Enum
-                .Select(e => e is Microsoft.OpenApi.Any.OpenApiString s ? s.Value : e?.ToString())
+            var enumStrings = enumValues
+                .Select(e => e is JsonValue jv && jv.TryGetValue<string>(out var s) ? s : e?.ToString())
                 .ToList();
 
-            if (!enumValues.Contains(value))
+            if (!enumStrings.Contains(value))
             {
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
                     $"Value is not one of the allowed enum values",
                     ViolationType.InvalidEnumValue,
-                    string.Join(", ", enumValues),
+                    string.Join(", ", enumStrings.Where(s => s != null)),
                     value));
             }
         }
 
         // Validate min/max length
-        if (schema.MinLength.HasValue && value.Length < schema.MinLength.Value)
+        var minLength = schema.MinLength;
+        if (minLength.HasValue && value.Length < minLength.Value)
         {
             violations.Add(new ContractViolation(
                 endpoint,
                 path,
                 $"String is shorter than minimum length",
                 ViolationType.OutOfRange,
-                $"at least {schema.MinLength} characters",
+                $"at least {minLength} characters",
                 value.Length.ToString()));
         }
 
-        if (schema.MaxLength.HasValue && value.Length > schema.MaxLength.Value)
+        var maxLength = schema.MaxLength;
+        if (maxLength.HasValue && value.Length > maxLength.Value)
         {
             violations.Add(new ContractViolation(
                 endpoint,
                 path,
                 $"String is longer than maximum length",
                 ViolationType.OutOfRange,
-                $"at most {schema.MaxLength} characters",
+                $"at most {maxLength} characters",
                 value.Length.ToString()));
         }
 
         // Validate pattern
-        if (!string.IsNullOrEmpty(schema.Pattern))
+        var pattern = schema.Pattern;
+        if (!string.IsNullOrEmpty(pattern))
         {
-            if (!Regex.IsMatch(value, schema.Pattern))
+            if (!Regex.IsMatch(value, pattern))
             {
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
                     $"Value does not match pattern",
                     ViolationType.PatternMismatch,
-                    schema.Pattern,
+                    pattern,
                     value));
             }
         }
 
         // Validate format
-        if (!string.IsNullOrEmpty(schema.Format))
+        var format = schema.Format;
+        if (!string.IsNullOrEmpty(format))
         {
-            var isValid = schema.Format.ToLowerInvariant() switch
+            var isValid = format.ToLowerInvariant() switch
             {
                 "email" => IsValidEmail(value),
                 "uri" or "url" => Uri.TryCreate(value, UriKind.Absolute, out _),
@@ -416,15 +435,15 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
-                    $"Value does not match format '{schema.Format}'",
+                    $"Value does not match format '{format}'",
                     ViolationType.InvalidFormat,
-                    schema.Format,
+                    format,
                     value));
             }
         }
     }
 
-    private void ValidateInteger(JsonNode node, OpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
+    private void ValidateInteger(JsonNode node, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
     {
         var kind = node.GetValueKind();
         if (kind != JsonValueKind.Number)
@@ -452,7 +471,7 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         ValidateNumericConstraints(value, schema, endpoint, path, violations);
     }
 
-    private void ValidateNumber(JsonNode node, OpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
+    private void ValidateNumber(JsonNode node, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
     {
         if (node.GetValueKind() != JsonValueKind.Number)
         {
@@ -470,52 +489,75 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         ValidateNumericConstraints(value, schema, endpoint, path, violations);
     }
 
-    private void ValidateNumericConstraints(decimal value, OpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
+    private void ValidateNumericConstraints(decimal value, IOpenApiSchema schema, string endpoint, string path, List<ContractViolation> violations)
     {
-        if (schema.Minimum.HasValue)
+        // In OpenAPI 3.1 / Microsoft.OpenApi v3, Minimum/Maximum/ExclusiveMinimum/ExclusiveMaximum are all string values
+        // ExclusiveMinimum/Maximum are the actual exclusive boundary values (not boolean flags)
+        var minimumStr = schema.Minimum;
+        var exclusiveMinimumStr = schema.ExclusiveMinimum;
+
+        // Check exclusive minimum (value must be strictly greater than exclusiveMinimum)
+        if (!string.IsNullOrEmpty(exclusiveMinimumStr) && decimal.TryParse(exclusiveMinimumStr, out var exclusiveMinimum))
         {
-            if (schema.ExclusiveMinimum == true && value <= schema.Minimum.Value)
+            if (value <= exclusiveMinimum)
             {
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
-                    "Value is not greater than minimum",
+                    "Value is not greater than exclusive minimum",
                     ViolationType.OutOfRange,
-                    $"> {schema.Minimum.Value}",
+                    $"> {exclusiveMinimum}",
                     value.ToString()));
+                return; // Don't double-report
             }
-            else if (value < schema.Minimum.Value)
+        }
+
+        // Check inclusive minimum (value must be >= minimum)
+        if (!string.IsNullOrEmpty(minimumStr) && decimal.TryParse(minimumStr, out var minimum))
+        {
+            if (value < minimum)
             {
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
                     "Value is less than minimum",
                     ViolationType.OutOfRange,
-                    $">= {schema.Minimum.Value}",
+                    $">= {minimum}",
                     value.ToString()));
+                return; // Don't double-report
             }
         }
 
-        if (schema.Maximum.HasValue)
+        var maximumStr = schema.Maximum;
+        var exclusiveMaximumStr = schema.ExclusiveMaximum;
+
+        // Check exclusive maximum (value must be strictly less than exclusiveMaximum)
+        if (!string.IsNullOrEmpty(exclusiveMaximumStr) && decimal.TryParse(exclusiveMaximumStr, out var exclusiveMaximum))
         {
-            if (schema.ExclusiveMaximum == true && value >= schema.Maximum.Value)
+            if (value >= exclusiveMaximum)
             {
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
-                    "Value is not less than maximum",
+                    "Value is not less than exclusive maximum",
                     ViolationType.OutOfRange,
-                    $"< {schema.Maximum.Value}",
+                    $"< {exclusiveMaximum}",
                     value.ToString()));
+                return; // Don't double-report
             }
-            else if (value > schema.Maximum.Value)
+        }
+
+        // Check inclusive maximum (value must be <= maximum)
+        if (!string.IsNullOrEmpty(maximumStr) && decimal.TryParse(maximumStr, out var maximum))
+        {
+            if (value > maximum)
             {
                 violations.Add(new ContractViolation(
                     endpoint,
                     path,
                     "Value is greater than maximum",
                     ViolationType.OutOfRange,
-                    $"<= {schema.Maximum.Value}",
+                    $"<= {maximum}",
                     value.ToString()));
             }
         }
@@ -543,21 +585,23 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         return Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
     }
 
-    private object? GenerateSampleValue(OpenApiSchema schema)
+    private object? GenerateSampleValue(IOpenApiSchema schema)
     {
         // Priority 1: Use example if provided
-        if (schema.Example != null)
+        var example = schema.Example;
+        if (example != null)
         {
-            return ConvertOpenApiAny(schema.Example);
+            return ConvertJsonNode(example);
         }
 
         // Priority 2: Use enum values
-        if (schema.Enum?.Count > 0)
+        var enumValues = schema.Enum;
+        if (enumValues?.Count > 0)
         {
-            return ConvertOpenApiAny(schema.Enum[0]);
+            return ConvertJsonNode(enumValues[0]);
         }
 
-        var schemaType = schema.Type?.ToLowerInvariant();
+        var schemaType = GetSchemaTypeString(schema);
 
         return schemaType switch
         {
@@ -571,12 +615,13 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         };
     }
 
-    private object GenerateSampleObject(OpenApiSchema schema)
+    private object GenerateSampleObject(IOpenApiSchema schema)
     {
         var result = new Dictionary<string, object?>();
-        if (schema.Properties != null)
+        var properties = schema.Properties;
+        if (properties != null)
         {
-            foreach (var (propName, propSchema) in schema.Properties)
+            foreach (var (propName, propSchema) in properties)
             {
                 result[propName] = GenerateSampleValue(propSchema);
             }
@@ -584,19 +629,21 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         return result;
     }
 
-    private object GenerateSampleArray(OpenApiSchema schema)
+    private object GenerateSampleArray(IOpenApiSchema schema)
     {
-        if (schema.Items != null)
+        var items = schema.Items;
+        if (items != null)
         {
-            return new[] { GenerateSampleValue(schema.Items) };
+            return new[] { GenerateSampleValue(items) };
         }
         return Array.Empty<object>();
     }
 
-    private string GenerateSampleString(OpenApiSchema schema)
+    private string GenerateSampleString(IOpenApiSchema schema)
     {
+        var format = schema.Format;
         // Use format-specific values
-        return schema.Format?.ToLowerInvariant() switch
+        return format?.ToLowerInvariant() switch
         {
             "email" => "user@example.com",
             "uri" or "url" => "https://example.com",
@@ -612,44 +659,77 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         };
     }
 
-    private long GenerateSampleInteger(OpenApiSchema schema)
+    private long GenerateSampleInteger(IOpenApiSchema schema)
     {
-        if (schema.Minimum.HasValue)
-            return (long)schema.Minimum.Value;
-        if (schema.Maximum.HasValue)
-            return (long)schema.Maximum.Value;
+        var minimumStr = schema.Minimum;
+        if (!string.IsNullOrEmpty(minimumStr) && decimal.TryParse(minimumStr, out var minimum))
+            return (long)minimum;
+        var maximumStr = schema.Maximum;
+        if (!string.IsNullOrEmpty(maximumStr) && decimal.TryParse(maximumStr, out var maximum))
+            return (long)maximum;
         return 1;
     }
 
-    private decimal GenerateSampleNumber(OpenApiSchema schema)
+    private decimal GenerateSampleNumber(IOpenApiSchema schema)
     {
-        if (schema.Minimum.HasValue)
-            return schema.Minimum.Value;
-        if (schema.Maximum.HasValue)
-            return schema.Maximum.Value;
+        var minimumStr = schema.Minimum;
+        if (!string.IsNullOrEmpty(minimumStr) && decimal.TryParse(minimumStr, out var minimum))
+            return minimum;
+        var maximumStr = schema.Maximum;
+        if (!string.IsNullOrEmpty(maximumStr) && decimal.TryParse(maximumStr, out var maximum))
+            return maximum;
         return 1.0m;
     }
 
-    private static object? ConvertOpenApiAny(Microsoft.OpenApi.Any.IOpenApiAny any)
+    private static object? ConvertJsonNode(JsonNode? node)
     {
-        return any switch
+        if (node == null)
+            return null;
+
+        return node switch
         {
-            Microsoft.OpenApi.Any.OpenApiString s => s.Value,
-            Microsoft.OpenApi.Any.OpenApiInteger i => i.Value,
-            Microsoft.OpenApi.Any.OpenApiLong l => l.Value,
-            Microsoft.OpenApi.Any.OpenApiFloat f => f.Value,
-            Microsoft.OpenApi.Any.OpenApiDouble d => d.Value,
-            Microsoft.OpenApi.Any.OpenApiBoolean b => b.Value,
-            Microsoft.OpenApi.Any.OpenApiNull => null,
-            Microsoft.OpenApi.Any.OpenApiArray arr => arr.Select(ConvertOpenApiAny).ToArray(),
-            Microsoft.OpenApi.Any.OpenApiObject obj => obj.ToDictionary(kv => kv.Key, kv => ConvertOpenApiAny(kv.Value)),
-            _ => any?.ToString()
+            JsonValue value => ConvertJsonValue(value),
+            JsonArray array => array.Select(ConvertJsonNode).ToArray(),
+            JsonObject obj => obj.ToDictionary(kv => kv.Key, kv => ConvertJsonNode(kv.Value)),
+            _ => node.ToString()
         };
     }
 
-    private static string? GetSchemaTypeName(OpenApiSchema schema)
+    private static object? ConvertJsonValue(JsonValue value)
     {
-        var schemaType = schema.Type?.ToLowerInvariant();
+        // Use GetValueKind to determine the actual JSON type, then extract appropriately
+        // This is more reliable than TryGetValue<T> which has coercion issues
+        var kind = value.GetValueKind();
+
+        return kind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number => ExtractNumber(value),
+            JsonValueKind.String => value.GetValue<string>(),
+            JsonValueKind.Null => null,
+            _ => value.ToString()
+        };
+    }
+
+    private static object ExtractNumber(JsonValue value)
+    {
+        // Try integer types first (more specific), then fall back to double
+        if (value.TryGetValue<int>(out var i)) return i;
+        if (value.TryGetValue<long>(out var l)) return l;
+        if (value.TryGetValue<double>(out var d)) return d;
+        if (value.TryGetValue<decimal>(out var dec)) return dec;
+        // Fallback - parse from string representation
+        var str = value.ToString();
+        if (int.TryParse(str, out var intVal)) return intVal;
+        if (long.TryParse(str, out var longVal)) return longVal;
+        if (double.TryParse(str, out var doubleVal)) return doubleVal;
+        return str;
+    }
+
+    private static string? GetSchemaTypeName(IOpenApiSchema schema)
+    {
+        var schemaType = GetSchemaTypeString(schema);
 
         // Return normalized type name with first letter capitalized
         return schemaType switch
@@ -664,27 +744,40 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         };
     }
 
+    private static string? GetSchemaTypeString(IOpenApiSchema schema)
+    {
+        var schemaType = schema.Type;
+        if (schemaType == null)
+            return null;
+
+        // JsonSchemaType is a flags enum, extract the primary type
+        if (schemaType.Value.HasFlag(JsonSchemaType.Object)) return "object";
+        if (schemaType.Value.HasFlag(JsonSchemaType.Array)) return "array";
+        if (schemaType.Value.HasFlag(JsonSchemaType.String)) return "string";
+        if (schemaType.Value.HasFlag(JsonSchemaType.Integer)) return "integer";
+        if (schemaType.Value.HasFlag(JsonSchemaType.Number)) return "number";
+        if (schemaType.Value.HasFlag(JsonSchemaType.Boolean)) return "boolean";
+
+        return null;
+    }
+
     /// <summary>
     /// Attempts to resolve a schema using the discriminator.
     /// </summary>
-    /// <param name="node">The JSON node being validated.</param>
-    /// <param name="schema">The parent schema with oneOf/anyOf.</param>
-    /// <param name="subSchemas">The list of subschemas from oneOf/anyOf.</param>
-    /// <param name="discriminatorSchema">The resolved schema if successful.</param>
-    /// <param name="discriminatorValue">The discriminator property value found.</param>
-    /// <returns>True if discriminator resolution was attempted (discriminator present), false otherwise.</returns>
     private static bool TryGetDiscriminatorSchema(
         JsonNode? node,
-        OpenApiSchema schema,
-        IList<OpenApiSchema> subSchemas,
-        out OpenApiSchema? discriminatorSchema,
+        IOpenApiSchema schema,
+        IList<IOpenApiSchema> subSchemas,
+        out IOpenApiSchema? discriminatorSchema,
         out string? discriminatorValue)
     {
         discriminatorSchema = null;
         discriminatorValue = null;
 
+        var discriminator = schema.Discriminator;
+
         // Check if discriminator is defined
-        if (schema.Discriminator?.PropertyName == null)
+        if (discriminator?.PropertyName == null)
         {
             return false; // No discriminator, use fallback
         }
@@ -695,7 +788,7 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
             return false; // Can't use discriminator on non-objects
         }
 
-        var propName = schema.Discriminator.PropertyName;
+        var propName = discriminator.PropertyName;
 
         // Read discriminator property value
         if (!jsonObj.TryGetPropertyValue(propName, out var propNode) ||
@@ -709,10 +802,22 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
         var discValue = discriminatorValue; // Local copy for lambda
 
         // Check explicit mapping first
-        if (schema.Discriminator.Mapping != null &&
-            schema.Discriminator.Mapping.TryGetValue(discriminatorValue, out var schemaRef))
+        if (discriminator.Mapping != null &&
+            discriminator.Mapping.TryGetValue(discriminatorValue, out var schemaRef))
         {
-            discriminatorSchema = ResolveSchemaFromReference(schemaRef, subSchemas);
+            // In v3, schemaRef is OpenApiSchemaReference - use its Id property
+            // The Id can be null if manually constructed without a document
+            var refId = schemaRef.Id;
+            if (!string.IsNullOrEmpty(refId))
+            {
+                discriminatorSchema = ResolveSchemaFromReference(refId, subSchemas);
+            }
+            else
+            {
+                // Fallback: try to find by discriminator value matching schema name
+                discriminatorSchema = subSchemas.FirstOrDefault(s =>
+                    GetSchemaName(s)?.Equals(discValue, StringComparison.OrdinalIgnoreCase) == true);
+            }
             return true;
         }
 
@@ -726,26 +831,27 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
     /// <summary>
     /// Resolves a schema from a reference string within the subschemas.
     /// </summary>
-    private static OpenApiSchema? ResolveSchemaFromReference(string reference, IList<OpenApiSchema> subSchemas)
+    private static IOpenApiSchema? ResolveSchemaFromReference(string reference, IList<IOpenApiSchema> subSchemas)
     {
         // Reference format: "#/components/schemas/SchemaName"
         var schemaName = reference.Split('/').LastOrDefault();
         if (schemaName == null) return null;
 
-        // Find in subSchemas by Reference.Id or matching name
+        // Find in subSchemas by matching name
         return subSchemas.FirstOrDefault(s =>
-            s.Reference?.Id?.Equals(schemaName, StringComparison.OrdinalIgnoreCase) == true ||
             GetSchemaName(s)?.Equals(schemaName, StringComparison.OrdinalIgnoreCase) == true);
     }
 
     /// <summary>
     /// Gets the name of a schema from its reference or title.
     /// </summary>
-    private static string? GetSchemaName(OpenApiSchema schema)
+    private static string? GetSchemaName(IOpenApiSchema schema)
     {
-        // Try Reference.Id first (for $ref schemas)
-        if (schema.Reference?.Id != null)
-            return schema.Reference.Id;
+        // In v3, check if schema is a reference type
+        if (schema is OpenApiSchemaReference schemaRef)
+        {
+            return schemaRef.Id;
+        }
 
         // Fall back to Title
         return schema.Title;
@@ -754,12 +860,14 @@ internal sealed class OpenApiSchemaValidator : ISchemaValidator
     /// <summary>
     /// Gets the valid discriminator values for error reporting.
     /// </summary>
-    private static IEnumerable<string> GetValidDiscriminatorValues(OpenApiSchema schema, IList<OpenApiSchema> subSchemas)
+    private static IEnumerable<string> GetValidDiscriminatorValues(IOpenApiSchema schema, IList<IOpenApiSchema> subSchemas)
     {
+        var discriminator = schema.Discriminator;
+
         // Return explicit mapping keys if present
-        if (schema.Discriminator?.Mapping?.Count > 0)
+        if (discriminator?.Mapping?.Count > 0)
         {
-            return schema.Discriminator.Mapping.Keys;
+            return discriminator.Mapping.Keys;
         }
 
         // Otherwise, return schema names from subSchemas

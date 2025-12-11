@@ -1,7 +1,9 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 using Treaty.Contracts;
 using Treaty.Serialization;
 using Treaty.Validation;
@@ -20,16 +22,35 @@ public sealed class OpenApiContractBuilder
     private readonly HashSet<string> _excludedEndpoints = [];
 
     internal OpenApiContractBuilder(string specPath)
-        : this(File.OpenRead(specPath), Path.GetExtension(specPath).ToLowerInvariant() == ".json" ? OpenApiFormat.Json : OpenApiFormat.Yaml)
     {
+        _logger = NullLogger.Instance;
+
+        var settings = new OpenApiReaderSettings();
+        settings.AddYamlReader();
+
+        // LoadAsync works with file paths as well as URLs
+        var result = OpenApiDocument.LoadAsync(specPath, settings).GetAwaiter().GetResult();
+        _document = result.Document ?? throw new InvalidOperationException("Failed to load OpenAPI document");
+
+        LogDiagnostics(result.Diagnostic);
     }
 
     internal OpenApiContractBuilder(Stream specStream, OpenApiFormat format)
     {
         _logger = NullLogger.Instance;
 
-        var reader = new OpenApiStreamReader();
-        _document = reader.Read(specStream, out var diagnostic);
+        var settings = new OpenApiReaderSettings();
+        settings.AddYamlReader();
+
+        var result = OpenApiDocument.LoadAsync(specStream, format == OpenApiFormat.Json ? "json" : "yaml", settings).GetAwaiter().GetResult();
+        _document = result.Document ?? throw new InvalidOperationException("Failed to load OpenAPI document");
+
+        LogDiagnostics(result.Diagnostic);
+    }
+
+    private void LogDiagnostics(OpenApiDiagnostic? diagnostic)
+    {
+        if (diagnostic == null) return;
 
         if (diagnostic.Errors.Count > 0)
         {
@@ -89,19 +110,24 @@ public sealed class OpenApiContractBuilder
     {
         var endpoints = new List<EndpointContract>();
 
-        foreach (var (path, pathItem) in _document.Paths)
+        if (_document.Paths != null)
         {
-            // Check inclusion/exclusion
-            if (_includedEndpoints.Count > 0 && !_includedEndpoints.Contains(path))
-                continue;
-            if (_excludedEndpoints.Contains(path))
-                continue;
-
-            foreach (var (operationType, operation) in pathItem.Operations)
+            foreach (var (path, pathItem) in _document.Paths)
             {
-                var method = OperationTypeToHttpMethod(operationType);
-                var endpoint = BuildEndpointContract(path, method, operation, pathItem.Parameters);
-                endpoints.Add(endpoint);
+                // Check inclusion/exclusion
+                if (_includedEndpoints.Count > 0 && !_includedEndpoints.Contains(path))
+                    continue;
+                if (_excludedEndpoints.Contains(path))
+                    continue;
+
+                if (pathItem.Operations != null)
+                {
+                    foreach (var (httpMethod, operation) in pathItem.Operations)
+                    {
+                        var endpoint = BuildEndpointContract(path, httpMethod, operation, pathItem.Parameters);
+                        endpoints.Add(endpoint);
+                    }
+                }
             }
         }
 
@@ -129,7 +155,7 @@ public sealed class OpenApiContractBuilder
         if (info.License != null)
         {
             license = new ContractLicense(
-                info.License.Name,
+                info.License.Name ?? "Unknown",
                 info.License.Url?.ToString());
         }
 
@@ -145,7 +171,7 @@ public sealed class OpenApiContractBuilder
         string path,
         HttpMethod method,
         OpenApiOperation operation,
-        IList<OpenApiParameter>? pathParameters)
+        IList<IOpenApiParameter>? pathParameters)
     {
         // Build request expectation
         RequestExpectation? requestExpectation = null;
@@ -158,53 +184,62 @@ public sealed class OpenApiContractBuilder
 
         // Build response expectations
         var responseExpectations = new List<ResponseExpectation>();
-        foreach (var (statusCode, response) in operation.Responses)
+        if (operation.Responses != null)
         {
-            if (int.TryParse(statusCode, out var code))
+            foreach (var (statusCode, response) in operation.Responses)
             {
-                var expectation = BuildResponseExpectation(code, response);
-                responseExpectations.Add(expectation);
-            }
-            else if (statusCode == "default")
-            {
-                // Default response - treat as 200 for mock purposes
-                var expectation = BuildResponseExpectation(200, response);
-                responseExpectations.Add(expectation);
+                if (int.TryParse(statusCode, out var code))
+                {
+                    var expectation = BuildResponseExpectation(code, response);
+                    responseExpectations.Add(expectation);
+                }
+                else if (statusCode == "default")
+                {
+                    // Default response - treat as 200 for mock purposes
+                    var expectation = BuildResponseExpectation(200, response);
+                    responseExpectations.Add(expectation);
+                }
             }
         }
 
         // Build header expectations and extract examples
         var headers = new Dictionary<string, HeaderExpectation>(StringComparer.OrdinalIgnoreCase);
         var headerExamples = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Header))
+        if (operation.Parameters != null)
         {
-            headers[param.Name] = new HeaderExpectation(param.Name, param.Required, null, null);
-            var example = ExtractParameterExample(param);
-            if (example != null)
+            foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Header))
             {
-                headerExamples[param.Name] = example.ToString() ?? "";
+                headers[param.Name] = new HeaderExpectation(param.Name, param.Required, null, null);
+                var example = ExtractParameterExample(param);
+                if (example != null)
+                {
+                    headerExamples[param.Name] = example.ToString() ?? "";
+                }
             }
         }
 
         // Build query parameter expectations and extract examples
         var queryParams = new Dictionary<string, QueryParameterExpectation>(StringComparer.OrdinalIgnoreCase);
         var queryExamples = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
+        if (operation.Parameters != null)
         {
-            var type = OpenApiSchemaToQueryParamType(param.Schema);
-            queryParams[param.Name] = new QueryParameterExpectation(param.Name, param.Required, type, null);
-            var example = ExtractParameterExample(param);
-            if (example != null)
+            foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Query))
             {
-                queryExamples[param.Name] = example;
+                var type = OpenApiSchemaToQueryParamType(param.Schema);
+                queryParams[param.Name] = new QueryParameterExpectation(param.Name, param.Required, type, null);
+                var example = ExtractParameterExample(param);
+                if (example != null)
+                {
+                    queryExamples[param.Name] = example;
+                }
             }
         }
 
         // Extract path parameter examples (from operation parameters and path-level parameters)
         var pathParamExamples = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        var allPathParams = operation.Parameters
-            .Where(p => p.In == ParameterLocation.Path)
-            .Concat(pathParameters?.Where(p => p.In == ParameterLocation.Path) ?? []);
+        var operationPathParams = operation.Parameters?.Where(p => p.In == ParameterLocation.Path) ?? [];
+        var pathLevelParams = pathParameters?.Where(p => p.In == ParameterLocation.Path) ?? [];
+        var allPathParams = operationPathParams.Concat(pathLevelParams);
 
         foreach (var param in allPathParams)
         {
@@ -225,16 +260,16 @@ public sealed class OpenApiContractBuilder
         return new EndpointContract(path, method, requestExpectation, responseExpectations, headers, queryParams, exampleData);
     }
 
-    private object? ExtractRequestBodyExample(OpenApiRequestBody requestBody)
+    private object? ExtractRequestBodyExample(IOpenApiRequestBody requestBody)
     {
         // Try application/json first
-        if (requestBody.Content.TryGetValue("application/json", out var mediaType))
+        if (requestBody.Content != null && requestBody.Content.TryGetValue("application/json", out var mediaType))
         {
             return ExtractMediaTypeExample(mediaType);
         }
 
         // Fall back to first content type
-        if (requestBody.Content.Count > 0)
+        if (requestBody.Content?.Count > 0)
         {
             return ExtractMediaTypeExample(requestBody.Content.First().Value);
         }
@@ -242,12 +277,12 @@ public sealed class OpenApiContractBuilder
         return null;
     }
 
-    private object? ExtractMediaTypeExample(OpenApiMediaType mediaType)
+    private object? ExtractMediaTypeExample(IOpenApiMediaType mediaType)
     {
         // Check for direct example
         if (mediaType.Example != null)
         {
-            return ConvertOpenApiAny(mediaType.Example);
+            return ConvertJsonNode(mediaType.Example);
         }
 
         // Check for named examples (use first one)
@@ -256,25 +291,25 @@ public sealed class OpenApiContractBuilder
             var firstExample = mediaType.Examples.First().Value;
             if (firstExample?.Value != null)
             {
-                return ConvertOpenApiAny(firstExample.Value);
+                return ConvertJsonNode(firstExample.Value);
             }
         }
 
         // Check schema example
         if (mediaType.Schema?.Example != null)
         {
-            return ConvertOpenApiAny(mediaType.Schema.Example);
+            return ConvertJsonNode(mediaType.Schema.Example);
         }
 
         return null;
     }
 
-    private object? ExtractParameterExample(OpenApiParameter parameter)
+    private object? ExtractParameterExample(IOpenApiParameter parameter)
     {
         // Check for direct example
         if (parameter.Example != null)
         {
-            return ConvertOpenApiAny(parameter.Example);
+            return ConvertJsonNode(parameter.Example);
         }
 
         // Check for named examples (use first one)
@@ -283,47 +318,73 @@ public sealed class OpenApiContractBuilder
             var firstExample = parameter.Examples.First().Value;
             if (firstExample?.Value != null)
             {
-                return ConvertOpenApiAny(firstExample.Value);
+                return ConvertJsonNode(firstExample.Value);
             }
         }
 
         // Check schema example
         if (parameter.Schema?.Example != null)
         {
-            return ConvertOpenApiAny(parameter.Schema.Example);
+            return ConvertJsonNode(parameter.Schema.Example);
         }
 
         return null;
     }
 
-    private object? ConvertOpenApiAny(Microsoft.OpenApi.Any.IOpenApiAny? openApiAny)
+    private object? ConvertJsonNode(JsonNode? node)
     {
-        if (openApiAny == null)
+        if (node == null)
             return null;
 
-        return openApiAny switch
+        return node switch
         {
-            Microsoft.OpenApi.Any.OpenApiString s => s.Value,
-            Microsoft.OpenApi.Any.OpenApiInteger i => i.Value,
-            Microsoft.OpenApi.Any.OpenApiLong l => l.Value,
-            Microsoft.OpenApi.Any.OpenApiFloat f => f.Value,
-            Microsoft.OpenApi.Any.OpenApiDouble d => d.Value,
-            Microsoft.OpenApi.Any.OpenApiBoolean b => b.Value,
-            Microsoft.OpenApi.Any.OpenApiNull => null,
-            Microsoft.OpenApi.Any.OpenApiArray arr => arr.Select(ConvertOpenApiAny).ToList(),
-            Microsoft.OpenApi.Any.OpenApiObject obj => obj.ToDictionary(
+            JsonValue value => ConvertJsonValue(value),
+            JsonArray array => array.Select(ConvertJsonNode).ToList(),
+            JsonObject obj => obj.ToDictionary(
                 kvp => kvp.Key,
-                kvp => ConvertOpenApiAny(kvp.Value)),
-            _ => openApiAny.ToString()
+                kvp => ConvertJsonNode(kvp.Value)),
+            _ => node.ToString()
         };
     }
 
-    private RequestExpectation BuildRequestExpectation(OpenApiRequestBody requestBody)
+    private static object? ConvertJsonValue(JsonValue value)
+    {
+        // Use GetValueKind to determine the actual JSON type, then extract appropriately
+        // This is more reliable than TryGetValue<T> which has coercion issues
+        var kind = value.GetValueKind();
+
+        return kind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number => ExtractNumber(value),
+            JsonValueKind.String => value.GetValue<string>(),
+            JsonValueKind.Null => null,
+            _ => value.ToString()
+        };
+    }
+
+    private static object ExtractNumber(JsonValue value)
+    {
+        // Try integer types first (more specific), then fall back to double
+        if (value.TryGetValue<int>(out var i)) return i;
+        if (value.TryGetValue<long>(out var l)) return l;
+        if (value.TryGetValue<double>(out var d)) return d;
+        if (value.TryGetValue<decimal>(out var dec)) return dec;
+        // Fallback - parse from string representation
+        var str = value.ToString();
+        if (int.TryParse(str, out var intVal)) return intVal;
+        if (long.TryParse(str, out var longVal)) return longVal;
+        if (double.TryParse(str, out var doubleVal)) return doubleVal;
+        return str;
+    }
+
+    private RequestExpectation BuildRequestExpectation(IOpenApiRequestBody requestBody)
     {
         string? contentType = null;
         ISchemaValidator? validator = null;
 
-        if (requestBody.Content.TryGetValue("application/json", out var mediaType))
+        if (requestBody.Content != null && requestBody.Content.TryGetValue("application/json", out var mediaType))
         {
             contentType = "application/json";
             if (mediaType.Schema != null)
@@ -331,7 +392,7 @@ public sealed class OpenApiContractBuilder
                 validator = new OpenApiSchemaValidator(mediaType.Schema, _jsonSerializer);
             }
         }
-        else if (requestBody.Content.Count > 0)
+        else if (requestBody.Content?.Count > 0)
         {
             var firstContent = requestBody.Content.First();
             contentType = firstContent.Key;
@@ -344,12 +405,12 @@ public sealed class OpenApiContractBuilder
         return new RequestExpectation(contentType, validator, requestBody.Required);
     }
 
-    private ResponseExpectation BuildResponseExpectation(int statusCode, OpenApiResponse response)
+    private ResponseExpectation BuildResponseExpectation(int statusCode, IOpenApiResponse response)
     {
         string? contentType = null;
         ISchemaValidator? validator = null;
 
-        if (response.Content.TryGetValue("application/json", out var mediaType))
+        if (response.Content != null && response.Content.TryGetValue("application/json", out var mediaType))
         {
             contentType = "application/json";
             if (mediaType.Schema != null)
@@ -357,7 +418,7 @@ public sealed class OpenApiContractBuilder
                 validator = new OpenApiSchemaValidator(mediaType.Schema, _jsonSerializer);
             }
         }
-        else if (response.Content.Count > 0)
+        else if (response.Content?.Count > 0)
         {
             var firstContent = response.Content.First();
             contentType = firstContent.Key;
@@ -368,42 +429,47 @@ public sealed class OpenApiContractBuilder
         }
 
         var headers = new Dictionary<string, HeaderExpectation>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (headerName, headerSchema) in response.Headers)
+        if (response.Headers != null)
         {
-            headers[headerName] = new HeaderExpectation(headerName, headerSchema.Required, null, null);
+            foreach (var (headerName, headerSchema) in response.Headers)
+            {
+                headers[headerName] = new HeaderExpectation(headerName, headerSchema.Required, null, null);
+            }
         }
 
         return new ResponseExpectation(statusCode, contentType, validator, headers, null);
     }
 
-    private static HttpMethod OperationTypeToHttpMethod(OperationType operationType)
+    private static HttpMethod StringToHttpMethod(string httpMethodString)
     {
-        return operationType switch
+        return httpMethodString.ToUpperInvariant() switch
         {
-            OperationType.Get => HttpMethod.Get,
-            OperationType.Post => HttpMethod.Post,
-            OperationType.Put => HttpMethod.Put,
-            OperationType.Delete => HttpMethod.Delete,
-            OperationType.Patch => HttpMethod.Patch,
-            OperationType.Head => HttpMethod.Head,
-            OperationType.Options => HttpMethod.Options,
-            OperationType.Trace => HttpMethod.Trace,
+            "GET" => HttpMethod.Get,
+            "POST" => HttpMethod.Post,
+            "PUT" => HttpMethod.Put,
+            "DELETE" => HttpMethod.Delete,
+            "PATCH" => HttpMethod.Patch,
+            "HEAD" => HttpMethod.Head,
+            "OPTIONS" => HttpMethod.Options,
+            "TRACE" => HttpMethod.Trace,
             _ => HttpMethod.Get
         };
     }
 
-    private static QueryParameterType OpenApiSchemaToQueryParamType(OpenApiSchema? schema)
+    private static QueryParameterType OpenApiSchemaToQueryParamType(IOpenApiSchema? schema)
     {
         if (schema == null)
             return QueryParameterType.String;
 
-        return schema.Type?.ToLowerInvariant() switch
-        {
-            "integer" => QueryParameterType.Integer,
-            "number" => QueryParameterType.Number,
-            "boolean" => QueryParameterType.Boolean,
-            "array" => QueryParameterType.Array,
-            _ => QueryParameterType.String
-        };
+        var schemaType = schema.Type;
+        if (schemaType == null)
+            return QueryParameterType.String;
+
+        if (schemaType.Value.HasFlag(JsonSchemaType.Integer)) return QueryParameterType.Integer;
+        if (schemaType.Value.HasFlag(JsonSchemaType.Number)) return QueryParameterType.Number;
+        if (schemaType.Value.HasFlag(JsonSchemaType.Boolean)) return QueryParameterType.Boolean;
+        if (schemaType.Value.HasFlag(JsonSchemaType.Array)) return QueryParameterType.Array;
+
+        return QueryParameterType.String;
     }
 }

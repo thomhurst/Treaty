@@ -1,4 +1,5 @@
-using Microsoft.OpenApi.Models;
+using System.Text.Json.Nodes;
+using Microsoft.OpenApi;
 using Treaty.OpenApi;
 using Treaty.Serialization;
 using Treaty.Validation;
@@ -13,38 +14,44 @@ public class DiscriminatorValidationTests
     {
         var catSchema = new OpenApiSchema
         {
-            Type = "object",
-            Properties = new Dictionary<string, OpenApiSchema>
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
             {
-                { "petType", new OpenApiSchema { Type = "string" } },
-                { "meowVolume", new OpenApiSchema { Type = "integer" } }
+                { "petType", new OpenApiSchema { Type = JsonSchemaType.String } },
+                { "meowVolume", new OpenApiSchema { Type = JsonSchemaType.Integer } }
             },
             Required = new HashSet<string> { "petType", "meowVolume" },
-            Reference = new OpenApiReference { Id = "Cat" }
+            Title = "Cat" // Used for discriminator matching
         };
 
         var dogSchema = new OpenApiSchema
         {
-            Type = "object",
-            Properties = new Dictionary<string, OpenApiSchema>
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
             {
-                { "petType", new OpenApiSchema { Type = "string" } },
-                { "barkVolume", new OpenApiSchema { Type = "integer" } }
+                { "petType", new OpenApiSchema { Type = JsonSchemaType.String } },
+                { "barkVolume", new OpenApiSchema { Type = JsonSchemaType.Integer } }
             },
             Required = new HashSet<string> { "petType", "barkVolume" },
-            Reference = new OpenApiReference { Id = "Dog" }
+            Title = "Dog" // Used for discriminator matching
         };
+
+        // Create schema references for cat and dog
+        // Note: Without a document, these references won't have their Id property set,
+        // so the discriminator matching will fall back to matching by Title
+        var catRef = new OpenApiSchemaReference("Cat");
+        var dogRef = new OpenApiSchemaReference("Dog");
 
         return new OpenApiSchema
         {
-            OneOf = new List<OpenApiSchema> { catSchema, dogSchema },
+            OneOf = new List<IOpenApiSchema> { catSchema, dogSchema },
             Discriminator = new OpenApiDiscriminator
             {
                 PropertyName = "petType",
-                Mapping = new Dictionary<string, string>
+                Mapping = new Dictionary<string, OpenApiSchemaReference>
                 {
-                    { "cat", "#/components/schemas/Cat" },
-                    { "dog", "#/components/schemas/Dog" }
+                    { "cat", catRef },
+                    { "dog", dogRef }
                 }
             }
         };
@@ -155,12 +162,12 @@ public class DiscriminatorValidationTests
     public async Task Validate_OneOfWithoutDiscriminator_FallsBackToSequential()
     {
         // Arrange - Schema without discriminator
-        var stringSchema = new OpenApiSchema { Type = "string" };
-        var integerSchema = new OpenApiSchema { Type = "integer" };
+        var stringSchema = new OpenApiSchema { Type = JsonSchemaType.String };
+        var integerSchema = new OpenApiSchema { Type = JsonSchemaType.Integer };
 
         var schema = new OpenApiSchema
         {
-            OneOf = new List<OpenApiSchema> { stringSchema, integerSchema }
+            OneOf = new List<IOpenApiSchema> { stringSchema, integerSchema }
             // No discriminator
         };
 
@@ -178,12 +185,12 @@ public class DiscriminatorValidationTests
     public async Task Validate_OneOfWithoutDiscriminator_InvalidValue_ReturnsInvalidType()
     {
         // Arrange - Schema without discriminator
-        var stringSchema = new OpenApiSchema { Type = "string" };
-        var integerSchema = new OpenApiSchema { Type = "integer" };
+        var stringSchema = new OpenApiSchema { Type = JsonSchemaType.String };
+        var integerSchema = new OpenApiSchema { Type = JsonSchemaType.Integer };
 
         var schema = new OpenApiSchema
         {
-            OneOf = new List<OpenApiSchema> { stringSchema, integerSchema }
+            OneOf = new List<IOpenApiSchema> { stringSchema, integerSchema }
             // No discriminator
         };
 
@@ -204,24 +211,26 @@ public class DiscriminatorValidationTests
         // Arrange - Create schema with case-sensitive reference IDs but case-insensitive matching
         var catSchema = new OpenApiSchema
         {
-            Type = "object",
-            Properties = new Dictionary<string, OpenApiSchema>
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
             {
-                { "type", new OpenApiSchema { Type = "string" } },
-                { "name", new OpenApiSchema { Type = "string" } }
+                { "type", new OpenApiSchema { Type = JsonSchemaType.String } },
+                { "name", new OpenApiSchema { Type = JsonSchemaType.String } }
             },
-            Reference = new OpenApiReference { Id = "CatSchema" }
+            Title = "CatSchema"
         };
+
+        var catRef = new OpenApiSchemaReference("CatSchema");
 
         var schema = new OpenApiSchema
         {
-            OneOf = new List<OpenApiSchema> { catSchema },
+            OneOf = new List<IOpenApiSchema> { catSchema },
             Discriminator = new OpenApiDiscriminator
             {
                 PropertyName = "type",
-                Mapping = new Dictionary<string, string>
+                Mapping = new Dictionary<string, OpenApiSchemaReference>
                 {
-                    { "catschema", "#/components/schemas/CatSchema" }  // lowercase mapping
+                    { "catschema", catRef }  // lowercase mapping
                 }
             }
         };
@@ -242,25 +251,27 @@ public class DiscriminatorValidationTests
         // Arrange - Use anyOf instead of oneOf
         var catSchema = new OpenApiSchema
         {
-            Type = "object",
-            Properties = new Dictionary<string, OpenApiSchema>
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
             {
-                { "petType", new OpenApiSchema { Type = "string" } },
-                { "meowVolume", new OpenApiSchema { Type = "integer" } }
+                { "petType", new OpenApiSchema { Type = JsonSchemaType.String } },
+                { "meowVolume", new OpenApiSchema { Type = JsonSchemaType.Integer } }
             },
             Required = new HashSet<string> { "petType", "meowVolume" },
-            Reference = new OpenApiReference { Id = "Cat" }
+            Title = "Cat"
         };
+
+        var catRef = new OpenApiSchemaReference("Cat");
 
         var schema = new OpenApiSchema
         {
-            AnyOf = new List<OpenApiSchema> { catSchema },
+            AnyOf = new List<IOpenApiSchema> { catSchema },
             Discriminator = new OpenApiDiscriminator
             {
                 PropertyName = "petType",
-                Mapping = new Dictionary<string, string>
+                Mapping = new Dictionary<string, OpenApiSchemaReference>
                 {
-                    { "cat", "#/components/schemas/Cat" }
+                    { "cat", catRef }
                 }
             }
         };
