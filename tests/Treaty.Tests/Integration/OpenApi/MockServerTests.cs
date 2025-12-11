@@ -114,7 +114,7 @@ public class MockServerTests : IAsyncDisposable
         _client?.Dispose();
         if (_mockServer != null)
         {
-          await _mockServer.DisposeAsync();
+            await _mockServer.DisposeAsync();
         }
     }
 
@@ -123,7 +123,7 @@ public class MockServerTests : IAsyncDisposable
         _client?.Dispose();
         if (_mockServer != null)
         {
-          await _mockServer.DisposeAsync();
+            await _mockServer.DisposeAsync();
         }
     }
 
@@ -244,7 +244,7 @@ public class MockServerWithConditionsTests : IAsyncDisposable
         _client?.Dispose();
         if (_mockServer != null)
         {
-          await _mockServer.DisposeAsync();
+            await _mockServer.DisposeAsync();
         }
     }
 
@@ -253,7 +253,7 @@ public class MockServerWithConditionsTests : IAsyncDisposable
         _client?.Dispose();
         if (_mockServer != null)
         {
-          await _mockServer.DisposeAsync();
+            await _mockServer.DisposeAsync();
         }
     }
 

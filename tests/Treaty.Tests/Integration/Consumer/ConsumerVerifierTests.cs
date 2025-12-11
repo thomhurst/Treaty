@@ -119,7 +119,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
     {
         if (_mockServer != null)
         {
-          await _mockServer.DisposeAsync();
+            await _mockServer.DisposeAsync();
         }
     }
 
@@ -127,7 +127,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
     {
         if (_mockServer != null)
         {
-          await _mockServer.DisposeAsync();
+            await _mockServer.DisposeAsync();
         }
     }
 
