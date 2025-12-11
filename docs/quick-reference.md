@@ -26,16 +26,16 @@ using Treaty;
 
 ```csharp
 // From file
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 // From stream
 using var stream = File.OpenRead("api-spec.yaml");
-var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
 // With endpoint filter
-var contract = Contract.FromOpenApi("api-spec.yaml")
+var contract = await Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
-    .Build();
+    .BuildAsync();
 ```
 
 ## Provider Verification
@@ -111,7 +111,7 @@ var response = await httpClient.GetAsync("/users/123");
 
 ```csharp
 // Basic mock server from OpenAPI
-await using var server = MockServer.FromOpenApi("api-spec.yaml").Build();
+await using var server = await MockServer.FromOpenApi("api-spec.yaml").BuildAsync();
 await server.StartAsync();
 var baseUrl = server.BaseUrl; // e.g., "http://127.0.0.1:5001"
 
@@ -129,8 +129,8 @@ await using var server = MockServer.FromContract(contract)
 ## Contract Comparison
 
 ```csharp
-var oldContract = Contract.FromOpenApi("v1/api-spec.yaml").Build();
-var newContract = Contract.FromOpenApi("v2/api-spec.yaml").Build();
+var oldContract = await Contract.FromOpenApi("v1/api-spec.yaml").BuildAsync();
+var newContract = await Contract.FromOpenApi("v2/api-spec.yaml").BuildAsync();
 
 var diff = Contract.Compare(oldContract, newContract);
 

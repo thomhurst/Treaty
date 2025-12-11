@@ -8,7 +8,7 @@ namespace Treaty.Tests.Integration.Provider;
 
 public class ProviderVerifierTests : IDisposable
 {
-    private readonly ProviderVerifier<TestStartup> _provider;
+    private ProviderVerifier<TestStartup> _provider = null!;
 
     private const string TestApiSpec = """
         openapi: '3.0.3'
@@ -86,10 +86,11 @@ public class ProviderVerifierTests : IDisposable
                   type: string
         """;
 
-    public ProviderVerifierTests()
+    [Before(Test)]
+    public async Task Setup()
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _provider = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contract)

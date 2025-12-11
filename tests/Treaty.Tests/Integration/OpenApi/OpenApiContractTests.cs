@@ -16,13 +16,13 @@ public class OpenApiSpecFileTests
         Path.Combine(AppContext.BaseDirectory, "Specs", fileName);
 
     [Test]
-    public void OpenApi_LoadsYamlFile_Successfully()
+    public async Task OpenApi_LoadsYamlFile_Successfully()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert
         contract.Should().NotBeNull();
@@ -32,13 +32,13 @@ public class OpenApiSpecFileTests
     #region Metadata Extraction Tests
 
     [Test]
-    public void OpenApi_ExtractsBasicMetadata_FromYaml()
+    public async Task OpenApi_ExtractsBasicMetadata_FromYaml()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert
         contract.Metadata.Should().NotBeNull();
@@ -47,13 +47,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ExtractsFullMetadata_FromYaml()
+    public async Task OpenApi_ExtractsFullMetadata_FromYaml()
     {
         // Arrange
         var specPath = GetSpecPath("full-metadata.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert
         contract.Name.Should().Be("Full Metadata API");
@@ -81,13 +81,13 @@ public class OpenApiSpecFileTests
     #region Example Extraction Tests
 
     [Test]
-    public void OpenApi_ExtractsPathParameterExample()
+    public async Task OpenApi_ExtractsPathParameterExample()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert - GET /users/{userId} should have path param example
         var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
@@ -98,13 +98,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ExtractsQueryParameterExamples()
+    public async Task OpenApi_ExtractsQueryParameterExamples()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert - GET /users should have query param examples
         var listEndpoint = contract.FindEndpoint("/users", HttpMethod.Get);
@@ -117,13 +117,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ExtractsHeaderParameterExample()
+    public async Task OpenApi_ExtractsHeaderParameterExample()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert - GET /users/{userId} should have header example
         var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
@@ -134,13 +134,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ExtractsRequestBodyExample()
+    public async Task OpenApi_ExtractsRequestBodyExample()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert - POST /users should have request body example
         var postEndpoint = contract.FindEndpoint("/users", HttpMethod.Post);
@@ -156,13 +156,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ExtractsRequestBodyFromNamedExamples()
+    public async Task OpenApi_ExtractsRequestBodyFromNamedExamples()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert - PUT /users/{userId} should have request body from named examples (uses first one)
         var putEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Put);
@@ -176,11 +176,11 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_EndpointWithExamples_CanGenerateExamplePath()
+    public async Task OpenApi_EndpointWithExamples_CanGenerateExamplePath()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Act
         var getEndpoint = contract.FindEndpoint("/users/123", HttpMethod.Get);
@@ -192,11 +192,11 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_EndpointWithExamples_CanGenerateExampleUrl()
+    public async Task OpenApi_EndpointWithExamples_CanGenerateExampleUrl()
     {
         // Arrange
         var specPath = GetSpecPath("with-examples.yaml");
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Act
         var listEndpoint = contract.FindEndpoint("/users", HttpMethod.Get);
@@ -211,13 +211,13 @@ public class OpenApiSpecFileTests
     #endregion
 
     [Test]
-    public void OpenApi_LoadsJsonFile_Successfully()
+    public async Task OpenApi_LoadsJsonFile_Successfully()
     {
         // Arrange
         var specPath = GetSpecPath("users-api.json");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert
         contract.Should().NotBeNull();
@@ -225,13 +225,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ContainsAllEndpoints_FromYamlSpec()
+    public async Task OpenApi_ContainsAllEndpoints_FromYamlSpec()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert - should have endpoints for /pets and /pets/{petId}
         contract.FindEndpoint("/pets", HttpMethod.Get).Should().NotBeNull();
@@ -242,13 +242,13 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_ContainsAllEndpoints_FromJsonSpec()
+    public async Task OpenApi_ContainsAllEndpoints_FromJsonSpec()
     {
         // Arrange
         var specPath = GetSpecPath("users-api.json");
 
         // Act
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Assert
         contract.FindEndpoint("/users", HttpMethod.Get).Should().NotBeNull();
@@ -257,14 +257,14 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_WithStream_LoadsYaml()
+    public async Task OpenApi_WithStream_LoadsYaml()
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
         using var stream = File.OpenRead(specPath);
 
         // Act
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         // Assert
         contract.Should().NotBeNull();
@@ -272,14 +272,14 @@ public class OpenApiSpecFileTests
     }
 
     [Test]
-    public void OpenApi_WithStream_LoadsJson()
+    public async Task OpenApi_WithStream_LoadsJson()
     {
         // Arrange
         var specPath = GetSpecPath("users-api.json");
         using var stream = File.OpenRead(specPath);
 
         // Act
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Json).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Json).BuildAsync();
 
         // Assert
         contract.Should().NotBeNull();
@@ -302,7 +302,7 @@ public class OpenApiMockServerFromSpecTests : IAsyncDisposable
     public async Task Setup()
     {
         var specPath = GetSpecPath("petstore.yaml");
-        _mockServer = MockServer.FromOpenApi(specPath).Build();
+        _mockServer = await MockServer.FromOpenApi(specPath).BuildAsync();
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
@@ -425,12 +425,12 @@ public class OpenApiMockServerWithConditionsTests : IAsyncDisposable
     public async Task Setup()
     {
         var specPath = GetSpecPath("petstore.yaml");
-        _mockServer = MockServer.FromOpenApi(specPath)
+        _mockServer = await MockServer.FromOpenApi(specPath)
             .ForEndpoint("/pets/{petId}")
                 .When(req => req.PathParam("petId") == "0").Return(404)
                 .When(req => req.PathParam("petId") == "999").Return(404)
                 .Otherwise().Return(200)
-            .Build();
+            .BuildAsync();
 
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
@@ -489,7 +489,7 @@ public class OpenApiJsonMockServerTests : IAsyncDisposable
     public async Task Setup()
     {
         var specPath = GetSpecPath("users-api.json");
-        _mockServer = MockServer.FromOpenApi(specPath).Build();
+        _mockServer = await MockServer.FromOpenApi(specPath).BuildAsync();
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
@@ -572,7 +572,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         // Use the mock server as the "provider" to test against
         var specPath = GetSpecPath("petstore.yaml");
-        _mockServer = MockServer.FromOpenApi(specPath).Build();
+        _mockServer = await MockServer.FromOpenApi(specPath).BuildAsync();
         await _mockServer.StartAsync();
         _client = new HttpClient { BaseAddress = new Uri(_mockServer.BaseUrl!) };
     }
@@ -597,7 +597,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         // Arrange - Load contract from same spec
         var specPath = GetSpecPath("petstore.yaml");
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Act - Get response from provider (mock server)
         var response = await _client!.GetAsync("/pets");
@@ -619,7 +619,7 @@ public class OpenApiProviderValidationTests : IAsyncDisposable
     {
         // Arrange
         var specPath = GetSpecPath("petstore.yaml");
-        var contract = Contract.FromOpenApi(specPath).Build();
+        var contract = await Contract.FromOpenApi(specPath).BuildAsync();
 
         // Act
         var response = await _client!.GetAsync("/pets/1");

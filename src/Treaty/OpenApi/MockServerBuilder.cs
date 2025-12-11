@@ -10,7 +10,7 @@ namespace Treaty.OpenApi;
 /// </summary>
 public sealed class MockServerBuilder
 {
-    private readonly ContractDefinition _contract;
+    private readonly OpenApiContractBuilder _contractBuilder;
     private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     private bool _useHttps;
     private int? _minLatencyMs;
@@ -21,12 +21,12 @@ public sealed class MockServerBuilder
 
     internal MockServerBuilder(string specPath)
     {
-        _contract = Contract.FromOpenApi(specPath).Build();
+        _contractBuilder = Contract.FromOpenApi(specPath);
     }
 
     internal MockServerBuilder(Stream specStream, OpenApiFormat format)
     {
-        _contract = Contract.FromOpenApi(specStream, format).Build();
+        _contractBuilder = Contract.FromOpenApi(specStream, format);
     }
 
     /// <summary>
@@ -113,13 +113,15 @@ public sealed class MockServerBuilder
     }
 
     /// <summary>
-    /// Builds the mock server.
+    /// Builds the mock server asynchronously.
     /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The configured mock server.</returns>
-    public IMockServer Build()
+    public async Task<IMockServer> BuildAsync(CancellationToken cancellationToken = default)
     {
+        var contract = await _contractBuilder.BuildAsync(cancellationToken).ConfigureAwait(false);
         return new ContractMockServer(
-            _contract,
+            contract,
             _loggerFactory,
             _useHttps,
             _minLatencyMs,
@@ -171,10 +173,11 @@ public sealed class MockEndpointBuilder
     public MockEndpointBuilder ForEndpoint(string pathTemplate) => _parent.ForEndpoint(pathTemplate);
 
     /// <summary>
-    /// Builds the mock server.
+    /// Builds the mock server asynchronously.
     /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The configured mock server.</returns>
-    public IMockServer Build() => _parent.Build();
+    public Task<IMockServer> BuildAsync(CancellationToken cancellationToken = default) => _parent.BuildAsync(cancellationToken);
 }
 
 /// <summary>

@@ -7,14 +7,14 @@ namespace Treaty.Tests.Unit.Contracts;
 
 public class ContractComparerTests
 {
-    private static ContractDefinition BuildContract(string yaml)
+    private static async Task<ContractDefinition> BuildContractAsync(string yaml)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
-        return Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        return await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
     }
 
     [Test]
-    public void Compare_IdenticalContracts_ReturnsNoDifferences()
+    public async Task Compare_IdenticalContracts_ReturnsNoDifferences()
     {
         // Arrange
         const string spec = """
@@ -30,8 +30,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(spec);
-        var newContract = BuildContract(spec);
+        var oldContract = await BuildContractAsync(spec);
+        var newContract = await BuildContractAsync(spec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -43,7 +43,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_EndpointRemoved_DetectsBreakingChange()
+    public async Task Compare_EndpointRemoved_DetectsBreakingChange()
     {
         // Arrange
         const string oldSpec = """
@@ -77,8 +77,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -91,7 +91,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_EndpointAdded_DetectsInfoChange()
+    public async Task Compare_EndpointAdded_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -125,8 +125,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -139,7 +139,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_SuccessStatusCodeRemoved_DetectsBreakingChange()
+    public async Task Compare_SuccessStatusCodeRemoved_DetectsBreakingChange()
     {
         // Arrange
         const string oldSpec = """
@@ -170,8 +170,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -183,7 +183,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_ErrorStatusCodeRemoved_DetectsWarning()
+    public async Task Compare_ErrorStatusCodeRemoved_DetectsWarning()
     {
         // Arrange
         const string oldSpec = """
@@ -214,8 +214,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -228,7 +228,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_StatusCodeAdded_DetectsInfoChange()
+    public async Task Compare_StatusCodeAdded_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -259,8 +259,8 @@ public class ContractComparerTests
                       description: Created
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -272,7 +272,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_RequiredRequestBodyAdded_DetectsBreakingChange()
+    public async Task Compare_RequiredRequestBodyAdded_DetectsBreakingChange()
     {
         // Arrange
         const string oldSpec = """
@@ -310,8 +310,8 @@ public class ContractComparerTests
                       description: Created
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -323,7 +323,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_OptionalRequestBodyAdded_DetectsInfoChange()
+    public async Task Compare_OptionalRequestBodyAdded_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -361,8 +361,8 @@ public class ContractComparerTests
                       description: Created
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -373,7 +373,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_RequestBodyBecameRequired_DetectsBreakingChange()
+    public async Task Compare_RequestBodyBecameRequired_DetectsBreakingChange()
     {
         // Arrange
         const string oldSpec = """
@@ -420,8 +420,8 @@ public class ContractComparerTests
                       description: Created
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -432,7 +432,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_RequestBodyBecameOptional_DetectsInfoChange()
+    public async Task Compare_RequestBodyBecameOptional_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -479,8 +479,8 @@ public class ContractComparerTests
                       description: Created
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -491,7 +491,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_RequiredRequestHeaderAdded_DetectsBreakingChange()
+    public async Task Compare_RequiredRequestHeaderAdded_DetectsBreakingChange()
     {
         // Arrange
         const string oldSpec = """
@@ -526,8 +526,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -539,7 +539,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_RequestHeaderRemoved_DetectsInfoChange()
+    public async Task Compare_RequestHeaderRemoved_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -574,8 +574,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -586,7 +586,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_ResponseBodyTypeChanged_DetectsBreakingChange()
+    public async Task Compare_ResponseBodyTypeChanged_DetectsBreakingChange()
     {
         // Arrange
         const string oldSpec = """
@@ -637,8 +637,8 @@ public class ContractComparerTests
                                 type: integer
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -651,7 +651,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_ResponseBodySchemaAdded_DetectsInfoChange()
+    public async Task Compare_ResponseBodySchemaAdded_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -691,8 +691,8 @@ public class ContractComparerTests
                                   type: string
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -703,7 +703,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_ResponseBodySchemaRemoved_DetectsWarning()
+    public async Task Compare_ResponseBodySchemaRemoved_DetectsWarning()
     {
         // Arrange
         const string oldSpec = """
@@ -743,8 +743,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -755,7 +755,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_PathParameterEndpoints_MatchesCorrectly()
+    public async Task Compare_PathParameterEndpoints_MatchesCorrectly()
     {
         // Arrange - endpoints with different param names but same pattern
         const string oldSpec = """
@@ -796,8 +796,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -807,7 +807,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_NullOldContract_ThrowsArgumentNullException()
+    public async Task Compare_NullOldContract_ThrowsArgumentNullException()
     {
         // Arrange
         const string spec = """
@@ -823,7 +823,7 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var newContract = BuildContract(spec);
+        var newContract = await BuildContractAsync(spec);
 
         // Act
         var act = () => ContractComparer.Compare(null!, newContract);
@@ -834,7 +834,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_NullNewContract_ThrowsArgumentNullException()
+    public async Task Compare_NullNewContract_ThrowsArgumentNullException()
     {
         // Arrange
         const string spec = """
@@ -850,7 +850,7 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(spec);
+        var oldContract = await BuildContractAsync(spec);
 
         // Act
         var act = () => ContractComparer.Compare(oldContract, null!);
@@ -861,7 +861,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void GetSummary_WithBreakingChanges_ContainsBreakingSection()
+    public async Task GetSummary_WithBreakingChanges_ContainsBreakingSection()
     {
         // Arrange
         const string oldSpec = """
@@ -885,8 +885,8 @@ public class ContractComparerTests
             paths: {}
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -898,7 +898,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void ThrowIfBreaking_WithBreakingChanges_ThrowsException()
+    public async Task ThrowIfBreaking_WithBreakingChanges_ThrowsException()
     {
         // Arrange
         const string oldSpec = """
@@ -922,8 +922,8 @@ public class ContractComparerTests
             paths: {}
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         var diff = ContractComparer.Compare(oldContract, newContract);
 
@@ -936,7 +936,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void ThrowIfBreaking_WithoutBreakingChanges_DoesNotThrow()
+    public async Task ThrowIfBreaking_WithoutBreakingChanges_DoesNotThrow()
     {
         // Arrange
         const string oldSpec = """
@@ -970,8 +970,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         var diff = ContractComparer.Compare(oldContract, newContract);
 
@@ -983,7 +983,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_ResponseHeaderAdded_DetectsInfoChange()
+    public async Task Compare_ResponseHeaderAdded_DetectsInfoChange()
     {
         // Arrange
         const string oldSpec = """
@@ -1016,8 +1016,8 @@ public class ContractComparerTests
                             type: string
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);
@@ -1029,7 +1029,7 @@ public class ContractComparerTests
     }
 
     [Test]
-    public void Compare_ResponseHeaderRemoved_DetectsWarning()
+    public async Task Compare_ResponseHeaderRemoved_DetectsWarning()
     {
         // Arrange
         const string oldSpec = """
@@ -1062,8 +1062,8 @@ public class ContractComparerTests
                       description: OK
             """;
 
-        var oldContract = BuildContract(oldSpec);
-        var newContract = BuildContract(newSpec);
+        var oldContract = await BuildContractAsync(oldSpec);
+        var newContract = await BuildContractAsync(newSpec);
 
         // Act
         var diff = ContractComparer.Compare(oldContract, newContract);

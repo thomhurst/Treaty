@@ -12,40 +12,66 @@ namespace Treaty.OpenApi;
 
 /// <summary>
 /// Builder for creating contracts from OpenAPI specifications.
+/// Uses async patterns throughout to avoid blocking I/O.
 /// </summary>
 public sealed class OpenApiContractBuilder
 {
-    private readonly OpenApiDocument _document;
+    private readonly Func<CancellationToken, Task<OpenApiDocument>> _documentLoader;
     private readonly ILogger _logger;
     private IJsonSerializer _jsonSerializer = new SystemTextJsonSerializer();
     private readonly HashSet<string> _includedEndpoints = [];
     private readonly HashSet<string> _excludedEndpoints = [];
 
+    /// <summary>
+    /// Creates a builder from a file path. Document loading is deferred until BuildAsync is called.
+    /// </summary>
     internal OpenApiContractBuilder(string specPath)
     {
         _logger = NullLogger.Instance;
 
-        var settings = new OpenApiReaderSettings();
-        settings.AddYamlReader();
+        _documentLoader = async ct =>
+        {
+            var settings = new OpenApiReaderSettings();
+            settings.AddYamlReader();
 
-        // LoadAsync works with file paths as well as URLs
-        var result = OpenApiDocument.LoadAsync(specPath, settings).GetAwaiter().GetResult();
-        _document = result.Document ?? throw new InvalidOperationException("Failed to load OpenAPI document");
-
-        LogDiagnostics(result.Diagnostic);
+            var result = await OpenApiDocument.LoadAsync(specPath, settings, ct).ConfigureAwait(false);
+            LogDiagnostics(result.Diagnostic);
+            return result.Document ?? throw new InvalidOperationException("Failed to load OpenAPI document");
+        };
     }
 
+    /// <summary>
+    /// Creates a builder from a stream. The stream is read immediately to avoid lifetime issues.
+    /// </summary>
     internal OpenApiContractBuilder(Stream specStream, OpenApiFormat format)
     {
         _logger = NullLogger.Instance;
 
-        var settings = new OpenApiReaderSettings();
-        settings.AddYamlReader();
+        // Read stream content immediately to avoid lifetime/disposal issues
+        // The caller shouldn't need to keep the stream open after creating the builder
+        using var memoryStream = new MemoryStream();
+        specStream.CopyTo(memoryStream);
+        var content = memoryStream.ToArray();
 
-        var result = OpenApiDocument.LoadAsync(specStream, format == OpenApiFormat.Json ? "json" : "yaml", settings).GetAwaiter().GetResult();
-        _document = result.Document ?? throw new InvalidOperationException("Failed to load OpenAPI document");
+        _documentLoader = async ct =>
+        {
+            using var stream = new MemoryStream(content);
+            var settings = new OpenApiReaderSettings();
+            settings.AddYamlReader();
 
-        LogDiagnostics(result.Diagnostic);
+            var result = await OpenApiDocument.LoadAsync(stream, format == OpenApiFormat.Json ? "json" : "yaml", settings, ct).ConfigureAwait(false);
+            LogDiagnostics(result.Diagnostic);
+            return result.Document ?? throw new InvalidOperationException("Failed to load OpenAPI document");
+        };
+    }
+
+    /// <summary>
+    /// Creates a builder from a pre-loaded OpenAPI document.
+    /// </summary>
+    internal OpenApiContractBuilder(OpenApiDocument document)
+    {
+        _logger = NullLogger.Instance;
+        _documentLoader = _ => Task.FromResult(document);
     }
 
     private void LogDiagnostics(OpenApiDiagnostic? diagnostic)
@@ -103,16 +129,23 @@ public sealed class OpenApiContractBuilder
     }
 
     /// <summary>
-    /// Builds the contract from the OpenAPI specification.
+    /// Builds the contract from the OpenAPI specification asynchronously.
     /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The built contract.</returns>
-    public ContractDefinition Build()
+    public async Task<ContractDefinition> BuildAsync(CancellationToken cancellationToken = default)
+    {
+        var document = await _documentLoader(cancellationToken).ConfigureAwait(false);
+        return BuildFromDocument(document);
+    }
+
+    private ContractDefinition BuildFromDocument(OpenApiDocument document)
     {
         var endpoints = new List<EndpointContract>();
 
-        if (_document.Paths != null)
+        if (document.Paths != null)
         {
-            foreach (var (path, pathItem) in _document.Paths)
+            foreach (var (path, pathItem) in document.Paths)
             {
                 // Check inclusion/exclusion
                 if (_includedEndpoints.Count > 0 && !_includedEndpoints.Contains(path))
@@ -131,14 +164,14 @@ public sealed class OpenApiContractBuilder
             }
         }
 
-        var name = _document.Info?.Title ?? "OpenAPI Contract";
-        var metadata = BuildMetadata();
+        var name = document.Info?.Title ?? "OpenAPI Contract";
+        var metadata = BuildMetadata(document);
         return new ContractDefinition(name, endpoints, _jsonSerializer, null, metadata);
     }
 
-    private ContractMetadata? BuildMetadata()
+    private static ContractMetadata? BuildMetadata(OpenApiDocument document)
     {
-        var info = _document.Info;
+        var info = document.Info;
         if (info == null)
             return null;
 
@@ -260,7 +293,7 @@ public sealed class OpenApiContractBuilder
         return new EndpointContract(path, method, requestExpectation, responseExpectations, headers, queryParams, exampleData);
     }
 
-    private object? ExtractRequestBodyExample(IOpenApiRequestBody requestBody)
+    private static object? ExtractRequestBodyExample(IOpenApiRequestBody requestBody)
     {
         // Try application/json first
         if (requestBody.Content != null && requestBody.Content.TryGetValue("application/json", out var mediaType))
@@ -277,7 +310,7 @@ public sealed class OpenApiContractBuilder
         return null;
     }
 
-    private object? ExtractMediaTypeExample(IOpenApiMediaType mediaType)
+    private static object? ExtractMediaTypeExample(IOpenApiMediaType mediaType)
     {
         // Check for direct example
         if (mediaType.Example != null)
@@ -304,7 +337,7 @@ public sealed class OpenApiContractBuilder
         return null;
     }
 
-    private object? ExtractParameterExample(IOpenApiParameter parameter)
+    private static object? ExtractParameterExample(IOpenApiParameter parameter)
     {
         // Check for direct example
         if (parameter.Example != null)
@@ -331,7 +364,7 @@ public sealed class OpenApiContractBuilder
         return null;
     }
 
-    private object? ConvertJsonNode(JsonNode? node)
+    private static object? ConvertJsonNode(JsonNode? node)
     {
         if (node == null)
             return null;
@@ -438,22 +471,6 @@ public sealed class OpenApiContractBuilder
         }
 
         return new ResponseExpectation(statusCode, contentType, validator, headers, null);
-    }
-
-    private static HttpMethod StringToHttpMethod(string httpMethodString)
-    {
-        return httpMethodString.ToUpperInvariant() switch
-        {
-            "GET" => HttpMethod.Get,
-            "POST" => HttpMethod.Post,
-            "PUT" => HttpMethod.Put,
-            "DELETE" => HttpMethod.Delete,
-            "PATCH" => HttpMethod.Patch,
-            "HEAD" => HttpMethod.Head,
-            "OPTIONS" => HttpMethod.Options,
-            "TRACE" => HttpMethod.Trace,
-            _ => HttpMethod.Get
-        };
     }
 
     private static QueryParameterType OpenApiSchemaToQueryParamType(IOpenApiSchema? schema)

@@ -23,11 +23,12 @@ using Treaty;
 
 public class UserApiProviderTests : IDisposable
 {
-    private readonly ProviderVerifier<Startup> _provider;
+    private ProviderVerifier<Startup> _provider = null!;
 
-    public UserApiProviderTests()
+    [Before(Test)]
+    public async Task Setup()
     {
-        var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+        var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
         _provider = ProviderVerifier.ForWebApplication<Startup>()
             .WithContract(contract)
@@ -92,7 +93,7 @@ if (!result.IsValid)
 Verify all endpoints at once using `VerifyAllAsync`:
 
 ```csharp
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
@@ -157,7 +158,7 @@ Provider states set up test data before verification. This is useful when endpoi
 ### Handling States
 
 ```csharp
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)

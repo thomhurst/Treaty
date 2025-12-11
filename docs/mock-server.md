@@ -29,7 +29,7 @@ var response = await client.GetAsync("/users/1");
 ### From OpenAPI Spec
 
 ```csharp
-var mockServer = Treaty.MockFromOpenApi("api-spec.yaml").Build();
+var mockServer = await MockServer.FromOpenApi("api-spec.yaml").BuildAsync();
 await mockServer.StartAsync();
 ```
 

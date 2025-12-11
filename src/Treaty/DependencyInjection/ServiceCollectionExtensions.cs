@@ -12,20 +12,36 @@ namespace Treaty.DependencyInjection;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds Treaty services to the service collection.
+    /// Adds Treaty services to the service collection using async configuration.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="configure">An action to configure Treaty options.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <param name="configure">An async action to configure Treaty options.</param>
+    /// <returns>A task representing the service collection for chaining.</returns>
     /// <example>
     /// <code>
-    /// services.AddTreaty(options =>
+    /// await services.AddTreatyAsync(async options =>
     /// {
-    ///     options.AddContractFromOpenApi("api-spec.yaml");
+    ///     await options.AddContractFromOpenApiAsync("api-spec.yaml");
     ///     options.AddMockServer();
     /// });
     /// </code>
     /// </example>
+    public static async Task<IServiceCollection> AddTreatyAsync(
+        this IServiceCollection services,
+        Func<TreatyOptions, Task> configure)
+    {
+        var options = new TreatyOptions(services);
+        await configure(options).ConfigureAwait(false);
+        return services;
+    }
+
+    /// <summary>
+    /// Adds Treaty services to the service collection.
+    /// Use this overload when you don't need async contract loading (e.g., pre-built contracts).
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">An action to configure Treaty options.</param>
+    /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddTreaty(this IServiceCollection services, Action<TreatyOptions> configure)
     {
         var options = new TreatyOptions(services);
@@ -46,40 +62,46 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Adds a contract from an OpenAPI specification file to the service collection.
+    /// Adds a contract from an OpenAPI specification file to the service collection asynchronously.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="specPath">Path to the OpenAPI specification file.</param>
     /// <param name="configureBuilder">Optional action to configure the contract builder.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddContractFromOpenApi(
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task representing the service collection for chaining.</returns>
+    public static async Task<IServiceCollection> AddContractFromOpenApiAsync(
         this IServiceCollection services,
         string specPath,
-        Action<OpenApiContractBuilder>? configureBuilder = null)
+        Action<OpenApiContractBuilder>? configureBuilder = null,
+        CancellationToken cancellationToken = default)
     {
-        var builder = new OpenApiContractBuilder(specPath);
+        var builder = Contract.FromOpenApi(specPath);
         configureBuilder?.Invoke(builder);
-        services.AddSingleton(builder.Build());
+        var contract = await builder.BuildAsync(cancellationToken).ConfigureAwait(false);
+        services.AddSingleton(contract);
         return services;
     }
 
     /// <summary>
-    /// Adds a contract from an OpenAPI specification stream to the service collection.
+    /// Adds a contract from an OpenAPI specification stream to the service collection asynchronously.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="specStream">Stream containing the OpenAPI specification.</param>
     /// <param name="format">The format of the specification.</param>
     /// <param name="configureBuilder">Optional action to configure the contract builder.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddContractFromOpenApi(
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task representing the service collection for chaining.</returns>
+    public static async Task<IServiceCollection> AddContractFromOpenApiAsync(
         this IServiceCollection services,
         Stream specStream,
         OpenApiFormat format = OpenApiFormat.Yaml,
-        Action<OpenApiContractBuilder>? configureBuilder = null)
+        Action<OpenApiContractBuilder>? configureBuilder = null,
+        CancellationToken cancellationToken = default)
     {
-        var builder = new OpenApiContractBuilder(specStream, format);
+        var builder = Contract.FromOpenApi(specStream, format);
         configureBuilder?.Invoke(builder);
-        services.AddSingleton(builder.Build());
+        var contract = await builder.BuildAsync(cancellationToken).ConfigureAwait(false);
+        services.AddSingleton(contract);
         return services;
     }
 
@@ -130,28 +152,35 @@ public sealed class TreatyOptions
     }
 
     /// <summary>
-    /// Adds a contract from an OpenAPI specification file.
+    /// Adds a contract from an OpenAPI specification file asynchronously.
     /// </summary>
     /// <param name="specPath">Path to the OpenAPI specification file.</param>
     /// <param name="configureBuilder">Optional action to configure the contract builder.</param>
-    /// <returns>This options instance for chaining.</returns>
-    public TreatyOptions AddContractFromOpenApi(string specPath, Action<OpenApiContractBuilder>? configureBuilder = null)
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task for async chaining.</returns>
+    public async Task AddContractFromOpenApiAsync(
+        string specPath,
+        Action<OpenApiContractBuilder>? configureBuilder = null,
+        CancellationToken cancellationToken = default)
     {
-        _services.AddContractFromOpenApi(specPath, configureBuilder);
-        return this;
+        await _services.AddContractFromOpenApiAsync(specPath, configureBuilder, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Adds a contract from an OpenAPI specification stream.
+    /// Adds a contract from an OpenAPI specification stream asynchronously.
     /// </summary>
     /// <param name="specStream">Stream containing the OpenAPI specification.</param>
     /// <param name="format">The format of the specification.</param>
     /// <param name="configureBuilder">Optional action to configure the contract builder.</param>
-    /// <returns>This options instance for chaining.</returns>
-    public TreatyOptions AddContractFromOpenApi(Stream specStream, OpenApiFormat format = OpenApiFormat.Yaml, Action<OpenApiContractBuilder>? configureBuilder = null)
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task for async chaining.</returns>
+    public async Task AddContractFromOpenApiAsync(
+        Stream specStream,
+        OpenApiFormat format = OpenApiFormat.Yaml,
+        Action<OpenApiContractBuilder>? configureBuilder = null,
+        CancellationToken cancellationToken = default)
     {
-        _services.AddContractFromOpenApi(specStream, format, configureBuilder);
-        return this;
+        await _services.AddContractFromOpenApiAsync(specStream, format, configureBuilder, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

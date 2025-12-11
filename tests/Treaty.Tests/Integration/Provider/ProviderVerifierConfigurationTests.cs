@@ -61,7 +61,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
@@ -88,7 +88,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
@@ -113,7 +113,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
@@ -132,7 +132,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _provider = ProviderVerifier.ForWebApplication<ConfigurableTestStartup>()
             .WithContract(contract)
@@ -154,7 +154,7 @@ public class ProviderVerifierConfigurationTests : IDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         var servicesCalled = new List<string>();
 

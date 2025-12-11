@@ -22,19 +22,19 @@ dotnet add package Treaty
 
 ```csharp
 // Load contract from OpenAPI spec (YAML or JSON)
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 // Or filter to specific endpoints
-var contract = Contract.FromOpenApi("api-spec.yaml")
+var contract = await Contract.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
-    .Build();
+    .BuildAsync();
 ```
 
 ### Verify Your API (Provider Testing) - Spins up an In-Memory TestServer and intercepts your response to validate it
 
 ```csharp
 // In your test class
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var provider = ProviderVerifier.ForWebApplication<Startup>()
     .WithContract(contract)
@@ -51,7 +51,7 @@ var results = await provider.VerifyAllAsync();
 
 ```csharp
 // Start a mock server directly from OpenAPI
-var mockServer = MockServer.FromOpenApi("api-spec.yaml").Build();
+var mockServer = await MockServer.FromOpenApi("api-spec.yaml").BuildAsync();
 await mockServer.StartAsync();
 
 // Use the mock server URL in your client tests
@@ -60,24 +60,24 @@ var response = await client.GetAsync("/users/1");
 // Response body is auto-generated based on the OpenAPI schema
 
 // Or create a mock from an already-loaded contract
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 var mockServer = MockServer.FromContract(contract).Build();
 ```
 
 ### Conditional Mock Responses
 
 ```csharp
-var mockServer = MockServer.FromOpenApi("api-spec.yaml")
+var mockServer = await MockServer.FromOpenApi("api-spec.yaml")
     .ForEndpoint("/users/{id}")
         .When(req => req.PathParam("id") == "0").Return(404)
         .Otherwise().Return(200)
-    .Build();
+    .BuildAsync();
 ```
 
 ### Consumer Request Validation
 
 ```csharp
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var consumer = ConsumerVerifier.Create()
     .WithContract(contract)
@@ -92,8 +92,8 @@ await client.GetAsync("/users/1"); // Validated against contract
 ### Contract Comparison (Breaking Change Detection)
 
 ```csharp
-var oldContract = Contract.FromOpenApi("api-v1.yaml").Build();
-var newContract = Contract.FromOpenApi("api-v2.yaml").Build();
+var oldContract = await Contract.FromOpenApi("api-v1.yaml").BuildAsync();
+var newContract = await Contract.FromOpenApi("api-v2.yaml").BuildAsync();
 
 var diff = Contract.Compare(oldContract, newContract);
 

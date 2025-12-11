@@ -11,7 +11,7 @@ namespace Treaty.Tests.Unit.Provider;
 
 public class HttpProviderBuilderTests
 {
-    private static ContractDefinition CreateTestContract()
+    private static async Task<ContractDefinition> CreateTestContractAsync()
     {
         const string spec = """
             openapi: '3.0.3'
@@ -26,7 +26,7 @@ public class HttpProviderBuilderTests
                       description: OK
             """;
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(spec));
-        return Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        return await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
     }
 
     #region WithBaseUrl Tests
@@ -36,7 +36,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -54,7 +54,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act - URL without trailing slash
         var verifier = builder
@@ -72,7 +72,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act - URL with trailing slash
         var verifier = builder
@@ -120,7 +120,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -152,7 +152,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -184,7 +184,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var loggerFactory = NullLoggerFactory.Instance;
 
         // Act
@@ -218,7 +218,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var stateHandler = new StateHandlerBuilder()
             .ForState("test state", () => { })
             .Build();
@@ -251,7 +251,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -285,7 +285,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -304,7 +304,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -327,7 +327,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -346,7 +346,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -365,7 +365,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -384,7 +384,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -403,7 +403,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var headers = new Dictionary<string, string>
         {
             { "X-Custom-Header", "value" }
@@ -426,7 +426,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var customProvider = new BearerTokenAuthProvider("custom-token");
 
         // Act
@@ -460,7 +460,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -479,7 +479,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var options = new RetryPolicyOptions { MaxRetries = 5 };
 
         // Act
@@ -499,7 +499,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var customPolicy = new RetryPolicy();
 
         // Act
@@ -533,7 +533,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var options = new HttpProviderOptions
         {
             RequestTimeout = TimeSpan.FromSeconds(60),
@@ -567,7 +567,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -603,7 +603,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
         var httpClient = new HttpClient { BaseAddress = new Uri("https://api.example.com/") };
 
         // Act
@@ -640,7 +640,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act & Assert
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -667,7 +667,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -685,7 +685,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder
@@ -712,7 +712,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var builder1 = builder.WithBaseUrl("https://api.example.com");
@@ -730,7 +730,7 @@ public class HttpProviderBuilderTests
     {
         // Arrange - Setting multiple auth providers, last one should be used
         var builder = new HttpProviderBuilder();
-        var contract = CreateTestContract();
+        var contract = await CreateTestContractAsync();
 
         // Act
         var verifier = builder

@@ -99,12 +99,12 @@ public class ConsumerVerifierTests : IAsyncDisposable
         var specPath = Path.GetTempFileName() + ".yaml";
         await File.WriteAllTextAsync(specPath, TestOpenApiSpec);
 
-        _mockServer = MockServer.FromOpenApi(specPath).Build();
+        _mockServer = await MockServer.FromOpenApi(specPath).BuildAsync();
         await _mockServer.StartAsync();
 
         // Create consumer verifier with contract from OpenAPI spec
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _consumer = ConsumerVerifier.Create()
             .WithContract(contract)
@@ -227,7 +227,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
@@ -269,7 +269,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithAuth));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         var consumer = ConsumerVerifier.Create()
             .WithContract(contract)
@@ -307,7 +307,7 @@ public class ConsumerVerifierTests : IAsyncDisposable
     {
         // Arrange
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestOpenApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         var consumer = ConsumerVerifier.Create()
             .WithContract(contract)

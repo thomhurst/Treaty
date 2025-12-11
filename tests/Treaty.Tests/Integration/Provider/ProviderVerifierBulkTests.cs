@@ -56,10 +56,11 @@ public class ProviderVerifierBulkTests : IDisposable
                   type: string
         """;
 
-    public ProviderVerifierBulkTests()
+    [Before(Test)]
+    public async Task Setup()
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(TestApiSpec));
-        var contract = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contract = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         _verifier = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contract)
@@ -111,7 +112,7 @@ public class ProviderVerifierBulkTests : IDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithMissingExampleData));
-        var contractWithMissingExampleData = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contractWithMissingExampleData = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         using var verifier = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contractWithMissingExampleData)
@@ -166,7 +167,7 @@ public class ProviderVerifierBulkTests : IDisposable
             """;
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(specWithFailure));
-        var contractWithFailure = Contract.FromOpenApi(stream, OpenApiFormat.Yaml).Build();
+        var contractWithFailure = await Contract.FromOpenApi(stream, OpenApiFormat.Yaml).BuildAsync();
 
         using var verifier = ProviderVerifier.ForWebApplication<TestStartup>()
             .WithContract(contractWithFailure)

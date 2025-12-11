@@ -18,7 +18,7 @@ When you're the **consumer** (the team calling an API), consumer verification va
 ```csharp
 using Treaty;
 
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var consumer = ConsumerVerifier.Create()
     .WithContract(contract)
@@ -75,7 +75,7 @@ services.AddHttpClient("UsersApi", client =>
 
 ```csharp
 // Contract loaded from OpenAPI spec expects CreateUserRequest with Name and Email
-var contract = Contract.FromOpenApi("api-spec.yaml").Build();
+var contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
 
 var consumer = ConsumerVerifier.Create()
     .WithContract(contract)
@@ -109,19 +109,15 @@ using Treaty.Mocking;
 
 public class UserClientTests : IAsyncDisposable
 {
-    private readonly ContractDefinition _contract;
-    private readonly ContractMockServer _mockServer;
-    private readonly HttpClient _client;
-
-    public UserClientTests()
-    {
-        _contract = Contract.FromOpenApi("api-spec.yaml").Build();
-        _mockServer = MockServer.FromContract(_contract).Build();
-    }
+    private ContractDefinition _contract = null!;
+    private ContractMockServer _mockServer = null!;
+    private HttpClient _client = null!;
 
     [Before(Test)]
     public async Task Setup()
     {
+        _contract = await Contract.FromOpenApi("api-spec.yaml").BuildAsync();
+        _mockServer = MockServer.FromContract(_contract).Build();
         await _mockServer.StartAsync();
 
         // Create client pointing to mock server
@@ -241,15 +237,16 @@ MyApi.Client/              # Consumer
 ```csharp
 public abstract class ApiClientTestBase : IAsyncDisposable
 {
-    protected ContractMockServer MockServer { get; private set; }
-    protected HttpClient Client { get; private set; }
+    protected ContractMockServer MockServer { get; private set; } = null!;
+    protected HttpClient Client { get; private set; } = null!;
 
-    protected abstract ContractDefinition Contract { get; }
+    protected abstract Task<ContractDefinition> LoadContractAsync();
 
     [Before(Test)]
     public async Task BaseSetup()
     {
-        MockServer = MockServer.FromContract(Contract).Build();
+        var contract = await LoadContractAsync();
+        MockServer = MockServer.FromContract(contract).Build();
         await MockServer.StartAsync();
         Client = new HttpClient { BaseAddress = new Uri(MockServer.BaseUrl!) };
     }
