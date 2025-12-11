@@ -3,28 +3,16 @@ namespace Treaty.Validation;
 /// <summary>
 /// Represents the result of contract validation.
 /// </summary>
-public sealed class ValidationResult
+/// <param name="Endpoint">The endpoint that was validated.</param>
+/// <param name="Violations">All contract violations that were detected.</param>
+public sealed record ValidationResult(
+    string Endpoint,
+    IReadOnlyList<ContractViolation> Violations)
 {
     /// <summary>
     /// Gets whether the validation passed with no violations.
     /// </summary>
     public bool IsValid => Violations.Count == 0;
-
-    /// <summary>
-    /// Gets all contract violations that were detected.
-    /// </summary>
-    public IReadOnlyList<ContractViolation> Violations { get; }
-
-    /// <summary>
-    /// Gets the endpoint that was validated.
-    /// </summary>
-    public string Endpoint { get; }
-
-    private ValidationResult(string endpoint, IReadOnlyList<ContractViolation> violations)
-    {
-        Endpoint = endpoint;
-        Violations = violations;
-    }
 
     /// <summary>
     /// Creates a successful validation result.

@@ -3,39 +3,30 @@ namespace Treaty.Contracts;
 /// <summary>
 /// Represents the result of comparing two contracts.
 /// </summary>
-public sealed class ContractDiff
+/// <param name="OldContractName">The old (baseline) contract name.</param>
+/// <param name="NewContractName">The new contract name.</param>
+/// <param name="AllChanges">All detected changes.</param>
+public sealed record ContractDiff(
+    string OldContractName,
+    string NewContractName,
+    IReadOnlyList<ContractChange> AllChanges)
 {
-    /// <summary>
-    /// Gets the old (baseline) contract name.
-    /// </summary>
-    public string OldContractName { get; }
-
-    /// <summary>
-    /// Gets the new contract name.
-    /// </summary>
-    public string NewContractName { get; }
-
-    /// <summary>
-    /// Gets all detected changes.
-    /// </summary>
-    public IReadOnlyList<ContractChange> AllChanges { get; }
-
     /// <summary>
     /// Gets only the breaking changes.
     /// </summary>
-    public IReadOnlyList<ContractChange> BreakingChanges =>
+    public IReadOnlyList<ContractChange> BreakingChanges { get; } =
         AllChanges.Where(c => c.Severity == ChangeSeverity.Breaking).ToList();
 
     /// <summary>
     /// Gets only the warning-level changes.
     /// </summary>
-    public IReadOnlyList<ContractChange> Warnings =>
+    public IReadOnlyList<ContractChange> Warnings { get; } =
         AllChanges.Where(c => c.Severity == ChangeSeverity.Warning).ToList();
 
     /// <summary>
     /// Gets only the informational changes.
     /// </summary>
-    public IReadOnlyList<ContractChange> InfoChanges =>
+    public IReadOnlyList<ContractChange> InfoChanges { get; } =
         AllChanges.Where(c => c.Severity == ChangeSeverity.Info).ToList();
 
     /// <summary>
@@ -47,13 +38,6 @@ public sealed class ContractDiff
     /// Gets a value indicating whether the contracts are compatible (no breaking changes).
     /// </summary>
     public bool IsCompatible => !HasBreakingChanges;
-
-    internal ContractDiff(string oldContractName, string newContractName, IReadOnlyList<ContractChange> changes)
-    {
-        OldContractName = oldContractName;
-        NewContractName = newContractName;
-        AllChanges = changes;
-    }
 
     /// <summary>
     /// Gets a formatted summary of all changes.
@@ -115,75 +99,26 @@ public sealed class ContractDiff
 /// <summary>
 /// Represents a single change between two contract versions.
 /// </summary>
-public sealed class ContractChange
+/// <param name="Severity">The severity of the change.</param>
+/// <param name="Type">The type of change.</param>
+/// <param name="Description">A human-readable description of the change.</param>
+/// <param name="Path">The endpoint path affected by this change (if applicable).</param>
+/// <param name="Method">The HTTP method affected by this change (if applicable).</param>
+/// <param name="Location">The location of the change within the endpoint.</param>
+/// <param name="FieldName">The field name or path affected by this change (if applicable).</param>
+/// <param name="OldValue">The old value or type (if applicable).</param>
+/// <param name="NewValue">The new value or type (if applicable).</param>
+public sealed record ContractChange(
+    ChangeSeverity Severity,
+    ContractChangeType Type,
+    string Description,
+    string? Path = null,
+    HttpMethod? Method = null,
+    ChangeLocation Location = ChangeLocation.Endpoint,
+    string? FieldName = null,
+    string? OldValue = null,
+    string? NewValue = null)
 {
-    /// <summary>
-    /// Gets the severity of the change.
-    /// </summary>
-    public ChangeSeverity Severity { get; }
-
-    /// <summary>
-    /// Gets the type of change.
-    /// </summary>
-    public ContractChangeType Type { get; }
-
-    /// <summary>
-    /// Gets a human-readable description of the change.
-    /// </summary>
-    public string Description { get; }
-
-    /// <summary>
-    /// Gets the endpoint path affected by this change (if applicable).
-    /// </summary>
-    public string? Path { get; }
-
-    /// <summary>
-    /// Gets the HTTP method affected by this change (if applicable).
-    /// </summary>
-    public HttpMethod? Method { get; }
-
-    /// <summary>
-    /// Gets the location of the change within the endpoint.
-    /// </summary>
-    public ChangeLocation Location { get; }
-
-    /// <summary>
-    /// Gets the field name or path affected by this change (if applicable).
-    /// </summary>
-    public string? FieldName { get; }
-
-    /// <summary>
-    /// Gets the old value or type (if applicable).
-    /// </summary>
-    public string? OldValue { get; }
-
-    /// <summary>
-    /// Gets the new value or type (if applicable).
-    /// </summary>
-    public string? NewValue { get; }
-
-    internal ContractChange(
-        ChangeSeverity severity,
-        ContractChangeType type,
-        string description,
-        string? path = null,
-        HttpMethod? method = null,
-        ChangeLocation location = ChangeLocation.Endpoint,
-        string? fieldName = null,
-        string? oldValue = null,
-        string? newValue = null)
-    {
-        Severity = severity;
-        Type = type;
-        Description = description;
-        Path = path;
-        Method = method;
-        Location = location;
-        FieldName = fieldName;
-        OldValue = oldValue;
-        NewValue = newValue;
-    }
-
     /// <inheritdoc/>
     public override string ToString() => $"[{Severity}] {Description}";
 }

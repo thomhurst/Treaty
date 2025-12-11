@@ -3,57 +3,20 @@ namespace Treaty.Validation;
 /// <summary>
 /// Represents a single contract violation found during validation.
 /// </summary>
-public sealed class ContractViolation
+/// <param name="Endpoint">The endpoint where the violation occurred (e.g., "GET /users/123").</param>
+/// <param name="Path">The JSON path where the violation occurred (e.g., "$.user.email").</param>
+/// <param name="Message">A human-readable description of the violation.</param>
+/// <param name="Type">The type of violation.</param>
+/// <param name="Expected">The expected value or constraint.</param>
+/// <param name="Actual">The actual value that was found.</param>
+public sealed record ContractViolation(
+    string Endpoint,
+    string Path,
+    string Message,
+    ViolationType Type,
+    string? Expected = null,
+    string? Actual = null)
 {
-    /// <summary>
-    /// Gets the endpoint where the violation occurred (e.g., "GET /users/123").
-    /// </summary>
-    public string Endpoint { get; }
-
-    /// <summary>
-    /// Gets the JSON path where the violation occurred (e.g., "$.user.email").
-    /// </summary>
-    public string Path { get; }
-
-    /// <summary>
-    /// Gets a human-readable description of the violation.
-    /// </summary>
-    public string Message { get; }
-
-    /// <summary>
-    /// Gets the expected value or constraint.
-    /// </summary>
-    public string? Expected { get; }
-
-    /// <summary>
-    /// Gets the actual value that was found.
-    /// </summary>
-    public string? Actual { get; }
-
-    /// <summary>
-    /// Gets the type of violation.
-    /// </summary>
-    public ViolationType Type { get; }
-
-    /// <summary>
-    /// Creates a new contract violation.
-    /// </summary>
-    public ContractViolation(
-        string endpoint,
-        string path,
-        string message,
-        ViolationType type,
-        string? expected = null,
-        string? actual = null)
-    {
-        Endpoint = endpoint;
-        Path = path;
-        Message = message;
-        Type = type;
-        Expected = expected;
-        Actual = actual;
-    }
-
     /// <inheritdoc/>
     public override string ToString()
     {

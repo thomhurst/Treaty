@@ -165,7 +165,7 @@ public class DiagnosticReportTests
         var violations = new List<ContractViolation>
         {
             new("GET /users", "$.name", "Missing name field", ViolationType.MissingRequired),
-            new("GET /users", "$.age", "Should be number", ViolationType.InvalidType, expected: "number", actual: "string"),
+            new("GET /users", "$.age", "Should be number", ViolationType.InvalidType, Expected: "number", Actual: "string"),
             new("GET /users", "$.email", "Cannot be null", ViolationType.UnexpectedNull)
         };
         var report = new DiagnosticReport("GET /users", violations);
@@ -189,7 +189,7 @@ public class DiagnosticReportTests
         // Arrange
         var violations = new List<ContractViolation>
         {
-            new("GET /users", "$.count", "Type mismatch", ViolationType.InvalidType, expected: "integer", actual: "string")
+            new("GET /users", "$.count", "Type mismatch", ViolationType.InvalidType, Expected: "integer", Actual: "string")
         };
         var report = new DiagnosticReport("GET /users", violations);
 
@@ -230,7 +230,7 @@ public class DiagnosticReportTests
         var violations = new List<ContractViolation>
         {
             new("GET /users", "$.name", "Missing", ViolationType.MissingRequired),
-            new("GET /users", "$", "Wrong status", ViolationType.UnexpectedStatusCode, expected: "200", actual: "404")
+            new("GET /users", "$", "Wrong status", ViolationType.UnexpectedStatusCode, Expected: "200", Actual: "404")
         };
         var report = new DiagnosticReport("GET /users", violations);
 

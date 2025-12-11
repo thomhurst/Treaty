@@ -37,8 +37,8 @@ public class DiagnosticFormatterTests
             "$.age",
             "Type mismatch",
             ViolationType.InvalidType,
-            expected: "number",
-            actual: "string");
+            Expected: "number",
+            Actual: "string");
 
         // Act
         var result = DiagnosticFormatter.FormatViolation(violation);
@@ -73,8 +73,8 @@ public class DiagnosticFormatterTests
             "$.count",
             "Type mismatch",
             ViolationType.InvalidType,
-            expected: "integer",
-            actual: "string");
+            Expected: "integer",
+            Actual: "string");
 
         // Act
         var result = DiagnosticFormatter.FormatViolation(violation);
@@ -168,8 +168,8 @@ public class DiagnosticFormatterTests
             "$.field",
             "Test message",
             type,
-            expected: "expected",
-            actual: "actual");
+            Expected: "expected",
+            Actual: "actual");
 
         // Act
         var suggestion = DiagnosticFormatter.GenerateSuggestion(violation);

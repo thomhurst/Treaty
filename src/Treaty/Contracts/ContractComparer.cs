@@ -43,9 +43,9 @@ public static class ContractComparer
                     ChangeSeverity.Breaking,
                     ContractChangeType.EndpointRemoved,
                     $"Endpoint removed: {oldEndpoint}",
-                    path: oldEndpoint.PathTemplate,
-                    method: oldEndpoint.Method,
-                    location: ChangeLocation.Endpoint));
+                    Path: oldEndpoint.PathTemplate,
+                    Method: oldEndpoint.Method,
+                    Location: ChangeLocation.Endpoint));
             }
         }
 
@@ -58,9 +58,9 @@ public static class ContractComparer
                     ChangeSeverity.Info,
                     ContractChangeType.EndpointAdded,
                     $"Endpoint added: {newEndpoint}",
-                    path: newEndpoint.PathTemplate,
-                    method: newEndpoint.Method,
-                    location: ChangeLocation.Endpoint));
+                    Path: newEndpoint.PathTemplate,
+                    Method: newEndpoint.Method,
+                    Location: ChangeLocation.Endpoint));
             }
         }
 
@@ -104,10 +104,10 @@ public static class ContractComparer
                     severity,
                     ContractChangeType.ResponseStatusCodeRemoved,
                     $"Response status code {statusCode} removed from {oldEndpoint}",
-                    path: oldEndpoint.PathTemplate,
-                    method: oldEndpoint.Method,
-                    location: ChangeLocation.StatusCode,
-                    oldValue: statusCode.ToString()));
+                    Path: oldEndpoint.PathTemplate,
+                    Method: oldEndpoint.Method,
+                    Location: ChangeLocation.StatusCode,
+                    OldValue: statusCode.ToString()));
             }
         }
 
@@ -120,10 +120,10 @@ public static class ContractComparer
                     ChangeSeverity.Info,
                     ContractChangeType.ResponseStatusCodeAdded,
                     $"Response status code {statusCode} added to {newEndpoint}",
-                    path: newEndpoint.PathTemplate,
-                    method: newEndpoint.Method,
-                    location: ChangeLocation.StatusCode,
-                    newValue: statusCode.ToString()));
+                    Path: newEndpoint.PathTemplate,
+                    Method: newEndpoint.Method,
+                    Location: ChangeLocation.StatusCode,
+                    NewValue: statusCode.ToString()));
             }
         }
 
@@ -154,9 +154,9 @@ public static class ContractComparer
                 ChangeSeverity.Info,
                 ContractChangeType.ResponseFieldAdded,
                 $"Response body schema added to {endpoint} (status {oldResponse.StatusCode})",
-                path: endpoint.PathTemplate,
-                method: endpoint.Method,
-                location: ChangeLocation.ResponseBody));
+                Path: endpoint.PathTemplate,
+                Method: endpoint.Method,
+                Location: ChangeLocation.ResponseBody));
             return;
         }
 
@@ -166,9 +166,9 @@ public static class ContractComparer
                 ChangeSeverity.Warning,
                 ContractChangeType.ResponseFieldRemoved,
                 $"Response body schema removed from {endpoint} (status {oldResponse.StatusCode})",
-                path: endpoint.PathTemplate,
-                method: endpoint.Method,
-                location: ChangeLocation.ResponseBody));
+                Path: endpoint.PathTemplate,
+                Method: endpoint.Method,
+                Location: ChangeLocation.ResponseBody));
             return;
         }
 
@@ -182,11 +182,11 @@ public static class ContractComparer
                 ChangeSeverity.Breaking,
                 ContractChangeType.ResponseFieldTypeChanged,
                 $"Response body type changed from {oldType.Name} to {newType.Name} for {endpoint} (status {oldResponse.StatusCode})",
-                path: endpoint.PathTemplate,
-                method: endpoint.Method,
-                location: ChangeLocation.ResponseBody,
-                oldValue: oldType.Name,
-                newValue: newType.Name));
+                Path: endpoint.PathTemplate,
+                Method: endpoint.Method,
+                Location: ChangeLocation.ResponseBody,
+                OldValue: oldType.Name,
+                NewValue: newType.Name));
         }
         else
         {
@@ -200,11 +200,11 @@ public static class ContractComparer
                     ChangeSeverity.Breaking,
                     ContractChangeType.ResponseFieldTypeChanged,
                     $"Response body type changed from {oldSchemaType} to {newSchemaType} for {endpoint} (status {oldResponse.StatusCode})",
-                    path: endpoint.PathTemplate,
-                    method: endpoint.Method,
-                    location: ChangeLocation.ResponseBody,
-                    oldValue: oldSchemaType,
-                    newValue: newSchemaType));
+                    Path: endpoint.PathTemplate,
+                    Method: endpoint.Method,
+                    Location: ChangeLocation.ResponseBody,
+                    OldValue: oldSchemaType,
+                    NewValue: newSchemaType));
             }
         }
     }
@@ -227,10 +227,10 @@ public static class ContractComparer
                     ChangeSeverity.Warning,
                     ContractChangeType.ResponseHeaderRemoved,
                     $"Response header '{name}' removed from {endpoint} (status {oldResponse.StatusCode})",
-                    path: endpoint.PathTemplate,
-                    method: endpoint.Method,
-                    location: ChangeLocation.ResponseHeader,
-                    fieldName: name));
+                    Path: endpoint.PathTemplate,
+                    Method: endpoint.Method,
+                    Location: ChangeLocation.ResponseHeader,
+                    FieldName: name));
             }
         }
 
@@ -243,10 +243,10 @@ public static class ContractComparer
                     ChangeSeverity.Info,
                     ContractChangeType.ResponseHeaderAdded,
                     $"Response header '{name}' added to {endpoint} (status {newResponse.StatusCode})",
-                    path: endpoint.PathTemplate,
-                    method: endpoint.Method,
-                    location: ChangeLocation.ResponseHeader,
-                    fieldName: name));
+                    Path: endpoint.PathTemplate,
+                    Method: endpoint.Method,
+                    Location: ChangeLocation.ResponseHeader,
+                    FieldName: name));
             }
         }
     }
@@ -268,9 +268,9 @@ public static class ContractComparer
                     ChangeSeverity.Breaking,
                     ContractChangeType.RequestFieldAdded,
                     $"Required request body added to {newEndpoint}",
-                    path: newEndpoint.PathTemplate,
-                    method: newEndpoint.Method,
-                    location: ChangeLocation.RequestBody));
+                    Path: newEndpoint.PathTemplate,
+                    Method: newEndpoint.Method,
+                    Location: ChangeLocation.RequestBody));
             }
             else
             {
@@ -278,9 +278,9 @@ public static class ContractComparer
                     ChangeSeverity.Info,
                     ContractChangeType.RequestFieldAdded,
                     $"Optional request body added to {newEndpoint}",
-                    path: newEndpoint.PathTemplate,
-                    method: newEndpoint.Method,
-                    location: ChangeLocation.RequestBody));
+                    Path: newEndpoint.PathTemplate,
+                    Method: newEndpoint.Method,
+                    Location: ChangeLocation.RequestBody));
             }
             return;
         }
@@ -291,9 +291,9 @@ public static class ContractComparer
                 ChangeSeverity.Info,
                 ContractChangeType.RequestFieldRemoved,
                 $"Request body removed from {oldEndpoint}",
-                path: oldEndpoint.PathTemplate,
-                method: oldEndpoint.Method,
-                location: ChangeLocation.RequestBody));
+                Path: oldEndpoint.PathTemplate,
+                Method: oldEndpoint.Method,
+                Location: ChangeLocation.RequestBody));
             return;
         }
 
@@ -310,11 +310,11 @@ public static class ContractComparer
                 ChangeSeverity.Breaking,
                 ContractChangeType.RequestFieldTypeChanged,
                 $"Request body type changed from {oldType.Name} to {newType.Name} for {oldEndpoint}",
-                path: oldEndpoint.PathTemplate,
-                method: oldEndpoint.Method,
-                location: ChangeLocation.RequestBody,
-                oldValue: oldType.Name,
-                newValue: newType.Name));
+                Path: oldEndpoint.PathTemplate,
+                Method: oldEndpoint.Method,
+                Location: ChangeLocation.RequestBody,
+                OldValue: oldType.Name,
+                NewValue: newType.Name));
         }
 
         // Check if request became required
@@ -324,9 +324,9 @@ public static class ContractComparer
                 ChangeSeverity.Breaking,
                 ContractChangeType.RequestFieldMadeRequired,
                 $"Request body became required for {newEndpoint}",
-                path: newEndpoint.PathTemplate,
-                method: newEndpoint.Method,
-                location: ChangeLocation.RequestBody));
+                Path: newEndpoint.PathTemplate,
+                Method: newEndpoint.Method,
+                Location: ChangeLocation.RequestBody));
         }
         else if (oldRequest.IsRequired && !newRequest.IsRequired)
         {
@@ -334,9 +334,9 @@ public static class ContractComparer
                 ChangeSeverity.Info,
                 ContractChangeType.RequestFieldMadeOptional,
                 $"Request body became optional for {newEndpoint}",
-                path: newEndpoint.PathTemplate,
-                method: newEndpoint.Method,
-                location: ChangeLocation.RequestBody));
+                Path: newEndpoint.PathTemplate,
+                Method: newEndpoint.Method,
+                Location: ChangeLocation.RequestBody));
         }
     }
 
@@ -357,10 +357,10 @@ public static class ContractComparer
                     ChangeSeverity.Info,
                     ContractChangeType.RequestHeaderRemoved,
                     $"Request header '{name}' no longer required for {oldEndpoint}",
-                    path: oldEndpoint.PathTemplate,
-                    method: oldEndpoint.Method,
-                    location: ChangeLocation.RequestHeader,
-                    fieldName: name));
+                    Path: oldEndpoint.PathTemplate,
+                    Method: oldEndpoint.Method,
+                    Location: ChangeLocation.RequestHeader,
+                    FieldName: name));
             }
         }
 
@@ -374,10 +374,10 @@ public static class ContractComparer
                     severity,
                     ContractChangeType.RequestHeaderAdded,
                     $"Request header '{name}' {(newHeader.IsRequired ? "required" : "added")} for {newEndpoint}",
-                    path: newEndpoint.PathTemplate,
-                    method: newEndpoint.Method,
-                    location: ChangeLocation.RequestHeader,
-                    fieldName: name));
+                    Path: newEndpoint.PathTemplate,
+                    Method: newEndpoint.Method,
+                    Location: ChangeLocation.RequestHeader,
+                    FieldName: name));
             }
         }
     }

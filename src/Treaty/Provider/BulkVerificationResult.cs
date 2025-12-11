@@ -7,63 +7,38 @@ namespace Treaty.Provider;
 /// <summary>
 /// Result of bulk verification containing all individual results.
 /// </summary>
-public sealed class BulkVerificationResult
+/// <param name="Results">All individual verification results.</param>
+/// <param name="SkippedCount">The number of endpoints that were skipped (e.g., no example data).</param>
+/// <param name="Duration">The total duration of the verification run.</param>
+public sealed record BulkVerificationResult(
+    IReadOnlyList<EndpointVerificationResult> Results,
+    int SkippedCount,
+    TimeSpan Duration)
 {
+    /// <summary>
+    /// Gets the total number of endpoints that were included in verification.
+    /// </summary>
+    public int TotalCount { get; } = Results.Count + SkippedCount;
+
+    /// <summary>
+    /// Gets the number of endpoints that passed verification.
+    /// </summary>
+    public int PassedCount { get; } = Results.Count(r => r.Passed);
+
+    /// <summary>
+    /// Gets the number of endpoints that failed verification.
+    /// </summary>
+    public int FailedCount { get; } = Results.Count(r => !r.Passed);
+
     /// <summary>
     /// Gets a value indicating whether all verified endpoints passed.
     /// </summary>
     public bool AllPassed => FailedCount == 0;
 
     /// <summary>
-    /// Gets the total number of endpoints that were included in verification.
-    /// </summary>
-    public int TotalCount { get; }
-
-    /// <summary>
-    /// Gets the number of endpoints that passed verification.
-    /// </summary>
-    public int PassedCount { get; }
-
-    /// <summary>
-    /// Gets the number of endpoints that failed verification.
-    /// </summary>
-    public int FailedCount { get; }
-
-    /// <summary>
-    /// Gets the number of endpoints that were skipped (e.g., no example data).
-    /// </summary>
-    public int SkippedCount { get; }
-
-    /// <summary>
-    /// Gets all individual verification results.
-    /// </summary>
-    public IReadOnlyList<EndpointVerificationResult> Results { get; }
-
-    /// <summary>
     /// Gets only the failed verification results.
     /// </summary>
-    public IReadOnlyList<EndpointVerificationResult> Failures => Results.Where(r => !r.Passed).ToList();
-
-    /// <summary>
-    /// Gets the total duration of the verification run.
-    /// </summary>
-    public TimeSpan Duration { get; }
-
-    /// <summary>
-    /// Creates a new bulk verification result.
-    /// </summary>
-    public BulkVerificationResult(
-        IReadOnlyList<EndpointVerificationResult> results,
-        int skippedCount,
-        TimeSpan duration)
-    {
-        Results = results;
-        SkippedCount = skippedCount;
-        Duration = duration;
-        TotalCount = results.Count + skippedCount;
-        PassedCount = results.Count(r => r.Passed);
-        FailedCount = results.Count(r => !r.Passed);
-    }
+    public IReadOnlyList<EndpointVerificationResult> Failures { get; } = Results.Where(r => !r.Passed).ToList();
 
     /// <summary>
     /// Throws <see cref="ContractViolationException"/> if any endpoints failed verification.
@@ -105,7 +80,7 @@ public sealed class BulkVerificationResult
 
         if (AllPassed)
         {
-            sb.AppendLine("✓ All endpoints passed verification!");
+            sb.AppendLine("All endpoints passed verification!");
         }
         else
         {
@@ -114,7 +89,7 @@ public sealed class BulkVerificationResult
 
             foreach (var failure in Failures)
             {
-                sb.AppendLine($"  ✗ {failure.Endpoint}");
+                sb.AppendLine($"  X {failure.Endpoint}");
                 foreach (var violation in failure.ValidationResult.Violations.Take(3))
                 {
                     sb.AppendLine($"    - {violation.Type} at {violation.Path}");
@@ -133,54 +108,32 @@ public sealed class BulkVerificationResult
     public override string ToString()
     {
         return AllPassed
-            ? $"✓ Verification passed: {PassedCount}/{TotalCount} endpoints"
-            : $"✗ Verification failed: {FailedCount}/{TotalCount} endpoints failed";
+            ? $"Verification passed: {PassedCount}/{TotalCount} endpoints"
+            : $"Verification failed: {FailedCount}/{TotalCount} endpoints failed";
     }
 }
 
 /// <summary>
 /// Result of verifying a single endpoint.
 /// </summary>
-public sealed class EndpointVerificationResult
+/// <param name="Endpoint">The endpoint that was verified.</param>
+/// <param name="ValidationResult">The validation result.</param>
+/// <param name="Duration">The duration of this endpoint's verification.</param>
+public sealed record EndpointVerificationResult(
+    EndpointContract Endpoint,
+    ValidationResult ValidationResult,
+    TimeSpan Duration)
 {
-    /// <summary>
-    /// Gets the endpoint that was verified.
-    /// </summary>
-    public EndpointContract Endpoint { get; }
-
-    /// <summary>
-    /// Gets the validation result.
-    /// </summary>
-    public ValidationResult ValidationResult { get; }
-
     /// <summary>
     /// Gets a value indicating whether the endpoint passed verification.
     /// </summary>
     public bool Passed => ValidationResult.IsValid;
 
-    /// <summary>
-    /// Gets the duration of this endpoint's verification.
-    /// </summary>
-    public TimeSpan Duration { get; }
-
-    /// <summary>
-    /// Creates a new endpoint verification result.
-    /// </summary>
-    public EndpointVerificationResult(
-        EndpointContract endpoint,
-        ValidationResult validationResult,
-        TimeSpan duration)
-    {
-        Endpoint = endpoint;
-        ValidationResult = validationResult;
-        Duration = duration;
-    }
-
     /// <inheritdoc/>
     public override string ToString()
     {
         return Passed
-            ? $"✓ {Endpoint} ({Duration.TotalMilliseconds:F0}ms)"
-            : $"✗ {Endpoint} - {ValidationResult.Violations.Count} violation(s)";
+            ? $"Pass: {Endpoint} ({Duration.TotalMilliseconds:F0}ms)"
+            : $"Fail: {Endpoint} - {ValidationResult.Violations.Count} violation(s)";
     }
 }

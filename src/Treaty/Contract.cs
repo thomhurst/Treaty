@@ -33,6 +33,32 @@ public static class Contract
         => new(specStream, format);
 
     /// <summary>
+    /// Asynchronously creates a contract from an OpenAPI specification file.
+    /// </summary>
+    /// <param name="specPath">Path to the OpenAPI specification file (YAML or JSON).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>An OpenAPI contract builder for customization.</returns>
+    /// <example>
+    /// <code>
+    /// var contract = await Contract.FromOpenApiAsync("api-spec.yaml")
+    ///     .ForEndpoint("/users/{id}")
+    ///     .BuildAsync();
+    /// </code>
+    /// </example>
+    public static AsyncOpenApiContractBuilder FromOpenApiAsync(string specPath, CancellationToken cancellationToken = default)
+        => new(specPath, cancellationToken);
+
+    /// <summary>
+    /// Asynchronously creates a contract from an OpenAPI specification stream.
+    /// </summary>
+    /// <param name="specStream">Stream containing the OpenAPI specification.</param>
+    /// <param name="format">The format of the specification (yaml or json).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>An OpenAPI contract builder for customization.</returns>
+    public static AsyncOpenApiContractBuilder FromOpenApiAsync(Stream specStream, OpenApiFormat format = OpenApiFormat.Yaml, CancellationToken cancellationToken = default)
+        => new(specStream, format, cancellationToken);
+
+    /// <summary>
     /// Compares two contracts and returns a diff describing all changes.
     /// Use this to detect breaking changes between contract versions.
     /// </summary>

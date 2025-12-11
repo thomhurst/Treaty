@@ -16,7 +16,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Endpoint added", path: "/users", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Endpoint added", Path: "/users", Location: ChangeLocation.Endpoint)
         };
 
         // Act
@@ -50,9 +50,9 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", path: "/users", location: ChangeLocation.Endpoint),
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", path: "/products", location: ChangeLocation.Endpoint),
-            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Field removed", location: ChangeLocation.ResponseBody, fieldName: "name")
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", Path: "/users", Location: ChangeLocation.Endpoint),
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", Path: "/products", Location: ChangeLocation.Endpoint),
+            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Field removed", Location: ChangeLocation.ResponseBody, FieldName: "name")
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -70,9 +70,9 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", path: "/users", location: ChangeLocation.Endpoint),
-            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Field removed", location: ChangeLocation.ResponseBody, fieldName: "name"),
-            new(ChangeSeverity.Warning, ContractChangeType.ResponseHeaderRemoved, "Header removed", location: ChangeLocation.ResponseHeader, fieldName: "X-Header")
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", Path: "/users", Location: ChangeLocation.Endpoint),
+            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Field removed", Location: ChangeLocation.ResponseBody, FieldName: "name"),
+            new(ChangeSeverity.Warning, ContractChangeType.ResponseHeaderRemoved, "Header removed", Location: ChangeLocation.ResponseHeader, FieldName: "X-Header")
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -90,9 +90,9 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", path: "/users", location: ChangeLocation.Endpoint),
-            new(ChangeSeverity.Info, ContractChangeType.ResponseStatusCodeAdded, "Status added", location: ChangeLocation.StatusCode, newValue: "201"),
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", path: "/old", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", Path: "/users", Location: ChangeLocation.Endpoint),
+            new(ChangeSeverity.Info, ContractChangeType.ResponseStatusCodeAdded, "Status added", Location: ChangeLocation.StatusCode, NewValue: "201"),
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", Path: "/old", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -110,7 +110,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", path: "/users", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", Path: "/users", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -124,8 +124,8 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Removed", location: ChangeLocation.ResponseBody),
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", path: "/new", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Removed", Location: ChangeLocation.ResponseBody),
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", Path: "/new", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -139,7 +139,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.RequestFieldAdded, "Required field added", location: ChangeLocation.RequestBody)
+            new(ChangeSeverity.Breaking, ContractChangeType.RequestFieldAdded, "Required field added", Location: ChangeLocation.RequestBody)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -153,7 +153,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", path: "/new", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", Path: "/new", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -184,7 +184,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Endpoint removed", path: "/users", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Endpoint removed", Path: "/users", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -201,7 +201,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Field removed", location: ChangeLocation.ResponseBody, fieldName: "name")
+            new(ChangeSeverity.Warning, ContractChangeType.ResponseFieldRemoved, "Field removed", Location: ChangeLocation.ResponseBody, FieldName: "name")
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -218,7 +218,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "New endpoint", path: "/new", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "New endpoint", Path: "/new", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -239,7 +239,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", path: "/users", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", Path: "/users", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -257,7 +257,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", path: "/new", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Info, ContractChangeType.EndpointAdded, "Added", Path: "/new", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -280,11 +280,11 @@ public class ContractDiffTests
             ChangeSeverity.Breaking,
             ContractChangeType.ResponseFieldTypeChanged,
             "Type changed",
-            path: "/users",
-            location: ChangeLocation.ResponseBody,
-            fieldName: "age",
-            oldValue: "string",
-            newValue: "integer");
+            Path: "/users",
+            Location: ChangeLocation.ResponseBody,
+            FieldName: "age",
+            OldValue: "string",
+            NewValue: "integer");
 
         // Assert
         change.Type.Should().Be(ContractChangeType.ResponseFieldTypeChanged);
@@ -305,8 +305,8 @@ public class ContractDiffTests
             ChangeSeverity.Breaking,
             ContractChangeType.EndpointRemoved,
             "Endpoint was removed",
-            path: "/users",
-            location: ChangeLocation.Endpoint);
+            Path: "/users",
+            Location: ChangeLocation.Endpoint);
 
         // Act
         var result = change.ToString();
@@ -323,8 +323,8 @@ public class ContractDiffTests
             ChangeSeverity.Breaking,
             ContractChangeType.EndpointRemoved,
             "Endpoint was removed",
-            path: "/users",
-            location: ChangeLocation.Endpoint);
+            Path: "/users",
+            Location: ChangeLocation.Endpoint);
 
         // Act
         var result = change.ToString();
@@ -343,7 +343,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", path: "/users", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Removed", Path: "/users", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
@@ -360,7 +360,7 @@ public class ContractDiffTests
         // Arrange
         var changes = new List<ContractChange>
         {
-            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Endpoint removed", path: "/users", location: ChangeLocation.Endpoint)
+            new(ChangeSeverity.Breaking, ContractChangeType.EndpointRemoved, "Endpoint removed", Path: "/users", Location: ChangeLocation.Endpoint)
         };
         var diff = new ContractDiff("Old", "New", changes);
 
