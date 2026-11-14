@@ -1,16 +1,14 @@
-using ModularPipelines.Attributes;
-using ModularPipelines.Context;
-using ModularPipelines.Modules;
-using File = ModularPipelines.FileSystem.File;
+using ModularPipelines;
+using File = ModularPipelines.FileSystem.FilePath;
 
 namespace Treaty.Pipeline.Modules;
 
 [DependsOn<PackProjectsModule>]
 public class PackagePathsParserModule : Module<List<File>>
 {
-    protected override async Task<List<File>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
+    protected override async Task<List<File>> ExecuteAsync(IModuleContext context, CancellationToken cancellationToken)
     {
-        var packPackagesModuleResult = await GetModule<PackProjectsModule>();
+        var packPackagesModuleResult = await context.GetModule<PackProjectsModule>();
 
         return [.. packPackagesModuleResult.Value!
             .Select(x => x.StandardOutput)
