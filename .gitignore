@@ -421,3 +421,5 @@ FodyWeavers.xsd
 .claude
 requirements
 build_output
+# ModularPipelines run history
+.modularpipelines/run-history/

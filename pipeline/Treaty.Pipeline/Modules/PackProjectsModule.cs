@@ -1,12 +1,8 @@
 using Microsoft.Extensions.Logging;
-using ModularPipelines.Attributes;
+using ModularPipelines;
 using ModularPipelines.Context;
-using ModularPipelines.DotNet.Extensions;
 using ModularPipelines.DotNet.Options;
-using ModularPipelines.Git.Extensions;
-using ModularPipelines.Models;
-using ModularPipelines.Modules;
-using File = ModularPipelines.FileSystem.File;
+using File = ModularPipelines.FileSystem.FilePath;
 
 namespace Treaty.Pipeline.Modules;
 
@@ -15,31 +11,32 @@ namespace Treaty.Pipeline.Modules;
 [DependsOn<RunTUnitTestsModule>]
 public class PackProjectsModule : Module<List<CommandResult>>
 {
-    protected override async Task<List<CommandResult>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
+    protected override async Task<List<CommandResult>> ExecuteAsync(IModuleContext context, CancellationToken cancellationToken)
     {
         var results = new List<CommandResult>();
-        var packageVersion = await GetModule<NugetVersionGeneratorModule>();
-        var projectFiles = context.Git().RootDirectory!.GetFiles(f => GetProjectsPredicate(f, context));
+        var packageVersion = await context.GetModule<NugetVersionGeneratorModule>();
+        var rootDirectory = (await context.Tools.Git.Information.GetRequiredInfoAsync(cancellationToken)).Root;
+        var projectFiles = rootDirectory.GetFiles(f => GetProjectsPredicate(f, context));
 
         foreach (var projectFile in projectFiles)
         {
-            results.Add(await context.DotNet().Pack(new DotNetPackOptions
+            results.Add(await context.Tools.DotNet.PackAsync(new DotNetPackOptions
             {
                 ProjectSolution = projectFile.Path,
-                Configuration = Configuration.Release,
+                Configuration = "Release",
                 Properties =
                 [
                     ("PackageVersion", packageVersion.Value)!,
                     ("Version", packageVersion.Value)!
                 ],
                 IncludeSource = true
-            }, cancellationToken));
+            }, cancellationToken: cancellationToken));
         }
 
         return results;
     }
 
-    private static bool GetProjectsPredicate(File file, IPipelineContext context)
+    private static bool GetProjectsPredicate(File file, IModuleContext context)
     {
         var path = file.Path;
 

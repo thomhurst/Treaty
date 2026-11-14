@@ -1,27 +1,23 @@
 using Microsoft.Extensions.Logging;
+using ModularPipelines;
 using ModularPipelines.Context;
-using ModularPipelines.DotNet.Extensions;
 using ModularPipelines.DotNet.Options;
-using ModularPipelines.Enums;
-using ModularPipelines.Git.Extensions;
-using ModularPipelines.Models;
-using ModularPipelines.Modules;
 using ModularPipelines.Options;
 
 namespace Treaty.Pipeline.Modules;
 
 public class RunTUnitTestsModule : Module<CommandResult>
 {
-    protected override async Task<CommandResult?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
+    protected override async Task<CommandResult> ExecuteAsync(IModuleContext context, CancellationToken cancellationToken)
     {
-        var rootDirectory = context.Git().RootDirectory!;
+        var rootDirectory = (await context.Tools.Git.Information.GetRequiredInfoAsync(cancellationToken)).Root;
 
         // First, build the solution in Release mode
-        await context.DotNet().Build(new DotNetBuildOptions
+        await context.Tools.DotNet.BuildAsync(new DotNetBuildOptions
         {
             ProjectSolution = rootDirectory.GetFile("Treaty.sln").Path,
-            Configuration = Configuration.Release
-        }, cancellationToken);
+            Configuration = "Release"
+        }, cancellationToken: cancellationToken);
 
         // Find the test executable - on Linux it won't have .exe extension
         var testExeFolder = rootDirectory
@@ -38,10 +34,15 @@ public class RunTUnitTestsModule : Module<CommandResult>
         context.Logger.LogInformation("Running TUnit tests from: {Path}", testExePath);
 
         // Run the TUnit test executable directly
-        return await context.Command.ExecuteCommandLineTool(
-            new CommandLineToolOptions(testExePath)
+        return await context.Shell.RunAsync(
+            new CommandLineToolOptions(testExePath),
+            new CommandExecutionOptions
             {
-                CommandLogging = CommandLogging.Input | CommandLogging.Error
+                Logging = new CommandLoggingOptions
+                {
+                    Verbosity = CommandLogVerbosity.InputOnly,
+                    ShowStandardError = true
+                }
             },
             cancellationToken);
     }
